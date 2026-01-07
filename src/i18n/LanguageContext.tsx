@@ -32,11 +32,62 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationCache, setTranslationCache] = useState<Record<string, Record<string, string>>>({});
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const setLanguage = useCallback((code: LanguageCode) => {
+  // Load language preference from database when user is authenticated
+  useEffect(() => {
+    const loadUserLanguage = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preferred_language')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.preferred_language && languages.some(l => l.code === profile.preferred_language)) {
+          setLanguageState(profile.preferred_language as LanguageCode);
+          localStorage.setItem(STORAGE_KEY, profile.preferred_language);
+        }
+      }
+    };
+
+    loadUserLanguage();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUserId(session.user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preferred_language')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.preferred_language && languages.some(l => l.code === profile.preferred_language)) {
+          setLanguageState(profile.preferred_language as LanguageCode);
+          localStorage.setItem(STORAGE_KEY, profile.preferred_language);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUserId(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const setLanguage = useCallback(async (code: LanguageCode) => {
     setLanguageState(code);
     localStorage.setItem(STORAGE_KEY, code);
-  }, []);
+
+    // Save to database if user is authenticated
+    if (userId) {
+      await supabase
+        .from('profiles')
+        .update({ preferred_language: code })
+        .eq('id', userId);
+    }
+  }, [userId]);
 
   const t = getTranslations(language);
   const isRTL = getLanguage(language)?.rtl || false;
