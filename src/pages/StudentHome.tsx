@@ -231,7 +231,9 @@ export default function StudentHome() {
             <Link to="/student/rewards">
               <NavButton icon="🏆" label="Rewards" />
             </Link>
-            <NavButton icon="📊" label="Progress" />
+            <Link to="/student/leaderboard">
+              <NavButton icon="📊" label="Leaderboard" />
+            </Link>
             <NavButton icon="👤" label="Profile" />
           </div>
         </div>
