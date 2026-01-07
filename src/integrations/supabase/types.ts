@@ -317,6 +317,33 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_students: {
+        Row: {
+          created_at: string
+          id: string
+          parent_id: string
+          relationship: string
+          student_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_id: string
+          relationship?: string
+          student_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_id?: string
+          relationship?: string
+          student_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
