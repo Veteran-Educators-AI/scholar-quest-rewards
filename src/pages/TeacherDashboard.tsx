@@ -1,0 +1,310 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { 
+  Users, 
+  BookOpen, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle,
+  Plus,
+  Settings,
+  LogOut,
+  ChevronRight
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+// Demo data
+const demoTeacher = {
+  name: "Ms. Johnson",
+};
+
+const demoClasses = [
+  {
+    id: "1",
+    name: "Math 101",
+    code: "MATH101",
+    studentCount: 24,
+    pendingVerifications: 3,
+  },
+  {
+    id: "2",
+    name: "Math 102",
+    code: "MATH102",
+    studentCount: 22,
+    pendingVerifications: 1,
+  },
+];
+
+const demoStats = {
+  totalStudents: 46,
+  activeAssignments: 5,
+  completionRate: 78,
+  pendingVerifications: 4,
+};
+
+const demoRecentActivity = [
+  { id: "1", student: "Alex", action: "completed", assignment: "Math Magic", time: "5 min ago" },
+  { id: "2", student: "Jordan", action: "submitted", assignment: "Reading Ch 5", time: "12 min ago" },
+  { id: "3", student: "Taylor", action: "started", assignment: "Science Quiz", time: "25 min ago" },
+];
+
+export default function TeacherDashboard() {
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out",
+      description: "See you next time!",
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card border-b border-border sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-bold text-foreground text-xl">Scan Scholar</h1>
+              <p className="text-sm text-muted-foreground">Teacher Dashboard</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon-sm">
+                <Settings className="w-5 h-5 text-muted-foreground" />
+              </Button>
+              <Button variant="ghost" size="icon-sm" onClick={handleLogout}>
+                <LogOut className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        {/* Welcome */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-2xl font-extrabold text-foreground mb-2">
+            Welcome back, <span className="text-gradient-primary">{demoTeacher.name}</span>
+          </h2>
+          <p className="text-muted-foreground">Here's what's happening with your classes today.</p>
+        </motion.section>
+
+        {/* Stats Grid */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard
+              icon={<Users className="w-6 h-6" />}
+              label="Students"
+              value={demoStats.totalStudents}
+              color="primary"
+            />
+            <StatCard
+              icon={<BookOpen className="w-6 h-6" />}
+              label="Active Assignments"
+              value={demoStats.activeAssignments}
+              color="secondary"
+            />
+            <StatCard
+              icon={<CheckCircle2 className="w-6 h-6" />}
+              label="Completion Rate"
+              value={`${demoStats.completionRate}%`}
+              color="success"
+            />
+            <StatCard
+              icon={<Clock className="w-6 h-6" />}
+              label="Pending Review"
+              value={demoStats.pendingVerifications}
+              color="warning"
+              highlight={demoStats.pendingVerifications > 0}
+            />
+          </div>
+        </motion.section>
+
+        {/* Pending Verifications Alert */}
+        {demoStats.pendingVerifications > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-warning" />
+                <div>
+                  <p className="font-bold text-foreground">
+                    {demoStats.pendingVerifications} paper submissions need review
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Students are waiting for their rewards!
+                  </p>
+                </div>
+              </div>
+              <Link to="/teacher/verify">
+                <Button variant="warning" size="sm">
+                  Review Now
+                </Button>
+              </Link>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Classes */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-foreground">Your Classes</h3>
+            <Button variant="outline" size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Class
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {demoClasses.map((cls, index) => (
+              <motion.div
+                key={cls.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+              >
+                <Link to={`/teacher/class/${cls.id}`}>
+                  <div className="bg-card rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-bold text-foreground text-lg">{cls.name}</h4>
+                        <p className="text-sm text-muted-foreground">Code: {cls.code}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Users className="w-4 h-4" />
+                        {cls.studentCount} students
+                      </div>
+                      {cls.pendingVerifications > 0 && (
+                        <div className="flex items-center gap-1 text-warning">
+                          <Clock className="w-4 h-4" />
+                          {cls.pendingVerifications} pending
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Recent Activity */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="text-xl font-bold text-foreground mb-4">Recent Activity</h3>
+          
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            {demoRecentActivity.map((activity, index) => (
+              <div
+                key={activity.id}
+                className={`px-5 py-4 flex items-center justify-between ${
+                  index !== demoRecentActivity.length - 1 ? "border-b border-border" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    activity.action === "completed" ? "bg-success/10" :
+                    activity.action === "submitted" ? "bg-warning/10" :
+                    "bg-primary/10"
+                  }`}>
+                    {activity.action === "completed" ? "✅" :
+                     activity.action === "submitted" ? "📝" : "▶️"}
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      <span className="text-primary">{activity.student}</span>
+                      {" "}{activity.action}{" "}
+                      <span className="text-muted-foreground">{activity.assignment}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Integration Info */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="bg-muted/50 rounded-2xl p-6">
+            <h3 className="font-bold text-foreground mb-2">Scan Genius Integration</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connect with Scan Genius to automatically push assignments and student profiles.
+            </p>
+            <Link to="/teacher/integrations">
+              <Button variant="outline" size="sm">
+                Configure Integration
+              </Button>
+            </Link>
+          </div>
+        </motion.section>
+      </main>
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+  highlight = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  color: "primary" | "secondary" | "success" | "warning";
+  highlight?: boolean;
+}) {
+  const colorClasses = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/10 text-secondary",
+    success: "bg-success/10 text-success",
+    warning: "bg-warning/10 text-warning",
+  };
+
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className={`bg-card rounded-2xl p-4 border ${
+        highlight ? "border-warning" : "border-border"
+      } shadow-sm`}
+    >
+      <div className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center mb-3`}>
+        {icon}
+      </div>
+      <p className="text-2xl font-extrabold text-foreground">{value}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </motion.div>
+  );
+}

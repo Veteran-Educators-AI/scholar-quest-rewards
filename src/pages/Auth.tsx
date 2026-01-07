@@ -1,0 +1,248 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScholarBuddy } from "@/components/ScholarBuddy";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Users } from "lucide-react";
+
+type AuthMode = "login" | "signup";
+type UserRole = "student" | "teacher";
+
+export default function Auth() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [role, setRole] = useState<UserRole>(searchParams.get("role") === "teacher" ? "teacher" : "student");
+  const [loading, setLoading] = useState(false);
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (mode === "signup") {
+        const redirectUrl = `${window.location.origin}/`;
+        
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              full_name: fullName,
+              role: role,
+            },
+          },
+        });
+
+        if (error) {
+          if (error.message.includes("already registered")) {
+            toast({
+              title: "Account exists",
+              description: "This email is already registered. Try logging in instead.",
+              variant: "destructive",
+            });
+          } else {
+            throw error;
+          }
+        } else {
+          toast({
+            title: "Welcome to Scan Scholar! 🎉",
+            description: "Your account has been created. Let's start learning!",
+          });
+          navigate(role === "teacher" ? "/teacher" : "/student");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast({
+              title: "Login failed",
+              description: "Please check your email and password.",
+              variant: "destructive",
+            });
+          } else {
+            throw error;
+          }
+        } else {
+          toast({
+            title: "Welcome back! 🦉",
+            description: "Ready for another learning adventure?",
+          });
+          // Navigation will be handled by auth state listener in App
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Something went wrong",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const messages = {
+    student: {
+      login: "Welcome back, scholar! Ready for more adventures?",
+      signup: "Hi there! Let's set up your account and start earning rewards!",
+    },
+    teacher: {
+      login: "Welcome back! Your students are waiting.",
+      signup: "Great to have you! Let's get your classroom set up.",
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-48 h-48 bg-secondary/10 rounded-full blur-3xl" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/")}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to home
+        </Button>
+
+        <div className="bg-card rounded-3xl shadow-xl border border-border p-8">
+          {/* Mascot */}
+          <div className="flex justify-center mb-6">
+            <ScholarBuddy size="md" message={messages[role][mode]} />
+          </div>
+
+          {/* Role selector */}
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant={role === "student" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setRole("student")}
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Student
+            </Button>
+            <Button
+              variant={role === "teacher" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setRole("teacher")}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Teacher
+            </Button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  minLength={6}
+                  required
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              variant="hero"
+              className="w-full"
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : mode === "login" ? (
+                "Log In"
+              ) : (
+                "Create Account"
+              )}
+            </Button>
+          </form>
+
+          {/* Toggle mode */}
+          <div className="mt-6 text-center">
+            <p className="text-muted-foreground text-sm">
+              {mode === "login" ? "Don't have an account?" : "Already have an account?"}
+            </p>
+            <Button
+              variant="link"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              className="text-primary font-semibold"
+            >
+              {mode === "login" ? "Sign up" : "Log in"}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
