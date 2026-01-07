@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import TeacherVerify from "./pages/TeacherVerify";
+import ParentDashboard from "./pages/ParentDashboard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
           <Route path="/teacher/verify" element={<TeacherVerify />} />
+          <Route path="/parent" element={<ParentDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
