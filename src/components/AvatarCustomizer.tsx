@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Check, Sparkles, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { AvatarParticles, AvatarGlow } from "./AvatarParticles";
 
 type Rarity = "common" | "rare" | "epic" | "legendary";
 type Slot = "frame" | "background" | "hat" | "pet" | "accessory";
@@ -277,27 +277,65 @@ export function AvatarPreview({
     ? frameStyles[equippedItems.frame.name] || ""
     : "";
 
+  // Check if any equipped item is epic or legendary
+  const hasLegendaryItem = Object.values(equippedItems).some(
+    (item) => item?.rarity === "legendary"
+  );
+  const hasEpicItem = Object.values(equippedItems).some(
+    (item) => item?.rarity === "epic"
+  );
+
+  const highestRarity = hasLegendaryItem ? "legendary" : hasEpicItem ? "epic" : null;
+
   return (
     <div className="relative inline-block">
+      {/* Particle effects for epic/legendary */}
+      {highestRarity && (
+        <>
+          <AvatarGlow rarity={highestRarity} size={size} />
+          <AvatarParticles rarity={highestRarity} size={size} />
+        </>
+      )}
+
       {/* Main avatar */}
-      <div
+      <motion.div
         className={cn(
           sizeClasses[size],
           bgStyle,
           frameStyle,
-          "rounded-full flex items-center justify-center shadow-glow-primary relative overflow-hidden"
+          "rounded-full flex items-center justify-center shadow-glow-primary relative overflow-hidden",
+          hasLegendaryItem && "ring-2 ring-rarity-legendary/50",
+          hasEpicItem && !hasLegendaryItem && "ring-2 ring-rarity-epic/50"
         )}
+        animate={
+          hasLegendaryItem
+            ? { boxShadow: ["0 0 20px rgba(251,191,36,0.4)", "0 0 35px rgba(251,191,36,0.6)", "0 0 20px rgba(251,191,36,0.4)"] }
+            : hasEpicItem
+            ? { boxShadow: ["0 0 15px rgba(168,85,247,0.3)", "0 0 25px rgba(168,85,247,0.5)", "0 0 15px rgba(168,85,247,0.3)"] }
+            : {}
+        }
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >
         <User className={cn("text-primary-foreground", size === "xl" ? "w-12 h-12" : size === "lg" ? "w-10 h-10" : "w-8 h-8")} />
-      </div>
+      </motion.div>
 
-      {/* Hat */}
+      {/* Hat with effects */}
       <AnimatePresence>
         {equippedItems.hat && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ 
+              opacity: 1, 
+              y: 0,
+              ...(equippedItems.hat.rarity === "legendary" && {
+                filter: ["drop-shadow(0 0 4px #fbbf24)", "drop-shadow(0 0 8px #fbbf24)", "drop-shadow(0 0 4px #fbbf24)"],
+              }),
+              ...(equippedItems.hat.rarity === "epic" && {
+                filter: ["drop-shadow(0 0 3px #a855f7)", "drop-shadow(0 0 6px #a855f7)", "drop-shadow(0 0 3px #a855f7)"],
+              }),
+            }}
             exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className={cn("absolute left-1/2 -translate-x-1/2", hatSizeClasses[size])}
           >
             {hatEmojis[equippedItems.hat.name] || "🎩"}
@@ -305,16 +343,32 @@ export function AvatarPreview({
         )}
       </AnimatePresence>
 
-      {/* Pet */}
+      {/* Pet with effects */}
       <AnimatePresence>
         {equippedItems.pet && (
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              ...(equippedItems.pet.rarity === "legendary" && {
+                y: [0, -3, 0],
+              }),
+              ...(equippedItems.pet.rarity === "epic" && {
+                rotate: [0, 5, -5, 0],
+              }),
+            }}
             exit={{ opacity: 0, scale: 0 }}
+            transition={{ 
+              duration: equippedItems.pet.rarity === "legendary" ? 1 : 2, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
             className={cn(
               "absolute rounded-full bg-card border border-border flex items-center justify-center",
-              petSizeClasses[size]
+              petSizeClasses[size],
+              equippedItems.pet.rarity === "legendary" && "border-rarity-legendary shadow-[0_0_10px_rgba(251,191,36,0.5)]",
+              equippedItems.pet.rarity === "epic" && "border-rarity-epic shadow-[0_0_8px_rgba(168,85,247,0.4)]"
             )}
           >
             {petEmojis[equippedItems.pet.name] || "🐾"}
