@@ -159,6 +159,97 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_participants: {
+        Row: {
+          assignments_completed: number
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          joined_at: string
+          rewards_claimed: boolean
+          student_id: string
+        }
+        Insert: {
+          assignments_completed?: number
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          joined_at?: string
+          rewards_claimed?: boolean
+          student_id: string
+        }
+        Update: {
+          assignments_completed?: number
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          joined_at?: string
+          rewards_claimed?: boolean
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          badge_id: string | null
+          coin_bonus: number
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          min_assignments: number
+          start_date: string
+          theme: string
+          title: string
+          xp_bonus: number
+        }
+        Insert: {
+          badge_id?: string | null
+          coin_bonus?: number
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          min_assignments?: number
+          start_date: string
+          theme: string
+          title: string
+          xp_bonus?: number
+        }
+        Update: {
+          badge_id?: string | null
+          coin_bonus?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          min_assignments?: number
+          start_date?: string
+          theme?: string
+          title?: string
+          xp_bonus?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           class_code: string
