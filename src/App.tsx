@@ -9,6 +9,7 @@ import StudentHome from "./pages/StudentHome";
 import Rewards from "./pages/Rewards";
 import AssignmentDetail from "./pages/AssignmentDetail";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherIntegrations from "./pages/TeacherIntegrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/student/rewards" element={<Rewards />} />
           <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
           <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
