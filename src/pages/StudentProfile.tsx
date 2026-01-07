@@ -1,14 +1,12 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
-  User, 
   Trophy, 
   Flame, 
   Target, 
   BookOpen, 
   Calculator, 
-  Clock, 
   Calendar,
   ChevronLeft,
   Sparkles,
@@ -21,9 +19,31 @@ import { StreakCounter } from "@/components/StreakCounter";
 import { CoinCounter } from "@/components/CoinCounter";
 import { BadgeCard } from "@/components/BadgeCard";
 import { CollectibleCard } from "@/components/CollectibleCard";
+import { AvatarCustomizer, AvatarPreview } from "@/components/AvatarCustomizer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+
+type Rarity = "common" | "rare" | "epic" | "legendary";
+type Slot = "frame" | "background" | "hat" | "pet" | "accessory";
+
+interface Collectible {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string | null;
+  rarity: Rarity;
+  slot: Slot;
+  earned: boolean;
+}
+
+interface EquippedItems {
+  frame?: Collectible;
+  background?: Collectible;
+  hat?: Collectible;
+  pet?: Collectible;
+}
 
 // Demo data
 const demoProfile = {
@@ -66,13 +86,27 @@ const demoBadges = [
   { id: "6", name: "Science Explorer", description: "Complete 15 science assignments", iconUrl: null, earned: false },
 ];
 
-const demoCollectibles = [
-  { id: "1", name: "Golden Pencil", description: "A shiny golden pencil for top scholars", imageUrl: null, rarity: "legendary" as const, earned: true },
-  { id: "2", name: "Magic Book", description: "An enchanted book of knowledge", imageUrl: null, rarity: "epic" as const, earned: true },
-  { id: "3", name: "Star Badge", description: "A bright star for achievers", imageUrl: null, rarity: "rare" as const, earned: true },
-  { id: "4", name: "Scholar Hat", description: "The hat of wisdom", imageUrl: null, rarity: "common" as const, earned: true },
-  { id: "5", name: "Rainbow Quill", description: "Writes in all colors", imageUrl: null, rarity: "epic" as const, earned: false },
-  { id: "6", name: "Time Crystal", description: "Frozen moment of genius", imageUrl: null, rarity: "legendary" as const, earned: false },
+const demoCollectibles: Collectible[] = [
+  // Frames
+  { id: "c1", name: "Golden Frame", description: "A shimmering golden border", imageUrl: null, rarity: "legendary", slot: "frame", earned: true },
+  { id: "c2", name: "Star Frame", description: "Surrounded by twinkling stars", imageUrl: null, rarity: "epic", slot: "frame", earned: true },
+  { id: "c3", name: "Rainbow Frame", description: "A colorful rainbow border", imageUrl: null, rarity: "rare", slot: "frame", earned: false },
+  { id: "c4", name: "Basic Frame", description: "A simple decorative frame", imageUrl: null, rarity: "common", slot: "frame", earned: true },
+  // Backgrounds
+  { id: "c5", name: "Galaxy Background", description: "A cosmic starfield", imageUrl: null, rarity: "legendary", slot: "background", earned: false },
+  { id: "c6", name: "Forest Background", description: "A peaceful forest scene", imageUrl: null, rarity: "epic", slot: "background", earned: true },
+  { id: "c7", name: "Ocean Background", description: "Calm ocean waves", imageUrl: null, rarity: "rare", slot: "background", earned: true },
+  { id: "c8", name: "Sky Background", description: "Blue sky with clouds", imageUrl: null, rarity: "common", slot: "background", earned: true },
+  // Hats
+  { id: "c9", name: "Wizard Hat", description: "The hat of a scholar wizard", imageUrl: null, rarity: "legendary", slot: "hat", earned: false },
+  { id: "c10", name: "Crown", description: "A royal crown for champions", imageUrl: null, rarity: "epic", slot: "hat", earned: true },
+  { id: "c11", name: "Graduation Cap", description: "Celebrate your journey", imageUrl: null, rarity: "rare", slot: "hat", earned: true },
+  { id: "c12", name: "Baseball Cap", description: "A cool casual cap", imageUrl: null, rarity: "common", slot: "hat", earned: true },
+  // Pets
+  { id: "c13", name: "Phoenix Companion", description: "A magical fire bird", imageUrl: null, rarity: "legendary", slot: "pet", earned: false },
+  { id: "c14", name: "Owl Companion", description: "A wise owl friend", imageUrl: null, rarity: "epic", slot: "pet", earned: true },
+  { id: "c15", name: "Cat Companion", description: "A curious cat buddy", imageUrl: null, rarity: "rare", slot: "pet", earned: false },
+  { id: "c16", name: "Puppy Companion", description: "A loyal puppy friend", imageUrl: null, rarity: "common", slot: "pet", earned: true },
 ];
 
 export default function StudentProfile() {
@@ -80,6 +114,24 @@ export default function StudentProfile() {
   const [stats] = useState(demoStats);
   const [badges] = useState(demoBadges);
   const [collectibles] = useState(demoCollectibles);
+  const [equippedItems, setEquippedItems] = useState<EquippedItems>({
+    frame: demoCollectibles.find((c) => c.id === "c2"), // Star Frame
+    background: demoCollectibles.find((c) => c.id === "c6"), // Forest Background
+    hat: demoCollectibles.find((c) => c.id === "c11"), // Graduation Cap
+    pet: demoCollectibles.find((c) => c.id === "c14"), // Owl Companion
+  });
+
+  const handleEquip = useCallback((slot: Slot, collectible: Collectible | null) => {
+    setEquippedItems((prev) => ({
+      ...prev,
+      [slot]: collectible ?? undefined,
+    }));
+    if (collectible) {
+      toast.success(`Equipped ${collectible.name}!`);
+    } else {
+      toast.info(`Removed ${slot}`);
+    }
+  }, []);
 
   const earnedBadges = badges.filter(b => b.earned);
   const earnedCollectibles = collectibles.filter(c => c.earned);
@@ -108,13 +160,12 @@ export default function StudentProfile() {
             className="bg-card text-card-foreground rounded-2xl p-6 shadow-lg"
           >
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-hero flex items-center justify-center shadow-glow-primary">
-                {profile.avatar ? (
-                  <img src={profile.avatar} alt={profile.name} className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  <User className="w-10 h-10 text-primary-foreground" />
-                )}
-              </div>
+              <AvatarCustomizer
+                collectibles={collectibles}
+                equippedItems={equippedItems}
+                onEquip={handleEquip}
+                userName={profile.name}
+              />
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-foreground">{profile.name}</h2>
                 <p className="text-muted-foreground">Grade {profile.gradeLevel} Scholar</p>
