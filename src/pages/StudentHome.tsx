@@ -8,10 +8,13 @@ import { CoinCounter } from "@/components/CoinCounter";
 import { MissionCard } from "@/components/MissionCard";
 import { BadgeCard } from "@/components/BadgeCard";
 import { NotificationBell } from "@/components/NotificationBell";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { TranslatedText } from "@/components/TranslatedText";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gift, LogOut, Sparkles } from "lucide-react";
+import { Trophy, Gift, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage, interpolate } from "@/i18n/LanguageContext";
 
 // Demo data for first-time experience
 const demoStudent = {
@@ -29,7 +32,7 @@ const demoMissions = [
     id: "1",
     title: "Math Magic: Multiplication",
     subject: "math",
-    dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+    dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
     xpReward: 50,
     coinReward: 10,
     status: "not_started" as const,
@@ -38,7 +41,7 @@ const demoMissions = [
     id: "2",
     title: "Reading Adventure: Chapter 5",
     subject: "reading",
-    dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+    dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     xpReward: 75,
     coinReward: 15,
     status: "in_progress" as const,
@@ -47,7 +50,7 @@ const demoMissions = [
     id: "3",
     title: "Science Explorer: Plants",
     subject: "science",
-    dueAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 2 days
+    dueAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
     xpReward: 60,
     coinReward: 12,
     status: "not_started" as const,
@@ -62,22 +65,23 @@ const demoBadges = [
 
 export default function StudentHome() {
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [student] = useState(demoStudent);
   const [missions] = useState(demoMissions);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
-      title: "See you later! 👋",
-      description: "Come back soon to continue your learning journey!",
+      title: t.studentHome.logoutTitle,
+      description: t.studentHome.logoutMessage,
     });
   };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return t.greeting.morning;
+    if (hour < 17) return t.greeting.afternoon;
+    return t.greeting.evening;
   };
 
   return (
@@ -89,12 +93,15 @@ export default function StudentHome() {
             <Link to="/student/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <ScholarBuddy size="sm" animate={false} />
               <div>
-                <h1 className="font-bold text-foreground text-lg">Scan Scholar</h1>
-                <p className="text-xs text-muted-foreground">Level {student.level} Scholar</p>
+                <h1 className="font-bold text-foreground text-lg">{t.studentHome.title}</h1>
+                <p className="text-xs text-muted-foreground">
+                  {interpolate(t.studentHome.levelScholar, { level: student.level })}
+                </p>
               </div>
             </Link>
             
             <div className="flex items-center gap-2">
+              <LanguageSelector />
               <CoinCounter coins={student.coins} size="sm" />
               <NotificationBell />
               <Link to="/student/rewards">
@@ -121,7 +128,7 @@ export default function StudentHome() {
               <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
                 {getGreeting()}, <span className="text-gradient-primary">{student.name}!</span>
               </h2>
-              <p className="text-muted-foreground">Ready for today's adventures?</p>
+              <p className="text-muted-foreground">{t.greeting.readyForAdventure}</p>
             </div>
             
             <StreakCounter streak={student.streak} hasShield={student.hasShield} />
@@ -142,8 +149,8 @@ export default function StudentHome() {
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">Today's Missions</h3>
-            <span className="text-sm text-muted-foreground">{missions.length} pending</span>
+            <h3 className="text-xl font-bold text-foreground">{t.studentHome.todaysMissions}</h3>
+            <span className="text-sm text-muted-foreground">{missions.length} {t.common.pending}</span>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -176,10 +183,10 @@ export default function StudentHome() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">Your Badges</h3>
+            <h3 className="text-xl font-bold text-foreground">{t.studentHome.yourBadges}</h3>
             <Link to="/student/rewards">
               <Button variant="link" className="text-primary">
-                View all
+                {t.common.viewAll}
                 <Gift className="w-4 h-4 ml-1" />
               </Button>
             </Link>
@@ -213,11 +220,8 @@ export default function StudentHome() {
           <div className="flex items-start gap-4">
             <ScholarBuddy size="sm" animate={false} />
             <div>
-              <h3 className="font-bold text-lg mb-1">Scholar Tip of the Day!</h3>
-              <p className="opacity-90">
-                Complete your missions on time to keep your streak going! 
-                You have a streak shield ready if you need a day off. 🛡️
-              </p>
+              <h3 className="font-bold text-lg mb-1">{t.studentHome.scholarTip}</h3>
+              <p className="opacity-90">{t.studentHome.tipMessage}</p>
             </div>
           </div>
         </motion.section>
@@ -226,16 +230,16 @@ export default function StudentHome() {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-inset-bottom z-50">
         <div className="container mx-auto px-4">
-        <div className="flex items-center justify-around py-3">
-            <NavButton icon="🏠" label="Home" active />
+          <div className="flex items-center justify-around py-3">
+            <NavButton icon="🏠" label={t.nav.home} active />
             <Link to="/student/rewards">
-              <NavButton icon="🏆" label="Rewards" />
+              <NavButton icon="🏆" label={t.nav.rewards} />
             </Link>
             <Link to="/student/challenges">
-              <NavButton icon="⚡" label="Challenges" />
+              <NavButton icon="⚡" label={t.nav.challenges} />
             </Link>
             <Link to="/student/leaderboard">
-              <NavButton icon="📊" label="Leaderboard" />
+              <NavButton icon="📊" label={t.nav.leaderboard} />
             </Link>
           </div>
         </div>
