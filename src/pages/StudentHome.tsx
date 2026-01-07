@@ -9,7 +9,7 @@ import { MissionCard } from "@/components/MissionCard";
 import { BadgeCard } from "@/components/BadgeCard";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gift, LogOut } from "lucide-react";
+import { Trophy, Gift, LogOut, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -226,15 +226,17 @@ export default function StudentHome() {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-inset-bottom z-50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-around py-3">
+        <div className="flex items-center justify-around py-3">
             <NavButton icon="🏠" label="Home" active />
             <Link to="/student/rewards">
               <NavButton icon="🏆" label="Rewards" />
             </Link>
+            <Link to="/student/challenges">
+              <NavButton icon="⚡" label="Challenges" />
+            </Link>
             <Link to="/student/leaderboard">
               <NavButton icon="📊" label="Leaderboard" />
             </Link>
-            <NavButton icon="👤" label="Profile" />
           </div>
         </div>
       </nav>
