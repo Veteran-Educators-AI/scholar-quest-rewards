@@ -7,8 +7,9 @@ import { StreakCounter } from "@/components/StreakCounter";
 import { CoinCounter } from "@/components/CoinCounter";
 import { MissionCard } from "@/components/MissionCard";
 import { BadgeCard } from "@/components/BadgeCard";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gift, Settings, LogOut } from "lucide-react";
+import { Trophy, Gift, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,6 +96,7 @@ export default function StudentHome() {
             
             <div className="flex items-center gap-2">
               <CoinCounter coins={student.coins} size="sm" />
+              <NotificationBell />
               <Link to="/student/rewards">
                 <Button variant="ghost" size="icon-sm">
                   <Trophy className="w-5 h-5 text-gold" />
