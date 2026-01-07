@@ -1,1 +1,4 @@
 project_id = "rjlqmfthemfpetpcydog"
+
+[functions.scan-genius-webhook]
+verify_jwt = false
