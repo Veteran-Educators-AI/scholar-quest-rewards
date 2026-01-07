@@ -291,6 +291,7 @@ export type Database = {
           image_url: string | null
           name: string
           rarity: Database["public"]["Enums"]["collectible_rarity"]
+          slot: string | null
         }
         Insert: {
           created_at?: string
@@ -299,6 +300,7 @@ export type Database = {
           image_url?: string | null
           name: string
           rarity?: Database["public"]["Enums"]["collectible_rarity"]
+          slot?: string | null
         }
         Update: {
           created_at?: string
@@ -307,6 +309,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           rarity?: Database["public"]["Enums"]["collectible_rarity"]
+          slot?: string | null
         }
         Relationships: []
       }
@@ -335,6 +338,41 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipped_items: {
+        Row: {
+          collectible_id: string | null
+          created_at: string
+          id: string
+          slot: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          collectible_id?: string | null
+          created_at?: string
+          id?: string
+          slot: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          collectible_id?: string | null
+          created_at?: string
+          id?: string
+          slot?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipped_items_collectible_id_fkey"
+            columns: ["collectible_id"]
+            isOneToOne: false
+            referencedRelation: "collectibles"
             referencedColumns: ["id"]
           },
         ]
