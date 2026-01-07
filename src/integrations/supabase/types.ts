@@ -1,0 +1,751 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
+  public: {
+    Tables: {
+      assignments: {
+        Row: {
+          class_id: string
+          coin_reward: number
+          created_at: string
+          description: string | null
+          due_at: string
+          external_ref: string | null
+          id: string
+          printable_url: string | null
+          status: Database["public"]["Enums"]["assignment_status"]
+          subject: string | null
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          class_id: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          due_at: string
+          external_ref?: string | null
+          id?: string
+          printable_url?: string | null
+          status?: Database["public"]["Enums"]["assignment_status"]
+          subject?: string | null
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          class_id?: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          due_at?: string
+          external_ref?: string | null
+          id?: string
+          printable_url?: string | null
+          status?: Database["public"]["Enums"]["assignment_status"]
+          subject?: string | null
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempts: {
+        Row: {
+          answers: Json | null
+          assignment_id: string
+          created_at: string
+          id: string
+          mode: Database["public"]["Enums"]["attempt_mode"]
+          rejection_reason: string | null
+          score: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["attempt_status"]
+          student_id: string
+          submitted_at: string | null
+          time_spent_seconds: number | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          answers?: Json | null
+          assignment_id: string
+          created_at?: string
+          id?: string
+          mode: Database["public"]["Enums"]["attempt_mode"]
+          rejection_reason?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["attempt_status"]
+          student_id: string
+          submitted_at?: string | null
+          time_spent_seconds?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          answers?: Json | null
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          mode?: Database["public"]["Enums"]["attempt_mode"]
+          rejection_reason?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["attempt_status"]
+          student_id?: string
+          submitted_at?: string | null
+          time_spent_seconds?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      badges: {
+        Row: {
+          created_at: string
+          criteria: Json | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          name: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          name: string
+          xp_reward?: number
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          name?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      classes: {
+        Row: {
+          class_code: string
+          created_at: string
+          grade_level: number | null
+          id: string
+          name: string
+          subject: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_code: string
+          created_at?: string
+          grade_level?: number | null
+          id?: string
+          name: string
+          subject?: string | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_code?: string
+          created_at?: string
+          grade_level?: number | null
+          id?: string
+          name?: string
+          subject?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      collectibles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          rarity: Database["public"]["Enums"]["collectible_rarity"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          rarity?: Database["public"]["Enums"]["collectible_rarity"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          rarity?: Database["public"]["Enums"]["collectible_rarity"]
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          class_id: string
+          enrolled_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          class_id: string
+          enrolled_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          class_id?: string
+          enrolled_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          name: string
+          token_hash: string
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name: string
+          token_hash: string
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name?: string
+          token_hash?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          school_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name: string
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          school_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          school_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          answer_key: Json
+          assignment_id: string
+          created_at: string
+          difficulty: number
+          hint: string | null
+          id: string
+          options: Json | null
+          order_index: number
+          prompt: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          skill_tag: string | null
+        }
+        Insert: {
+          answer_key: Json
+          assignment_id: string
+          created_at?: string
+          difficulty?: number
+          hint?: string | null
+          id?: string
+          options?: Json | null
+          order_index?: number
+          prompt: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          skill_tag?: string | null
+        }
+        Update: {
+          answer_key?: Json
+          assignment_id?: string
+          created_at?: string
+          difficulty?: number
+          hint?: string | null
+          id?: string
+          options?: Json | null
+          order_index?: number
+          prompt?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          skill_tag?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_ledger: {
+        Row: {
+          assignment_id: string | null
+          coin_delta: number
+          created_at: string
+          id: string
+          reason: string
+          student_id: string
+          xp_delta: number
+        }
+        Insert: {
+          assignment_id?: string | null
+          coin_delta?: number
+          created_at?: string
+          id?: string
+          reason: string
+          student_id: string
+          xp_delta?: number
+        }
+        Update: {
+          assignment_id?: string | null
+          coin_delta?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          student_id?: string
+          xp_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_ledger_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_collectibles: {
+        Row: {
+          collectible_id: string
+          earned_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          collectible_id: string
+          earned_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          collectible_id?: string
+          earned_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_collectibles_collectible_id_fkey"
+            columns: ["collectible_id"]
+            isOneToOne: false
+            referencedRelation: "collectibles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_profiles: {
+        Row: {
+          accommodations: string[] | null
+          coins: number
+          created_at: string
+          current_streak: number
+          grade_level: number | null
+          id: string
+          longest_streak: number
+          math_level: string | null
+          reading_level: string | null
+          skill_tags: string[] | null
+          streak_shield_available: boolean
+          strengths: string[] | null
+          updated_at: string
+          user_id: string
+          weaknesses: string[] | null
+          xp: number
+        }
+        Insert: {
+          accommodations?: string[] | null
+          coins?: number
+          created_at?: string
+          current_streak?: number
+          grade_level?: number | null
+          id?: string
+          longest_streak?: number
+          math_level?: string | null
+          reading_level?: string | null
+          skill_tags?: string[] | null
+          streak_shield_available?: boolean
+          strengths?: string[] | null
+          updated_at?: string
+          user_id: string
+          weaknesses?: string[] | null
+          xp?: number
+        }
+        Update: {
+          accommodations?: string[] | null
+          coins?: number
+          created_at?: string
+          current_streak?: number
+          grade_level?: number | null
+          id?: string
+          longest_streak?: number
+          math_level?: string | null
+          reading_level?: string | null
+          skill_tags?: string[] | null
+          streak_shield_available?: boolean
+          strengths?: string[] | null
+          updated_at?: string
+          user_id?: string
+          weaknesses?: string[] | null
+          xp?: number
+        }
+        Relationships: []
+      }
+      submission_assets: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          file_type: string | null
+          file_url: string
+          id: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_assets_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      assignment_status: "pending" | "active" | "completed" | "archived"
+      attempt_mode: "paper" | "in_app"
+      attempt_status:
+        | "not_started"
+        | "in_progress"
+        | "submitted"
+        | "verified"
+        | "rejected"
+      collectible_rarity: "common" | "rare" | "epic" | "legendary"
+      question_type:
+        | "multiple_choice"
+        | "short_answer"
+        | "numeric"
+        | "drag_order"
+        | "matching"
+      user_role: "student" | "teacher" | "parent" | "admin"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      assignment_status: ["pending", "active", "completed", "archived"],
+      attempt_mode: ["paper", "in_app"],
+      attempt_status: [
+        "not_started",
+        "in_progress",
+        "submitted",
+        "verified",
+        "rejected",
+      ],
+      collectible_rarity: ["common", "rare", "epic", "legendary"],
+      question_type: [
+        "multiple_choice",
+        "short_answer",
+        "numeric",
+        "drag_order",
+        "matching",
+      ],
+      user_role: ["student", "teacher", "parent", "admin"],
+    },
+  },
+} as const
