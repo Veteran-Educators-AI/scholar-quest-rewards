@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import scanGeniusLogo from "@/assets/scan-genius-logo.png";
 
 // Demo data
 const demoTeacher = {
@@ -68,9 +68,22 @@ export default function TeacherDashboard() {
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-bold text-foreground text-xl">Scan Scholar</h1>
-              <p className="text-sm text-muted-foreground">Teacher Dashboard</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
+                <img 
+                  src={scanGeniusLogo} 
+                  alt="Scan Genius" 
+                  className="w-8 h-8 object-contain"
+                />
+                <div className="hidden sm:block">
+                  <p className="text-xs text-muted-foreground leading-none">Powered by</p>
+                  <p className="text-sm font-semibold text-foreground leading-tight">Scan Genius</p>
+                </div>
+              </div>
+              <div>
+                <h1 className="font-bold text-foreground text-xl">Scan Scholar</h1>
+                <p className="text-sm text-muted-foreground">Teacher Dashboard</p>
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
@@ -256,16 +269,23 @@ export default function TeacherDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <div className="bg-muted/50 rounded-2xl p-6">
-            <h3 className="font-bold text-foreground mb-2">Scan Genius Integration</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Connect with Scan Genius to automatically push assignments and student profiles.
-            </p>
-            <Link to="/teacher/integrations">
-              <Button variant="outline" size="sm">
-                Configure Integration
-              </Button>
-            </Link>
+          <div className="bg-muted/50 rounded-2xl p-6 flex items-start gap-4">
+            <img 
+              src={scanGeniusLogo} 
+              alt="Scan Genius" 
+              className="w-16 h-16 object-contain"
+            />
+            <div className="flex-1">
+              <h3 className="font-bold text-foreground mb-2">Scan Genius Integration</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Connect with Scan Genius to automatically push assignments and student profiles.
+              </p>
+              <Link to="/teacher/integrations">
+                <Button variant="outline" size="sm">
+                  Configure Integration
+                </Button>
+              </Link>
+            </div>
           </div>
         </motion.section>
       </main>
