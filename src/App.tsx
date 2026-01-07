@@ -10,6 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import StudentHome from "./pages/StudentHome";
+import StudentProfile from "./pages/StudentProfile";
 import Rewards from "./pages/Rewards";
 import AssignmentDetail from "./pages/AssignmentDetail";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/student" element={<StudentHome />} />
+          <Route path="/student/profile" element={<StudentProfile />} />
           <Route path="/student/rewards" element={<Rewards />} />
           <Route path="/student/leaderboard" element={<Leaderboard />} />
           <Route path="/student/challenges" element={<Challenges />} />
