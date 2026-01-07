@@ -86,13 +86,13 @@ export default function StudentHome() {
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link to="/student/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <ScholarBuddy size="sm" animate={false} />
               <div>
                 <h1 className="font-bold text-foreground text-lg">Scan Scholar</h1>
                 <p className="text-xs text-muted-foreground">Level {student.level} Scholar</p>
               </div>
-            </div>
+            </Link>
             
             <div className="flex items-center gap-2">
               <CoinCounter coins={student.coins} size="sm" />
