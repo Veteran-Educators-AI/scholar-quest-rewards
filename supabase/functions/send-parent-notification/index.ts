@@ -7,13 +7,15 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "badge_earned" | "streak_warning" | "reward_earned";
+  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed";
   student_id: string;
   data: {
     badge_name?: string;
     current_streak?: number;
     xp_earned?: number;
     coins_earned?: number;
+    assignment_title?: string;
+    score?: number;
   };
 }
 
@@ -68,8 +70,6 @@ const handler = async (req: Request): Promise<Response> => {
     // Get parent emails from auth.users via profiles
     const parentIds = parentLinks.map((p) => p.parent_id);
     
-    // We need to get emails - using a workaround since we can't access auth.users directly
-    // In production, you'd store email in profiles or use a different approach
     const { data: parentProfiles, error: parentProfilesError } = await supabase
       .from("profiles")
       .select("id, full_name")
@@ -143,10 +143,27 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
         break;
+
+      case "assignment_completed":
+        subject = `✅ ${studentName} completed an assignment!`;
+        htmlContent = `
+          <html>
+            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h1 style="color: #7c3aed; text-align: center;">✅ Assignment Complete!</h1>
+                <p style="font-size: 18px; color: #374151; text-align: center;">
+                  <strong>${studentName}</strong> just completed <strong style="color: #7c3aed;">${data.assignment_title || "an assignment"}</strong>!
+                </p>
+                ${data.score !== undefined ? `<p style="font-size: 24px; color: #10b981; text-align: center; font-weight: bold;">Score: ${data.score}%</p>` : ""}
+                <p style="color: #6b7280; text-align: center;">Great work! Keep up the encouragement!</p>
+              </div>
+            </body>
+          </html>
+        `;
+        break;
     }
 
-    // For each parent, we need their email - in a real app you'd have this in profiles
-    // For now, we'll use the Supabase admin API to get emails
+    // Get parent emails using admin API
     const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
     
     if (authError) {
@@ -160,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
     const parentEmails = authData.users
       .filter((u) => parentIds.includes(u.id))
       .map((u) => ({ email: u.email, name: parentProfiles.find((p) => p.id === u.id)?.full_name || "Parent" }))
-      .filter((p) => p.email);
+      .filter((p): p is { email: string; name: string } => !!p.email);
 
     if (parentEmails.length === 0) {
       console.log("No parent emails found");
@@ -182,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
         body: JSON.stringify({
           sender: {
             name: "ScholarQuest",
-            email: "notifications@scholarquest.app", // Replace with your verified sender
+            email: "notifications@scholarquest.app",
           },
           to: [{ email: parent.email, name: parent.name }],
           subject,
@@ -212,10 +229,11 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in send-parent-notification:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
