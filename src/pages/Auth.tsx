@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Users } from "lucide-react";
-
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome } from "lucide-react";
 type AuthMode = "login" | "signup";
 type UserRole = "student" | "teacher";
 
@@ -93,6 +92,26 @@ export default function Auth() {
         variant: "destructive",
       });
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/student`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Google login failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
       setLoading(false);
     }
   };
@@ -227,6 +246,28 @@ export default function Auth() {
               )}
             </Button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Login */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 rounded-xl"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
+            <Chrome className="w-5 h-5 mr-2" />
+            Continue with Google
+          </Button>
 
           {/* Toggle mode */}
           <div className="mt-6 text-center">
