@@ -446,6 +446,60 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_reward_pledges: {
+        Row: {
+          badge_id: string
+          claimed: boolean
+          claimed_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          parent_id: string
+          reward_description: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          badge_id: string
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_id: string
+          reward_description: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          badge_id?: string
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_id?: string
+          reward_description?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_parent_student"
+            columns: ["parent_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "parent_students"
+            referencedColumns: ["parent_id", "student_id"]
+          },
+          {
+            foreignKeyName: "parent_reward_pledges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_students: {
         Row: {
           created_at: string

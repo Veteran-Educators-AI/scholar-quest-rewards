@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { XPBar } from "@/components/XPBar";
 import { StreakCounter } from "@/components/StreakCounter";
 import { CoinCounter } from "@/components/CoinCounter";
@@ -16,6 +17,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Users,
   Trophy,
@@ -29,10 +37,31 @@ import {
   UserPlus,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Gift,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface Badge {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+}
+
+interface RewardPledge {
+  id: string;
+  badge_id: string;
+  student_id: string;
+  reward_description: string;
+  is_active: boolean;
+  claimed: boolean;
+  claimed_at: string | null;
+  badge?: Badge;
+  student_name?: string;
+}
 
 interface LinkedStudent {
   id: string;
@@ -105,9 +134,27 @@ export default function ParentDashboard() {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkEmail, setLinkEmail] = useState("");
   const [linking, setLinking] = useState(false);
+  
+  // Reward pledges state
+  const [pledges, setPledges] = useState<RewardPledge[]>([]);
+  const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
+  const [showPledgeDialog, setShowPledgeDialog] = useState(false);
+  const [pledgeStudent, setPledgeStudent] = useState<string>("");
+  const [pledgeBadge, setPledgeBadge] = useState<string>("");
+  const [pledgeReward, setPledgeReward] = useState("");
+  const [creatingPledge, setCreatingPledge] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLinkedStudents();
+    fetchPledges();
+    fetchBadges();
+    
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    getUser();
   }, []);
 
   const fetchLinkedStudents = async () => {
@@ -215,6 +262,132 @@ export default function ParentDashboard() {
       title: "Logged out",
       description: "See you next time!",
     });
+  };
+
+  const fetchBadges = async () => {
+    const { data } = await supabase.from('badges').select('*');
+    if (data) setAvailableBadges(data);
+  };
+
+  const fetchPledges = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: pledgesData } = await supabase
+      .from('parent_reward_pledges')
+      .select('*')
+      .eq('parent_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (pledgesData) {
+      // Fetch badge and student details for each pledge
+      const enrichedPledges = await Promise.all(
+        pledgesData.map(async (pledge) => {
+          const { data: badge } = await supabase
+            .from('badges')
+            .select('*')
+            .eq('id', pledge.badge_id)
+            .single();
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', pledge.student_id)
+            .single();
+
+          return {
+            ...pledge,
+            badge: badge || undefined,
+            student_name: profile?.full_name || 'Unknown',
+          };
+        })
+      );
+      setPledges(enrichedPledges);
+    }
+  };
+
+  const handleCreatePledge = async () => {
+    if (!pledgeStudent || !pledgeBadge || !pledgeReward.trim()) return;
+
+    setCreatingPledge(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase.from('parent_reward_pledges').insert({
+        parent_id: user.id,
+        student_id: pledgeStudent,
+        badge_id: pledgeBadge,
+        reward_description: pledgeReward.trim(),
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Reward Pledge Created! 🎁",
+        description: "Your child will be motivated to earn this badge!",
+      });
+      
+      setShowPledgeDialog(false);
+      setPledgeStudent("");
+      setPledgeBadge("");
+      setPledgeReward("");
+      fetchPledges();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create pledge",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingPledge(false);
+    }
+  };
+
+  const handleClaimPledge = async (pledgeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('parent_reward_pledges')
+        .update({ claimed: true, claimed_at: new Date().toISOString() })
+        .eq('id', pledgeId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Reward Claimed! ✅",
+        description: "Don't forget to give the reward to your child!",
+      });
+      fetchPledges();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark as claimed",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePledge = async (pledgeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('parent_reward_pledges')
+        .delete()
+        .eq('id', pledgeId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pledge Removed",
+        description: "The reward pledge has been deleted",
+      });
+      fetchPledges();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete pledge",
+        variant: "destructive",
+      });
+    }
   };
 
   const getLevel = (xp: number) => Math.floor(xp / 500) + 1;
@@ -417,6 +590,99 @@ export default function ParentDashboard() {
               </div>
             </motion.section>
 
+            {/* Reward Pledges Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-primary" />
+                  Reward Pledges
+                </h2>
+                <Button size="sm" onClick={() => setShowPledgeDialog(true)}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Pledge
+                </Button>
+              </div>
+              
+              {pledges.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {pledges.map((pledge) => (
+                    <motion.div
+                      key={pledge.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className={`bg-card rounded-xl p-4 border ${
+                        pledge.claimed 
+                          ? 'border-success/30 bg-success/5' 
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Trophy className="w-4 h-4 text-gold flex-shrink-0" />
+                            <span className="font-medium text-foreground truncate">
+                              {pledge.badge?.name || 'Badge'}
+                            </span>
+                            {pledge.claimed && (
+                              <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
+                                Claimed
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            For: {pledge.student_name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Gift className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                              {pledge.reward_description}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {!pledge.claimed && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={() => handleClaimPledge(pledge.id)}
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Mark Given
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeletePledge(pledge.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card rounded-2xl border border-dashed border-border p-8 text-center">
+                  <Gift className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-medium text-foreground mb-1">No Reward Pledges Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create pledges to reward your child when they earn specific badges!
+                  </p>
+                  <Button size="sm" onClick={() => setShowPledgeDialog(true)}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Create Your First Pledge
+                  </Button>
+                </div>
+              )}
+            </motion.section>
+
             {/* Recent Badges */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
@@ -589,6 +855,90 @@ export default function ParentDashboard() {
             <Button onClick={handleLinkStudent} disabled={!linkEmail.trim() || linking}>
               {linking ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Send Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Pledge Dialog */}
+      <Dialog open={showPledgeDialog} onOpenChange={setShowPledgeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-primary" />
+              Create Reward Pledge
+            </DialogTitle>
+            <DialogDescription>
+              Promise a reward when your child earns a specific badge. They'll be extra motivated!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Child</Label>
+              <Select value={pledgeStudent} onValueChange={setPledgeStudent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a child" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.filter(s => s.verified).map(student => (
+                    <SelectItem key={student.student_id} value={student.student_id}>
+                      {student.student_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Badge to Earn</Label>
+              <Select value={pledgeBadge} onValueChange={setPledgeBadge}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a badge" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBadges.map(badge => (
+                    <SelectItem key={badge.id} value={badge.id}>
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-gold" />
+                        {badge.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reward">Your Reward</Label>
+              <Textarea
+                id="reward"
+                placeholder="e.g., Ice cream trip, $5, New book, Extra screen time..."
+                value={pledgeReward}
+                onChange={(e) => setPledgeReward(e.target.value)}
+                className="resize-none"
+                rows={2}
+              />
+            </div>
+
+            <div className="bg-primary/5 rounded-lg p-3 flex gap-2">
+              <Star className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-muted-foreground">
+                You'll be notified when your child earns this badge so you can deliver the reward!
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPledgeDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreatePledge} 
+              disabled={!pledgeStudent || !pledgeBadge || !pledgeReward.trim() || creatingPledge}
+            >
+              {creatingPledge ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Gift className="w-4 h-4 mr-2" />}
+              Create Pledge
             </Button>
           </DialogFooter>
         </DialogContent>
