@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
@@ -11,10 +11,18 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TranslatedText } from "@/components/TranslatedText";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gift, LogOut } from "lucide-react";
+import { Trophy, Gift, LogOut, Sparkles, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage, interpolate } from "@/i18n/LanguageContext";
+
+interface ParentPledge {
+  id: string;
+  badge_id: string;
+  reward_description: string;
+  badge_name: string;
+  parent_name: string;
+}
 
 // Demo data for first-time experience
 const demoStudent = {
@@ -68,6 +76,51 @@ export default function StudentHome() {
   const { t, language } = useLanguage();
   const [student] = useState(demoStudent);
   const [missions] = useState(demoMissions);
+  const [pledges, setPledges] = useState<ParentPledge[]>([]);
+
+  useEffect(() => {
+    fetchPledges();
+  }, []);
+
+  const fetchPledges = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: pledgesData } = await supabase
+      .from('parent_reward_pledges')
+      .select('id, badge_id, reward_description, parent_id')
+      .eq('student_id', user.id)
+      .eq('is_active', true)
+      .eq('claimed', false);
+
+    if (pledgesData && pledgesData.length > 0) {
+      // Enrich with badge and parent names
+      const enrichedPledges = await Promise.all(
+        pledgesData.map(async (pledge) => {
+          const { data: badge } = await supabase
+            .from('badges')
+            .select('name')
+            .eq('id', pledge.badge_id)
+            .single();
+
+          const { data: parent } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', pledge.parent_id)
+            .single();
+
+          return {
+            id: pledge.id,
+            badge_id: pledge.badge_id,
+            reward_description: pledge.reward_description,
+            badge_name: badge?.name || 'Badge',
+            parent_name: parent?.full_name || 'Your parent',
+          };
+        })
+      );
+      setPledges(enrichedPledges);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -175,6 +228,52 @@ export default function StudentHome() {
             ))}
           </div>
         </motion.section>
+
+        {/* Parent Reward Pledges */}
+        {pledges.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-gold" />
+              <h3 className="text-xl font-bold text-foreground">Rewards Waiting For You!</h3>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {pledges.map((pledge, index) => (
+                <motion.div
+                  key={pledge.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.15 + index * 0.05 }}
+                  className="bg-gradient-to-br from-gold/10 via-card to-primary/5 rounded-2xl p-4 border border-gold/20 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Gift className="w-6 h-6 text-gold" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {pledge.parent_name} promised:
+                      </p>
+                      <p className="font-bold text-foreground text-lg mb-2">
+                        {pledge.reward_description}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star className="w-4 h-4 text-primary" />
+                        <span className="text-muted-foreground">
+                          Earn the <span className="font-medium text-primary">{pledge.badge_name}</span> badge!
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Recent Badges */}
         <motion.section
