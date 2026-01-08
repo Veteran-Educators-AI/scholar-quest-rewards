@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart } from "lucide-react";
+
 type AuthMode = "login" | "signup";
-type UserRole = "student" | "teacher";
+type UserRole = "student" | "teacher" | "parent";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,10 @@ export default function Auth() {
   const { toast } = useToast();
   
   const [mode, setMode] = useState<AuthMode>("login");
-  const [role, setRole] = useState<UserRole>(searchParams.get("role") === "teacher" ? "teacher" : "student");
+  const [role, setRole] = useState<UserRole>(
+    searchParams.get("role") === "teacher" ? "teacher" : 
+    searchParams.get("role") === "parent" ? "parent" : "student"
+  );
   const [loading, setLoading] = useState(false);
   
   const [email, setEmail] = useState("");
@@ -57,9 +61,11 @@ export default function Auth() {
         } else {
           toast({
             title: "Welcome to Scan Scholar! 🎉",
-            description: "Your account has been created. Let's start learning!",
+            description: role === "parent" 
+              ? "Your account has been created. Let's connect with your child!"
+              : "Your account has been created. Let's start learning!",
           });
-          navigate(role === "teacher" ? "/teacher" : "/student");
+          navigate(role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -125,6 +131,10 @@ export default function Auth() {
       login: "Welcome back! Your students are waiting.",
       signup: "Great to have you! Let's get your classroom set up.",
     },
+    parent: {
+      login: "Welcome back! Let's see how your child is doing.",
+      signup: "Hi there! Let's connect you with your child's progress.",
+    },
   };
 
   return (
@@ -158,22 +168,33 @@ export default function Auth() {
           </div>
 
           {/* Role selector */}
-          <div className="flex gap-2 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             <Button
               variant={role === "student" ? "default" : "outline"}
               className="flex-1"
               onClick={() => setRole("student")}
+              size="sm"
             >
-              <GraduationCap className="w-4 h-4 mr-2" />
+              <GraduationCap className="w-4 h-4 mr-1" />
               Student
             </Button>
             <Button
               variant={role === "teacher" ? "default" : "outline"}
               className="flex-1"
               onClick={() => setRole("teacher")}
+              size="sm"
             >
-              <Users className="w-4 h-4 mr-2" />
+              <Users className="w-4 h-4 mr-1" />
               Teacher
+            </Button>
+            <Button
+              variant={role === "parent" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setRole("parent")}
+              size="sm"
+            >
+              <Heart className="w-4 h-4 mr-1" />
+              Parent
             </Button>
           </div>
 
