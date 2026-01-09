@@ -24,17 +24,27 @@ const demoTeacher = {
 const demoClasses = [
   {
     id: "1",
-    name: "Math 101",
-    code: "MATH101",
-    studentCount: 24,
+    name: "Algebra II - Period 2",
+    code: "ALG2-P2",
+    gradeBand: "11-12",
+    studentCount: 28,
     pendingVerifications: 3,
   },
   {
     id: "2",
-    name: "Math 102",
-    code: "MATH102",
-    studentCount: 22,
+    name: "Geometry - Period 4",
+    code: "GEO-P4",
+    gradeBand: "9-10",
+    studentCount: 26,
     pendingVerifications: 1,
+  },
+  {
+    id: "3",
+    name: "AP Calculus AB",
+    code: "APCALC",
+    gradeBand: "11-12",
+    studentCount: 22,
+    pendingVerifications: 0,
   },
 ];
 
@@ -46,9 +56,10 @@ const demoStats = {
 };
 
 const demoRecentActivity = [
-  { id: "1", student: "Alex", action: "completed", assignment: "Math Magic", time: "5 min ago" },
-  { id: "2", student: "Jordan", action: "submitted", assignment: "Reading Ch 5", time: "12 min ago" },
-  { id: "3", student: "Taylor", action: "started", assignment: "Science Quiz", time: "25 min ago" },
+  { id: "1", student: "Alex", action: "completed", assignment: "Quadratic Equations (AI-A.REI.3)", time: "5 min ago" },
+  { id: "2", student: "Jordan", action: "submitted", assignment: "Hamlet Analysis (RL.9-10.2)", time: "12 min ago" },
+  { id: "3", student: "Taylor", action: "started", assignment: "Cell Division Lab (LE.1.1)", time: "25 min ago" },
+  { id: "4", student: "Morgan", action: "completed", assignment: "Triangle Proofs (GEO-G.SRT.4)", time: "45 min ago" },
 ];
 
 export default function TeacherDashboard() {
@@ -200,7 +211,12 @@ export default function TeacherDashboard() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h4 className="font-bold text-foreground text-lg">{cls.name}</h4>
-                        <p className="text-sm text-muted-foreground">Code: {cls.code}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-muted-foreground">Code: {cls.code}</p>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            Grades {cls.gradeBand}
+                          </span>
+                        </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </div>

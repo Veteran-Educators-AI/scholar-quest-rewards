@@ -45,35 +45,36 @@ interface EquippedItems {
   pet?: Collectible;
 }
 
-// Demo data
+// Demo data - High School Student
 const demoProfile = {
   name: "Alex Johnson",
   avatar: null,
-  level: 5,
-  xp: 350,
-  xpForNextLevel: 500,
-  coins: 125,
-  streak: 4,
-  longestStreak: 12,
+  level: 8,
+  xp: 720,
+  xpForNextLevel: 1000,
+  coins: 285,
+  streak: 7,
+  longestStreak: 21,
   hasShield: true,
   joinedAt: new Date("2025-09-01"),
-  gradeLevel: 4,
-  totalAssignmentsCompleted: 47,
-  totalXpEarned: 2350,
-  totalCoinsEarned: 475,
-  averageScore: 87,
+  gradeLevel: 10,
+  gradeBand: "9-10",
+  totalAssignmentsCompleted: 89,
+  totalXpEarned: 7200,
+  totalCoinsEarned: 1450,
+  averageScore: 84,
 };
 
 const demoStats = {
-  readingLevel: "4th Grade",
-  mathLevel: "5th Grade",
-  strengths: ["Multiplication", "Reading Comprehension", "Science Facts"],
-  areasToImprove: ["Division", "Writing"],
+  readingLevel: "10th Grade",
+  mathLevel: "Algebra II",
+  strengths: ["Quadratic Equations", "Literary Analysis", "Lab Reports", "Historical Context"],
+  areasToImprove: ["Trigonometry", "Thesis Statements"],
   recentSubjects: [
-    { name: "Math", assignments: 15, avgScore: 92 },
-    { name: "Reading", assignments: 12, avgScore: 85 },
-    { name: "Science", assignments: 10, avgScore: 88 },
-    { name: "Writing", assignments: 10, avgScore: 78 },
+    { name: "Algebra II", assignments: 18, avgScore: 86, standard: "AII-A.APR.1" },
+    { name: "English", assignments: 14, avgScore: 82, standard: "RL.9-10.2" },
+    { name: "Biology", assignments: 12, avgScore: 88, standard: "LE.2.1" },
+    { name: "Global History", assignments: 11, avgScore: 79, standard: "GH.9-10.2" },
   ],
 };
 
@@ -168,7 +169,13 @@ export default function StudentProfile() {
               />
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-foreground">{profile.name}</h2>
-                <p className="text-muted-foreground">Grade {profile.gradeLevel} Scholar</p>
+                <p className="text-muted-foreground">
+                  {profile.gradeLevel === 9 ? "Freshman" : 
+                   profile.gradeLevel === 10 ? "Sophomore" : 
+                   profile.gradeLevel === 11 ? "Junior" : 
+                   profile.gradeLevel === 12 ? "Senior" : 
+                   `Grade ${profile.gradeLevel}`} Scholar
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Joined {daysSinceJoin} days ago</span>
