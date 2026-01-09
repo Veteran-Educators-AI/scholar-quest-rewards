@@ -24,6 +24,7 @@ export type Database = {
           external_ref: string | null
           id: string
           printable_url: string | null
+          standard_id: string | null
           status: Database["public"]["Enums"]["assignment_status"]
           subject: string | null
           title: string
@@ -39,6 +40,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           printable_url?: string | null
+          standard_id?: string | null
           status?: Database["public"]["Enums"]["assignment_status"]
           subject?: string | null
           title: string
@@ -54,6 +56,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           printable_url?: string | null
+          standard_id?: string | null
           status?: Database["public"]["Enums"]["assignment_status"]
           subject?: string | null
           title?: string
@@ -66,6 +69,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "nys_standards"
             referencedColumns: ["id"]
           },
         ]
@@ -254,6 +264,7 @@ export type Database = {
         Row: {
           class_code: string
           created_at: string
+          grade_band: string | null
           grade_level: number | null
           id: string
           name: string
@@ -264,6 +275,7 @@ export type Database = {
         Insert: {
           class_code: string
           created_at?: string
+          grade_band?: string | null
           grade_level?: number | null
           id?: string
           name: string
@@ -274,6 +286,7 @@ export type Database = {
         Update: {
           class_code?: string
           created_at?: string
+          grade_band?: string | null
           grade_level?: number | null
           id?: string
           name?: string
@@ -443,6 +456,39 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      nys_standards: {
+        Row: {
+          cluster: string | null
+          code: string
+          created_at: string
+          domain: string
+          grade_band: string
+          id: string
+          standard_text: string
+          subject: string
+        }
+        Insert: {
+          cluster?: string | null
+          code: string
+          created_at?: string
+          domain: string
+          grade_band: string
+          id?: string
+          standard_text: string
+          subject: string
+        }
+        Update: {
+          cluster?: string | null
+          code?: string
+          created_at?: string
+          domain?: string
+          grade_band?: string
+          id?: string
+          standard_text?: string
+          subject?: string
         }
         Relationships: []
       }
