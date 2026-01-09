@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          name: string
+          scopes: string[]
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name: string
+          scopes?: string[]
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name?: string
+          scopes?: string[]
+          token_hash?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           class_id: string
@@ -808,6 +844,53 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      student_standard_mastery: {
+        Row: {
+          attempts_count: number
+          correct_count: number
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          mastered_at: string | null
+          mastery_level: string
+          standard_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts_count?: number
+          correct_count?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          mastered_at?: string | null
+          mastery_level?: string
+          standard_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts_count?: number
+          correct_count?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          mastered_at?: string | null
+          mastery_level?: string
+          standard_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_standard_mastery_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "nys_standards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submission_assets: {
         Row: {

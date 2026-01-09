@@ -284,6 +284,7 @@ export default function TeacherDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
+          className="grid gap-4 md:grid-cols-2"
         >
           <div className="bg-muted/50 rounded-2xl p-6 flex items-start gap-4">
             <img 
@@ -302,6 +303,26 @@ export default function TeacherDashboard() {
                 </Button>
               </Link>
             </div>
+          </div>
+
+          <div className="bg-primary/5 rounded-2xl p-6 border border-primary/20">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Settings className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">External API</h3>
+                <p className="text-xs text-muted-foreground">Connect other sites</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Generate API tokens for external sites to read student data and create assignments.
+            </p>
+            <Link to="/teacher/api">
+              <Button variant="outline" size="sm">
+                Manage API Tokens
+              </Button>
+            </Link>
           </div>
         </motion.section>
       </main>

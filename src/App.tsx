@@ -16,6 +16,7 @@ import Rewards from "./pages/Rewards";
 import AssignmentDetail from "./pages/AssignmentDetail";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherIntegrations from "./pages/TeacherIntegrations";
+import APISettings from "./pages/APISettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/teacher" element={<TeacherDashboard />} />
             <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
             <Route path="/teacher/verify" element={<TeacherVerify />} />
+            <Route path="/teacher/api" element={<APISettings />} />
             <Route path="/parent" element={<ParentDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
