@@ -339,11 +339,72 @@ export default function TeacherIntegrations() {
           )}
         </motion.section>
 
-        {/* Documentation */}
+        {/* Setup Instructions */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+        >
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
+            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+              <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+              Setup in Scan Genius
+            </h3>
+            <ol className="text-sm text-muted-foreground space-y-3 ml-8">
+              <li className="flex items-start gap-2">
+                <span className="font-semibold text-foreground">a.</span>
+                Go to <a href="https://thescangeniusapp.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">thescangeniusapp.com <ExternalLink className="w-3 h-3" /></a> and log in
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold text-foreground">b.</span>
+                Navigate to <span className="font-medium text-foreground">Settings → Integrations → Webhooks</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold text-foreground">c.</span>
+                Paste the <span className="font-medium text-foreground">Webhook URL</span> from above
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold text-foreground">d.</span>
+                Create an API key above and paste it in Scan Genius as the <span className="font-medium text-foreground">API Key</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold text-foreground">e.</span>
+                Enable the webhook and save
+              </li>
+            </ol>
+          </div>
+        </motion.section>
+
+        {/* Supported Events */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h3 className="font-bold text-foreground mb-4">Supported Webhook Events</h3>
+            <div className="space-y-4">
+              <div className="border-l-4 border-primary pl-4">
+                <p className="font-semibold text-foreground">assignment</p>
+                <p className="text-sm text-muted-foreground">Push new assignments from Scan Genius to Scan Scholar. Includes title, due date, questions, and rewards.</p>
+              </div>
+              <div className="border-l-4 border-secondary pl-4">
+                <p className="font-semibold text-foreground">student_profile</p>
+                <p className="text-sm text-muted-foreground">Sync student learning data (reading level, math level, skill tags, accommodations).</p>
+              </div>
+              <div className="border-l-4 border-accent pl-4">
+                <p className="font-semibold text-foreground">status_query</p>
+                <p className="text-sm text-muted-foreground">Query assignment completion status and student attempts.</p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Documentation */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
         >
           <div className="bg-muted/50 rounded-2xl p-6">
             <h3 className="font-bold text-foreground mb-3">API Documentation</h3>
@@ -351,9 +412,10 @@ export default function TeacherIntegrations() {
               Send requests to the webhook URL with your API key in the <code className="bg-muted px-1 rounded">x-api-key</code> header.
             </p>
             
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <p className="text-xs text-muted-foreground mb-2">Example: Push Assignment</p>
-              <pre className="text-xs text-foreground overflow-x-auto">
+            <div className="space-y-4">
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: Push Assignment</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
 {`POST ${webhookUrl}
 Headers:
   x-api-key: your-api-key
@@ -369,10 +431,52 @@ Body:
     "subject": "Math",
     "due_at": "2026-01-15T23:59:00Z",
     "xp_reward": 50,
-    "coin_reward": 10
+    "coin_reward": 10,
+    "questions": [
+      {
+        "prompt": "What is 1/2 + 1/4?",
+        "question_type": "multiple_choice",
+        "options": ["1/4", "3/4", "1/2", "1"],
+        "answer_key": "3/4"
+      }
+    ]
   }
 }`}
-              </pre>
+                </pre>
+              </div>
+
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: Query Status</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
+{`POST ${webhookUrl}
+Headers:
+  x-api-key: your-api-key
+  Content-Type: application/json
+
+Body:
+{
+  "type": "status_query",
+  "data": {
+    "external_ref": "sg-12345"
+  }
+}
+
+Response:
+{
+  "success": true,
+  "assignment_id": "uuid",
+  "status": "active",
+  "attempts": [
+    {
+      "student_id": "uuid",
+      "status": "verified",
+      "score": 85,
+      "submitted_at": "2026-01-10T14:30:00Z"
+    }
+  ]
+}`}
+                </pre>
+              </div>
             </div>
           </div>
         </motion.section>
