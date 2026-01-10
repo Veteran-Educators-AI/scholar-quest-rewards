@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import scanGeniusLogo from "@/assets/scan-genius-logo.png";
+import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 // Demo data
 const demoTeacher = {
@@ -82,13 +82,13 @@ export default function TeacherDashboard() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
                 <img 
-                  src={scanGeniusLogo} 
-                  alt="Scan Genius" 
+                  src={nycologicLogo} 
+                  alt="NYCologic Ai" 
                   className="w-8 h-8 object-contain"
                 />
                 <div className="hidden sm:block">
                   <p className="text-xs text-muted-foreground leading-none">Powered by</p>
-                  <p className="text-sm font-semibold text-foreground leading-tight">Scan Genius</p>
+                  <p className="text-sm font-semibold text-foreground leading-tight">NYCologic Ai™</p>
                 </div>
               </div>
               <div>
@@ -288,14 +288,14 @@ export default function TeacherDashboard() {
         >
           <div className="bg-muted/50 rounded-2xl p-6 flex items-start gap-4">
             <img 
-              src={scanGeniusLogo} 
-              alt="Scan Genius" 
+              src={nycologicLogo} 
+              alt="NYCologic Ai" 
               className="w-16 h-16 object-contain"
             />
             <div className="flex-1">
-              <h3 className="font-bold text-foreground mb-2">Scan Genius Integration</h3>
+              <h3 className="font-bold text-foreground mb-2">NYCologic Ai Integration</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Connect with Scan Genius to automatically push assignments and student profiles.
+                Connect with NYCologic Ai to automatically push assignments and student profiles.
               </p>
               <Link to="/teacher/integrations">
                 <Button variant="outline" size="sm">

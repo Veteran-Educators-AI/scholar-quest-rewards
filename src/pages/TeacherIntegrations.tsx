@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import scanGeniusLogo from "@/assets/scan-genius-logo.png";
+import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 interface IntegrationToken {
   id: string;
@@ -36,7 +36,7 @@ export default function TeacherIntegrations() {
   const [copied, setCopied] = useState(false);
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  const webhookUrl = `https://${projectId}.supabase.co/functions/v1/scan-genius-webhook`;
+  const webhookUrl = `https://${projectId}.supabase.co/functions/v1/nycologic-webhook`;
 
   useEffect(() => {
     fetchTokens();
@@ -171,12 +171,12 @@ export default function TeacherIntegrations() {
             </Link>
             <div className="flex items-center gap-3">
               <img 
-                src={scanGeniusLogo} 
-                alt="Scan Genius" 
+                src={nycologicLogo} 
+                alt="NYCologic Ai" 
                 className="w-10 h-10 object-contain"
               />
               <div>
-                <h1 className="font-bold text-foreground text-xl">Scan Genius Integration</h1>
+                <h1 className="font-bold text-foreground text-xl">NYCologic Ai Integration</h1>
                 <p className="text-sm text-muted-foreground">Manage API keys & webhook</p>
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6">
             <h2 className="font-bold text-foreground text-lg mb-2">Webhook URL</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Configure Scan Genius to send data to this endpoint.
+              Configure NYCologic Ai to send data to this endpoint.
             </p>
             
             <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
@@ -262,7 +262,7 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6">
             <h2 className="font-bold text-foreground text-lg mb-2">Create API Key</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Generate a new API key for Scan Genius to authenticate with Scan Scholar.
+              Generate a new API key for NYCologic Ai to authenticate with Scan Scholar.
             </p>
             
             <div className="flex gap-3">
@@ -348,12 +348,12 @@ export default function TeacherIntegrations() {
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
             <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
               <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
-              Setup in Scan Genius
+              Setup in NYCologic Ai
             </h3>
             <ol className="text-sm text-muted-foreground space-y-3 ml-8">
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">a.</span>
-                Go to <a href="https://thescangeniusapp.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">thescangeniusapp.com <ExternalLink className="w-3 h-3" /></a> and log in
+                Go to <a href="https://nycologic.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">nycologic.com <ExternalLink className="w-3 h-3" /></a> and log in
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">b.</span>
@@ -365,7 +365,7 @@ export default function TeacherIntegrations() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">d.</span>
-                Create an API key above and paste it in Scan Genius as the <span className="font-medium text-foreground">API Key</span>
+                Create an API key above and paste it in NYCologic Ai as the <span className="font-medium text-foreground">API Key</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">e.</span>
@@ -386,7 +386,7 @@ export default function TeacherIntegrations() {
             <div className="space-y-4">
               <div className="border-l-4 border-primary pl-4">
                 <p className="font-semibold text-foreground">assignment</p>
-                <p className="text-sm text-muted-foreground">Push new assignments from Scan Genius to Scan Scholar. Includes title, due date, questions, and rewards.</p>
+                <p className="text-sm text-muted-foreground">Push new assignments from NYCologic Ai to Scan Scholar. Includes title, due date, questions, and rewards.</p>
               </div>
               <div className="border-l-4 border-secondary pl-4">
                 <p className="font-semibold text-foreground">student_profile</p>
