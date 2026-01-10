@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed";
+  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed" | "points_deducted";
   student_id: string;
   data: {
     badge_name?: string;
@@ -16,6 +16,9 @@ interface NotificationPayload {
     coins_earned?: number;
     assignment_title?: string;
     score?: number;
+    points_deducted?: number;
+    reason?: string;
+    student_name?: string;
   };
 }
 
@@ -156,6 +159,29 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 ${data.score !== undefined ? `<p style="font-size: 24px; color: #10b981; text-align: center; font-weight: bold;">Score: ${data.score}%</p>` : ""}
                 <p style="color: #6b7280; text-align: center;">Great work! Keep up the encouragement!</p>
+              </div>
+            </body>
+          </html>
+        `;
+        break;
+
+      case "points_deducted":
+        subject = `⚠️ ${studentName} lost points for behavior`;
+        htmlContent = `
+          <html>
+            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h1 style="color: #dc2626; text-align: center;">⚠️ Behavior Alert</h1>
+                <p style="font-size: 18px; color: #374151; text-align: center;">
+                  <strong>${studentName}</strong> had <strong style="color: #dc2626;">${data.points_deducted} points</strong> deducted by their teacher.
+                </p>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                  <p style="color: #991b1b; font-weight: bold; margin: 0 0 8px 0;">Reason:</p>
+                  <p style="color: #7f1d1d; margin: 0;">${data.reason || "Behavior issue"}</p>
+                </div>
+                <p style="color: #6b7280; text-align: center;">
+                  Please talk to your child about their behavior. Points are needed to earn rewards!
+                </p>
               </div>
             </body>
           </html>

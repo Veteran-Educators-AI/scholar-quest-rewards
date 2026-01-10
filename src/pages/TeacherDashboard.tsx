@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+import { PointDeductionDialog } from "@/components/PointDeductionDialog";
 
 // Demo data
 const demoTeacher = {
@@ -54,6 +55,15 @@ const demoStats = {
   completionRate: 78,
   pendingVerifications: 4,
 };
+
+// Demo students for point deduction
+const demoStudents = [
+  { id: "demo-1", full_name: "Alex Johnson", coins: 150 },
+  { id: "demo-2", full_name: "Jordan Smith", coins: 230 },
+  { id: "demo-3", full_name: "Taylor Brown", coins: 85 },
+  { id: "demo-4", full_name: "Morgan Davis", coins: 320 },
+  { id: "demo-5", full_name: "Casey Wilson", coins: 175 },
+];
 
 const demoRecentActivity = [
   { id: "1", student: "Alex", action: "completed", assignment: "Quadratic Equations (AI-A.REI.3)", time: "5 min ago" },
@@ -192,10 +202,22 @@ export default function TeacherDashboard() {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-foreground">Your Classes</h3>
-            <Button variant="outline" size="sm">
-              <Plus className="w-4 h-4 mr-1" />
-              Add Class
-            </Button>
+            <div className="flex items-center gap-2">
+              <PointDeductionDialog 
+                students={demoStudents} 
+                classId="demo-class-1"
+                onDeductionComplete={() => {
+                  toast({
+                    title: "Points Updated",
+                    description: "Student points have been updated.",
+                  });
+                }}
+              />
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Add Class
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

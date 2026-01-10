@@ -609,6 +609,36 @@ export type Database = {
         }
         Relationships: []
       }
+      point_deductions: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          points_deducted: number
+          reason: string
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          points_deducted: number
+          reason: string
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          points_deducted?: number
+          reason?: string
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -951,6 +981,15 @@ export type Database = {
     }
     Functions: {
       check_streak_warnings: { Args: never; Returns: undefined }
+      deduct_student_points: {
+        Args: {
+          p_class_id: string
+          p_points: number
+          p_reason: string
+          p_student_id: string
+        }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
