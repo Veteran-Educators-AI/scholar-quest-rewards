@@ -9,6 +9,7 @@ import { XPBar } from "@/components/XPBar";
 import { StreakCounter } from "@/components/StreakCounter";
 import { CoinCounter } from "@/components/CoinCounter";
 import { BadgeCard } from "@/components/BadgeCard";
+import { PointPledgeManager } from "@/components/PointPledgeManager";
 import {
   Dialog,
   DialogContent,
@@ -682,6 +683,17 @@ export default function ParentDashboard() {
                 </div>
               )}
             </motion.section>
+
+            {/* Point-Based Pledges Section */}
+            <PointPledgeManager 
+              students={students.filter(s => s.verified).map(s => ({
+                id: s.id,
+                student_id: s.student_id,
+                student_name: s.student_name,
+                coins: s.student_profile?.coins || 0,
+              }))}
+              onPledgeChange={fetchPledges}
+            />
 
             {/* Recent Badges */}
             <motion.section
