@@ -15,10 +15,10 @@ export function ScholarBuddy({
   className = ""
 }: ScholarBuddyProps) {
   const sizeClasses = {
-    sm: "w-16 h-16",
-    md: "w-24 h-24",
-    lg: "w-32 h-32",
-    xl: "w-48 h-48",
+    sm: "w-[90px] h-[90px]",
+    md: "w-[134px] h-[134px]",
+    lg: "w-[180px] h-[180px]",
+    xl: "w-[270px] h-[270px]",
   };
 
   return (
