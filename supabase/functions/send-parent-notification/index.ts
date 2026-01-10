@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed" | "points_deducted";
+  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed" | "points_deducted" | "pledge_near_completion";
   student_id: string;
   data: {
     badge_name?: string;
@@ -19,6 +19,11 @@ interface NotificationPayload {
     points_deducted?: number;
     reason?: string;
     student_name?: string;
+    current_coins?: number;
+    threshold?: number;
+    progress_percent?: number;
+    reward_description?: string;
+    coins_needed?: number;
   };
 }
 
@@ -181,6 +186,43 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 <p style="color: #6b7280; text-align: center;">
                   Please talk to your child about their behavior. Points are needed to earn rewards!
+                </p>
+              </div>
+            </body>
+          </html>
+        `;
+        break;
+
+      case "pledge_near_completion":
+        subject = `🔥 ${studentName} is almost at their reward goal!`;
+        htmlContent = `
+          <html>
+            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h1 style="color: #f59e0b; text-align: center;">🔥 Almost There!</h1>
+                <p style="font-size: 18px; color: #374151; text-align: center;">
+                  <strong>${studentName}</strong> is <strong style="color: #f59e0b;">${data.progress_percent}%</strong> of the way to their reward!
+                </p>
+                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+                  <p style="font-size: 14px; color: #92400e; margin: 0 0 8px 0;">Working toward:</p>
+                  <p style="font-size: 20px; color: #78350f; font-weight: bold; margin: 0;">${data.reward_description}</p>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 16px; margin: 20px 0;">
+                  <div style="background: #f3f4f6; padding: 12px 20px; border-radius: 8px; text-align: center;">
+                    <p style="font-size: 12px; color: #6b7280; margin: 0;">Current</p>
+                    <p style="font-size: 24px; font-weight: bold; color: #374151; margin: 0;">${data.current_coins}</p>
+                  </div>
+                  <div style="background: #f3f4f6; padding: 12px 20px; border-radius: 8px; text-align: center;">
+                    <p style="font-size: 12px; color: #6b7280; margin: 0;">Goal</p>
+                    <p style="font-size: 24px; font-weight: bold; color: #374151; margin: 0;">${data.threshold}</p>
+                  </div>
+                  <div style="background: #dbeafe; padding: 12px 20px; border-radius: 8px; text-align: center;">
+                    <p style="font-size: 12px; color: #1e40af; margin: 0;">Needed</p>
+                    <p style="font-size: 24px; font-weight: bold; color: #1d4ed8; margin: 0;">${data.coins_needed}</p>
+                  </div>
+                </div>
+                <p style="color: #6b7280; text-align: center;">
+                  Just a few more assignments and ${studentName} will earn their reward! Keep encouraging them! 🌟
                 </p>
               </div>
             </body>
