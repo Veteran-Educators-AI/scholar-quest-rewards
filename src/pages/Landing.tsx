@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import scanGeniusLogo from "@/assets/scan-genius-logo.png";
+import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background overflow-hidden">
@@ -33,13 +34,13 @@ export default function Landing() {
               >
                 <div className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 shadow-md">
                   <img 
-                    src={scanGeniusLogo} 
-                    alt="Scan Genius" 
+                    src={nycologicLogo} 
+                    alt="NYCologic Ai" 
                     className="w-12 h-12 object-contain"
                   />
                   <div className="text-left">
                     <span className="text-xs text-muted-foreground">Powered by</span>
-                    <p className="font-bold text-foreground">Scan Genius</p>
+                    <p className="font-bold text-foreground">NYCologic Ai™</p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
@@ -187,7 +188,7 @@ export default function Landing() {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto text-center text-muted-foreground">
           <p className="text-sm">
-            © 2026 Scan Scholar. Making learning awesome! 🦉
+            © 2026 Scan Scholar. Powered by NYCologic Ai™ 🧠
           </p>
         </div>
       </footer>

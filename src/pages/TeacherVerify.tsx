@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import scanGeniusLogo from "@/assets/scan-genius-logo.png";
+import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 import {
   Dialog,
   DialogContent,
@@ -282,8 +282,8 @@ export default function TeacherVerify() {
             </Link>
             <div className="flex items-center gap-2">
               <img 
-                src={scanGeniusLogo} 
-                alt="Scan Genius" 
+                src={nycologicLogo} 
+                alt="NYCologic Ai" 
                 className="w-8 h-8 object-contain"
               />
               <div>
