@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
-import { Star, Trophy, Flame, Users, BookOpen, Sparkles } from "lucide-react";
+import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
@@ -159,8 +159,194 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Parent & Student Tour Section */}
       <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-gold/10 text-gold px-4 py-2 rounded-full mb-4">
+              <Heart className="w-4 h-4" />
+              <span className="text-sm font-semibold">For Parents & Students</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+              The <span className="text-gradient-primary">Reward System</span> Explained
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+              Our unique system connects learning achievements with real-world rewards, 
+              while giving teachers and parents the tools to shape positive behavior.
+            </p>
+          </motion.div>
+
+          {/* How Points Work */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="bg-card rounded-3xl p-8 border border-border shadow-xl">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <GraduationCap className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">How Students Earn Points</h3>
+                </div>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-success/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Star className="w-3 h-3 text-success" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Complete Assignments</p>
+                      <p className="text-sm text-muted-foreground">Earn XP and coins for every task you finish</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-gold/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Trophy className="w-3 h-3 text-gold" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Master Standards</p>
+                      <p className="text-sm text-muted-foreground">Bonus points for demonstrating skill mastery</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-streak/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Flame className="w-3 h-3 text-streak" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Keep Your Streak</p>
+                      <p className="text-sm text-muted-foreground">Daily consistency multiplies your rewards</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-accent/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Award className="w-3 h-3 text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Earn Badges</p>
+                      <p className="text-sm text-muted-foreground">Unlock achievements for major milestones</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="bg-gradient-to-br from-primary/5 to-destructive/5 rounded-3xl p-8 border border-border shadow-xl">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center">
+                    <AlertTriangle className="w-7 h-7 text-destructive" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">Behavior Matters!</h3>
+                </div>
+                <div className="bg-card/80 backdrop-blur rounded-2xl p-6 border border-destructive/20 mb-6">
+                  <p className="text-foreground font-medium mb-3">
+                    ⚠️ <span className="text-destructive font-bold">Teachers can deduct points</span> for classroom behavior issues:
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-destructive rounded-full" />
+                      Disrupting class or not following instructions
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-destructive rounded-full" />
+                      Being disrespectful to teachers or classmates
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-destructive rounded-full" />
+                      Not completing homework or arriving unprepared
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-destructive rounded-full" />
+                      Using devices inappropriately in class
+                    </li>
+                  </ul>
+                </div>
+                <p className="text-sm text-muted-foreground italic">
+                  💡 Good behavior protects your points! Stay focused and respectful to keep earning toward your goals.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Parent Rewards Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-gradient-to-r from-gold/10 via-card to-primary/10 rounded-3xl p-8 md:p-12 border border-border shadow-2xl"
+          >
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-gold/20 text-gold px-4 py-2 rounded-full mb-6">
+                  <Gift className="w-4 h-4" />
+                  <span className="text-sm font-semibold">Parent Reward Pledges</span>
+                </div>
+                <h3 className="text-3xl font-bold text-foreground mb-4">
+                  Set Real Prizes for Real Achievement
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  Parents, you can set up <strong className="text-foreground">reward pledges</strong> that motivate your child 
+                  to reach their goals. Choose a prize they'll work toward — but remember, 
+                  <span className="text-destructive font-semibold"> points can be deducted for bad behavior</span>, 
+                  so they must maintain good conduct to claim their reward!
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-foreground">
+                    <Shield className="w-5 h-5 text-success" />
+                    <span>Badge-based goals ensure real learning happens</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-foreground">
+                    <Trophy className="w-5 h-5 text-gold" />
+                    <span>You choose the reward: movie night, new game, special outing</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-foreground">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    <span>Behavior deductions keep accountability in place</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
+                <h4 className="font-bold text-lg text-foreground mb-4 flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-gold" />
+                  Example Reward Pledge
+                </h4>
+                <div className="space-y-4">
+                  <div className="bg-muted/50 rounded-xl p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Goal Badge</p>
+                    <p className="font-bold text-foreground flex items-center gap-2">
+                      <Award className="w-4 h-4 text-gold" />
+                      Math Master - Algebra
+                    </p>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Reward</p>
+                    <p className="font-bold text-foreground">🎮 New Video Game</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-success/10 to-transparent rounded-xl p-4 border border-success/20">
+                    <p className="text-sm text-success font-medium">
+                      ✓ Student must earn the badge AND maintain their coin balance above 500 to claim!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
