@@ -528,6 +528,48 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_point_pledges: {
+        Row: {
+          claimed: boolean
+          claimed_at: string | null
+          coin_threshold: number
+          created_at: string
+          id: string
+          is_active: boolean
+          parent_id: string
+          reward_description: string
+          reward_type: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          claimed?: boolean
+          claimed_at?: string | null
+          coin_threshold: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_id: string
+          reward_description: string
+          reward_type?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          claimed?: boolean
+          claimed_at?: string | null
+          coin_threshold?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          parent_id?: string
+          reward_description?: string
+          reward_type?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       parent_reward_pledges: {
         Row: {
           badge_id: string
