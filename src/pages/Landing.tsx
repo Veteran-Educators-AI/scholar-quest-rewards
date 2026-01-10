@@ -50,16 +50,16 @@ export default function Landing() {
               </motion.div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-                <span className="text-gradient-hero">Complete Missions.</span>
+                <span className="text-gradient-hero">Master Your Standards.</span>
                 <br />
-                <span className="text-foreground">Earn Rewards.</span>
+                <span className="text-foreground">Track Your Progress.</span>
                 <br />
-                <span className="text-gradient-primary">Level Up!</span>
+                <span className="text-gradient-primary">Achieve Excellence.</span>
               </h1>
 
               <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
-                Turn homework into an adventure! Complete assignments, build streaks, 
-                collect badges, and become a Scan Scholar champion.
+                Your personalized learning companion for grades 6-12 and beyond. Complete assignments, 
+                master NYS standards, and track your academic growth with data-driven insights.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -85,32 +85,32 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col items-center"
             >
-              <ScholarBuddy size="xl" message="Hey there! Ready to become a learning champion?" />
+              <ScholarBuddy size="xl" message="Ready to take your learning to the next level?" />
               
               {/* Feature cards */}
               <div className="grid grid-cols-2 gap-4 mt-8 w-full max-w-md">
                 <FeatureCard
                   icon={<Trophy className="w-6 h-6" />}
-                  title="Badges"
-                  description="Earn cool achievements"
+                  title="Achievements"
+                  description="Earn recognition for mastery"
                   color="gold"
                 />
                 <FeatureCard
                   icon={<Flame className="w-6 h-6" />}
-                  title="Streaks"
-                  description="Keep the fire going"
+                  title="Consistency"
+                  description="Build productive habits"
                   color="streak"
                 />
                 <FeatureCard
                   icon={<Star className="w-6 h-6" />}
-                  title="XP & Levels"
-                  description="Level up your skills"
+                  title="Progress"
+                  description="Track your growth"
                   color="primary"
                 />
                 <FeatureCard
                   icon={<BookOpen className="w-6 h-6" />}
-                  title="Collectibles"
-                  description="Build your collection"
+                  title="Standards"
+                  description="Master NYS curriculum"
                   color="accent"
                 />
               </div>
@@ -132,28 +132,28 @@ export default function Landing() {
               How It <span className="text-gradient-primary">Works</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Three simple steps to turn learning into an exciting adventure
+              A streamlined workflow designed to maximize your academic success
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <StepCard
               number={1}
-              title="Get Your Mission"
-              description="Your teacher assigns worksheets. Choose to complete on paper or directly in the app!"
+              title="Receive Assignments"
+              description="Your teacher assigns work aligned with NYS standards. Complete on paper or directly in the app."
               emoji="📋"
             />
             <StepCard
               number={2}
-              title="Complete & Submit"
-              description="Answer questions, scan your paper work, or do it all in-app with our adaptive quiz system."
+              title="Submit & Review"
+              description="Answer questions, scan your paper work, or complete digitally with our adaptive assessment system."
               emoji="✏️"
             />
             <StepCard
               number={3}
-              title="Earn Rewards!"
-              description="Get XP, coins, badges, and rare collectible cards. Build your streak and level up!"
-              emoji="🏆"
+              title="Track Mastery"
+              description="Monitor your progress across standards, earn achievements, and identify areas for improvement."
+              emoji="📊"
             />
           </div>
         </div>
@@ -169,10 +169,10 @@ export default function Landing() {
             className="bg-gradient-hero rounded-3xl p-8 md:p-12 text-center text-primary-foreground shadow-2xl"
           >
             <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
-              Ready to Start Your Journey?
+              Ready to Excel?
             </h2>
             <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-              Join thousands of students who are turning homework into an adventure!
+              Join students who are mastering NYS standards and achieving their academic goals.
             </p>
             <Link to="/auth">
               <Button variant="gold" size="xl">
