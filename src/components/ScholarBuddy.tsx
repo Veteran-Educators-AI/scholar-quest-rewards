@@ -47,19 +47,19 @@ export function ScholarBuddy({
           }}
         />
         
-        {/* Brain with circuit pattern */}
+        {/* Lateral brain view */}
         <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl relative z-10">
           <defs>
             {/* Gradient for the brain */}
             <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(0 85% 55%)" />
+              <stop offset="0%" stopColor="hsl(0 85% 58%)" />
               <stop offset="50%" stopColor="hsl(0 85% 50%)" />
-              <stop offset="100%" stopColor="hsl(0 75% 42%)" />
+              <stop offset="100%" stopColor="hsl(0 75% 40%)" />
             </linearGradient>
             
             {/* Glow filter */}
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
@@ -67,117 +67,120 @@ export function ScholarBuddy({
             </filter>
           </defs>
           
-          {/* Brain base shape - left hemisphere */}
+          {/* Lateral brain shape - main outline */}
           <path 
-            d="M50 15 
-               Q35 15 28 25 
-               Q18 30 18 45 
-               Q15 55 22 65 
-               Q25 75 35 80 
-               Q45 88 50 85"
+            d="M75 50
+               C75 30 65 15 50 15
+               C35 15 20 25 15 40
+               C10 55 15 70 25 80
+               C35 90 55 90 65 85
+               C75 80 85 70 85 55
+               C85 45 80 40 75 50
+               Z"
             fill="url(#brainGradient)"
           />
           
-          {/* Brain base shape - right hemisphere */}
+          {/* Frontal lobe */}
           <path 
-            d="M50 15 
-               Q65 15 72 25 
-               Q82 30 82 45 
-               Q85 55 78 65 
-               Q75 75 65 80 
-               Q55 88 50 85"
-            fill="url(#brainGradient)"
-          />
-          
-          {/* Brain folds/sulci - left side */}
-          <path 
-            d="M30 35 Q38 40 35 50 Q32 60 38 68"
-            stroke="hsl(0 75% 38%)" 
+            d="M70 35
+               C65 25 55 20 45 22
+               C40 23 35 28 35 35"
+            stroke="hsl(0 70% 38%)" 
             strokeWidth="2" 
             fill="none"
             strokeLinecap="round"
           />
+          
+          {/* Central sulcus */}
           <path 
-            d="M25 50 Q35 52 40 58"
-            stroke="hsl(0 75% 38%)" 
+            d="M55 22 
+               C52 35 48 50 52 65"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="2.5" 
+            fill="none"
+            strokeLinecap="round"
+          />
+          
+          {/* Lateral sulcus (Sylvian fissure) */}
+          <path 
+            d="M25 55
+               C35 50 50 48 65 55"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="2" 
+            fill="none"
+            strokeLinecap="round"
+          />
+          
+          {/* Parietal lobe folds */}
+          <path 
+            d="M60 30 C65 40 68 50 65 60"
+            stroke="hsl(0 70% 38%)" 
             strokeWidth="1.5" 
             fill="none"
             strokeLinecap="round"
           />
           
-          {/* Brain folds/sulci - right side */}
+          {/* Temporal lobe folds */}
           <path 
-            d="M70 35 Q62 40 65 50 Q68 60 62 68"
-            stroke="hsl(0 75% 38%)" 
-            strokeWidth="2" 
+            d="M30 60 C40 62 50 65 55 70"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="1.5" 
             fill="none"
             strokeLinecap="round"
           />
           <path 
-            d="M75 50 Q65 52 60 58"
-            stroke="hsl(0 75% 38%)" 
+            d="M25 70 C35 72 45 75 50 78"
+            stroke="hsl(0 70% 38%)" 
             strokeWidth="1.5" 
             fill="none"
             strokeLinecap="round"
           />
           
-          {/* Central divide */}
+          {/* Occipital lobe fold */}
           <path 
-            d="M50 18 L50 82"
-            stroke="hsl(0 75% 38%)" 
-            strokeWidth="2" 
+            d="M70 60 C75 65 78 72 75 78"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="1.5" 
             fill="none"
+            strokeLinecap="round"
+          />
+          
+          {/* Frontal lobe details */}
+          <path 
+            d="M35 35 C32 42 30 50 32 55"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="1.5" 
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path 
+            d="M42 28 C40 38 38 48 42 55"
+            stroke="hsl(0 70% 38%)" 
+            strokeWidth="1.5" 
+            fill="none"
+            strokeLinecap="round"
           />
           
           {/* Circuit nodes - glowing dots */}
           <g filter="url(#glow)">
-            {/* Left hemisphere nodes */}
-            <circle cx="32" cy="38" r="3" fill="hsl(0 0% 90%)" opacity="0.9" />
-            <circle cx="28" cy="55" r="2.5" fill="hsl(0 0% 90%)" opacity="0.8" />
-            <circle cx="38" cy="70" r="2.5" fill="hsl(0 0% 90%)" opacity="0.8" />
-            <circle cx="42" cy="48" r="2" fill="hsl(0 0% 90%)" opacity="0.7" />
-            
-            {/* Right hemisphere nodes */}
-            <circle cx="68" cy="38" r="3" fill="hsl(0 0% 90%)" opacity="0.9" />
-            <circle cx="72" cy="55" r="2.5" fill="hsl(0 0% 90%)" opacity="0.8" />
-            <circle cx="62" cy="70" r="2.5" fill="hsl(0 0% 90%)" opacity="0.8" />
-            <circle cx="58" cy="48" r="2" fill="hsl(0 0% 90%)" opacity="0.7" />
-            
-            {/* Center nodes */}
-            <circle cx="50" cy="30" r="3" fill="hsl(0 0% 95%)" opacity="1" />
-            <circle cx="50" cy="50" r="2.5" fill="hsl(0 0% 90%)" opacity="0.9" />
-            <circle cx="50" cy="70" r="2" fill="hsl(0 0% 90%)" opacity="0.8" />
+            <circle cx="45" cy="35" r="3" fill="hsl(0 0% 95%)" opacity="0.95" />
+            <circle cx="62" cy="42" r="2.5" fill="hsl(0 0% 90%)" opacity="0.85" />
+            <circle cx="55" cy="55" r="3" fill="hsl(0 0% 95%)" opacity="0.9" />
+            <circle cx="35" cy="50" r="2.5" fill="hsl(0 0% 90%)" opacity="0.85" />
+            <circle cx="40" cy="68" r="2.5" fill="hsl(0 0% 90%)" opacity="0.8" />
+            <circle cx="68" cy="65" r="2" fill="hsl(0 0% 90%)" opacity="0.75" />
+            <circle cx="30" cy="38" r="2" fill="hsl(0 0% 90%)" opacity="0.75" />
           </g>
           
           {/* Circuit connections */}
-          <g stroke="hsl(0 0% 80%)" strokeWidth="1" opacity="0.6">
-            {/* Left connections */}
-            <line x1="32" y1="38" x2="42" y2="48" />
-            <line x1="28" y1="55" x2="42" y2="48" />
-            <line x1="42" y1="48" x2="50" y2="50" />
-            <line x1="38" y1="70" x2="50" y2="70" />
-            
-            {/* Right connections */}
-            <line x1="68" y1="38" x2="58" y2="48" />
-            <line x1="72" y1="55" x2="58" y2="48" />
-            <line x1="58" y1="48" x2="50" y2="50" />
-            <line x1="62" y1="70" x2="50" y2="70" />
-            
-            {/* Vertical connections */}
-            <line x1="50" y1="30" x2="50" y2="50" />
-            <line x1="50" y1="50" x2="50" y2="70" />
-          </g>
-          
-          {/* Graduation cap */}
-          <g>
-            {/* Cap base */}
-            <rect x="28" y="8" width="44" height="6" fill="hsl(0 0% 20%)" rx="1" />
-            {/* Cap top */}
-            <polygon points="50,2 26,12 74,12" fill="hsl(0 0% 20%)" />
-            {/* Tassel button */}
-            <circle cx="50" cy="2" r="3" fill="hsl(43 96% 56%)" />
-            {/* Tassel */}
-            <path d="M50 2 Q58 8 62 4" stroke="hsl(43 96% 56%)" strokeWidth="2" fill="none" />
+          <g stroke="hsl(0 0% 85%)" strokeWidth="1" opacity="0.5">
+            <line x1="45" y1="35" x2="55" y2="55" />
+            <line x1="62" y1="42" x2="55" y2="55" />
+            <line x1="35" y1="50" x2="55" y2="55" />
+            <line x1="55" y1="55" x2="40" y2="68" />
+            <line x1="55" y1="55" x2="68" y2="65" />
+            <line x1="30" y1="38" x2="45" y2="35" />
+            <line x1="35" y1="50" x2="40" y2="68" />
           </g>
         </svg>
         
