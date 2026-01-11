@@ -148,6 +148,9 @@ export default function Landing() {
               className="flex flex-col items-center"
             >
               <ScholarBuddy size="xl" message="Ready to take your learning to the next level?" />
+              <h2 className="text-2xl md:text-3xl font-bold mt-4 text-foreground">
+                NYCologic <span className="text-destructive">Ai</span> - Student
+              </h2>
               
               {/* Feature cards */}
               <div className="grid grid-cols-2 gap-4 mt-8 w-full max-w-md">
