@@ -16,10 +16,11 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
-import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3 } from "lucide-react";
+import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage, interpolate } from "@/i18n/LanguageContext";
+import { useStudyTimer, formatStudyTime } from "@/contexts/StudyTimerContext";
 
 // Demo data for first-time experience
 const demoStudent = {
@@ -71,6 +72,7 @@ const demoBadges = [
 export default function StudentHome() {
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const { startTimerForAssignment, getTimeForAssignment } = useStudyTimer();
   const [student] = useState(demoStudent);
   const [missions] = useState(demoMissions);
   const [showTour, setShowTour] = useState(false);
@@ -249,43 +251,63 @@ export default function StudentHome() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 + idx * 0.05 }}
                 >
-                  <Link to={`/student/assignment/${mission.id}`}>
-                    <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 hover:shadow-md transition-all group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            mission.subject === "math" ? "bg-primary/10 text-primary" :
-                            mission.subject === "english" ? "bg-accent/10 text-accent" :
-                            "bg-success/10 text-success"
-                          }`}>
-                            {mission.subject === "math" ? <Target className="w-5 h-5" /> :
-                             mission.subject === "english" ? <BookOpen className="w-5 h-5" /> :
-                             <Zap className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                              {mission.title}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Due {mission.dueAt.toLocaleDateString()} at {mission.dueAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 hover:shadow-md transition-all group">
+                    <div className="flex items-center justify-between">
+                      <Link to={`/student/assignment/${mission.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          mission.subject === "math" ? "bg-primary/10 text-primary" :
+                          mission.subject === "english" ? "bg-accent/10 text-accent" :
+                          "bg-success/10 text-success"
+                        }`}>
+                          {mission.subject === "math" ? <Target className="w-5 h-5" /> :
+                           mission.subject === "english" ? <BookOpen className="w-5 h-5" /> :
+                           <Zap className="w-5 h-5" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                            {mission.title}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Due {mission.dueAt.toLocaleDateString()} at {mission.dueAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {mission.status === "in_progress" && (
+                              <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">
+                                In Progress
                               </span>
-                              {mission.status === "in_progress" && (
-                                <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">
-                                  In Progress
-                                </span>
-                              )}
-                            </div>
+                            )}
+                            {getTimeForAssignment(mission.id) > 0 && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Timer className="w-3 h-3" />
+                                {formatStudyTime(getTimeForAssignment(mission.id))}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-primary">+{mission.xpReward} XP</span>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
+                      </Link>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-primary"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            startTimerForAssignment({
+                              id: mission.id,
+                              title: mission.title,
+                              subject: mission.subject,
+                            });
+                          }}
+                        >
+                          <Timer className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-primary hidden sm:inline">+{mission.xpReward} XP</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               ))}
             </div>
