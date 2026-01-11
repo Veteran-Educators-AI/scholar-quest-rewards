@@ -16,67 +16,156 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
-import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3, Timer } from "lucide-react";
+import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3, Timer, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage, interpolate } from "@/i18n/LanguageContext";
 import { useStudyTimer, formatStudyTime } from "@/contexts/StudyTimerContext";
 
-// Demo data for first-time experience
-const demoStudent = {
-  name: "Alex",
-  level: 5,
-  xp: 350,
-  xpForNextLevel: 500,
-  coins: 125,
-  streak: 4,
-  hasShield: true,
-};
+interface StudentData {
+  name: string;
+  level: number;
+  xp: number;
+  xpForNextLevel: number;
+  coins: number;
+  streak: number;
+  hasShield: boolean;
+}
 
-const demoMissions = [
-  {
-    id: "1",
-    title: "Algebra II: Quadratic Functions",
-    subject: "math",
-    dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-    xpReward: 75,
-    coinReward: 15,
-    status: "not_started" as const,
-  },
-  {
-    id: "2",
-    title: "AP Literature: The Great Gatsby Analysis",
-    subject: "english",
-    dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    xpReward: 100,
-    coinReward: 20,
-    status: "in_progress" as const,
-  },
-  {
-    id: "3",
-    title: "Chemistry: Molecular Bonding Lab Report",
-    subject: "science",
-    dueAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-    xpReward: 85,
-    coinReward: 18,
-    status: "not_started" as const,
-  },
-];
+interface Mission {
+  id: string;
+  title: string;
+  subject: string;
+  dueAt: Date;
+  xpReward: number;
+  coinReward: number;
+  status: "not_started" | "in_progress" | "submitted" | "verified";
+}
 
-const demoBadges = [
-  { id: "1", name: "Early Achiever", earned: true },
-  { id: "2", name: "Consistent Performer", earned: true },
-  { id: "3", name: "AP Scholar", earned: false },
-];
+interface Badge {
+  id: string;
+  name: string;
+  earned: boolean;
+}
 
 export default function StudentHome() {
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { startTimerForAssignment, getTimeForAssignment } = useStudyTimer();
-  const [student] = useState(demoStudent);
-  const [missions] = useState(demoMissions);
+  const [student, setStudent] = useState<StudentData | null>(null);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showTour, setShowTour] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+  // Fetch real user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        // Fetch student profile with XP, coins, streak
+        const { data: studentProfile } = await supabase
+          .from("student_profiles")
+          .select("xp, coins, current_streak, streak_shield_available")
+          .eq("user_id", user.id)
+          .single();
+
+        // Calculate level from XP (every 500 XP = 1 level)
+        const xp = studentProfile?.xp || 0;
+        const level = Math.floor(xp / 500) + 1;
+        const xpForNextLevel = level * 500;
+        const currentLevelXp = xp - ((level - 1) * 500);
+
+        setStudent({
+          name: profile?.full_name || user.email?.split("@")[0] || "Scholar",
+          level,
+          xp: currentLevelXp,
+          xpForNextLevel: 500,
+          coins: studentProfile?.coins || 0,
+          streak: studentProfile?.current_streak || 0,
+          hasShield: studentProfile?.streak_shield_available || false,
+        });
+
+        // Fetch assignments via enrollments
+        const { data: enrollments } = await supabase
+          .from("enrollments")
+          .select("class_id")
+          .eq("student_id", user.id);
+
+        if (enrollments && enrollments.length > 0) {
+          const classIds = enrollments.map(e => e.class_id);
+          const { data: assignments } = await supabase
+            .from("assignments")
+            .select("id, title, subject, due_at, xp_reward, coin_reward, status")
+            .in("class_id", classIds)
+            .in("status", ["pending", "active"])
+            .order("due_at", { ascending: true })
+            .limit(5);
+
+          if (assignments) {
+            // Fetch attempts to determine student's status
+            const { data: attempts } = await supabase
+              .from("attempts")
+              .select("assignment_id, status")
+              .eq("student_id", user.id)
+              .in("assignment_id", assignments.map(a => a.id));
+
+            const attemptMap = new Map(attempts?.map(a => [a.assignment_id, a.status]) || []);
+
+            setMissions(assignments.map(a => ({
+              id: a.id,
+              title: a.title,
+              subject: a.subject || "general",
+              dueAt: new Date(a.due_at),
+              xpReward: a.xp_reward,
+              coinReward: a.coin_reward,
+              status: (attemptMap.get(a.id) as Mission["status"]) || "not_started",
+            })));
+          }
+        }
+
+        // Fetch earned badges
+        const { data: earnedBadges } = await supabase
+          .from("student_badges")
+          .select("badge_id, badges(id, name)")
+          .eq("student_id", user.id);
+
+        const { data: allBadges } = await supabase
+          .from("badges")
+          .select("id, name")
+          .limit(6);
+
+        if (allBadges) {
+          const earnedIds = new Set(earnedBadges?.map(eb => eb.badge_id) || []);
+          setBadges(allBadges.map(b => ({
+            id: b.id,
+            name: b.name,
+            earned: earnedIds.has(b.id),
+          })));
+        }
+
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Check if this is first visit and show guided tour
   useEffect(() => {
@@ -86,21 +175,6 @@ export default function StudentHome() {
       setShowTour(true);
     }
   }, []);
-
-  // Show welcome notification for new assignment
-  useEffect(() => {
-    // Simulate receiving a new assignment notification
-    const hasShownAssignmentNotif = sessionStorage.getItem("shown_assignment_notif");
-    if (!hasShownAssignmentNotif) {
-      setTimeout(() => {
-        toast({
-          title: "New Assignment",
-          description: "Your teacher assigned 'Algebra II: Quadratic Functions'. Due in 2 hours.",
-        });
-        sessionStorage.setItem("shown_assignment_notif", "true");
-      }, 2000);
-    }
-  }, [toast]);
 
   const handleTourComplete = () => {
     setShowTour(false);
@@ -126,6 +200,25 @@ export default function StudentHome() {
     return t.greeting.evening;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Default values for new users
+  const displayStudent = student || {
+    name: "Scholar",
+    level: 1,
+    xp: 0,
+    xpForNextLevel: 500,
+    coins: 0,
+    streak: 0,
+    hasShield: false,
+  };
+
   return (
     <>
       {/* Guided Tour for first-time students */}
@@ -138,12 +231,12 @@ export default function StudentHome() {
           <div className="flex items-center justify-between">
             <Link to="/student/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-                {student.name.charAt(0)}
+                {displayStudent.name.charAt(0)}
               </div>
               <div>
                 <h1 className="font-semibold text-foreground">{t.studentHome.title}</h1>
                 <p className="text-xs text-muted-foreground">
-                  Level {student.level} • {student.xp}/{student.xpForNextLevel} XP
+                  Level {displayStudent.level} • {displayStudent.xp}/{displayStudent.xpForNextLevel} XP
                 </p>
               </div>
             </Link>
@@ -152,7 +245,7 @@ export default function StudentHome() {
               <StudyTimer />
               <ThemeToggle />
               <LanguageSelector />
-              <CoinCounter coins={student.coins} size="sm" />
+              <CoinCounter coins={displayStudent.coins} size="sm" />
               <NotificationBell />
               <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 text-muted-foreground" />
@@ -173,7 +266,7 @@ export default function StudentHome() {
             <div className="relative z-10">
               <p className="text-secondary-foreground/70 text-sm font-medium mb-1">{getGreeting()}</p>
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Welcome back, {student.name}
+                Welcome back, {displayStudent.name}
               </h2>
               
               {/* Stats Row */}
@@ -183,14 +276,14 @@ export default function StudentHome() {
                     <TrendingUp className="w-4 h-4 text-success" />
                     <span className="text-xs text-secondary-foreground/70">Level</span>
                   </div>
-                  <p className="text-xl font-bold">{student.level}</p>
+                  <p className="text-xl font-bold">{displayStudent.level}</p>
                 </div>
                 <div className="bg-secondary-foreground/10 backdrop-blur rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <Target className="w-4 h-4 text-gold" />
                     <span className="text-xs text-secondary-foreground/70">Streak</span>
                   </div>
-                  <p className="text-xl font-bold">{student.streak} days</p>
+                  <p className="text-xl font-bold">{displayStudent.streak} days</p>
                 </div>
                 <div className="bg-secondary-foreground/10 backdrop-blur rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1">
@@ -204,13 +297,13 @@ export default function StudentHome() {
               {/* XP Progress */}
               <div className="bg-secondary-foreground/10 backdrop-blur rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Progress to Level {student.level + 1}</span>
-                  <span className="text-sm text-secondary-foreground/70">{student.xp}/{student.xpForNextLevel} XP</span>
+                  <span className="text-sm font-medium">Progress to Level {displayStudent.level + 1}</span>
+                  <span className="text-sm text-secondary-foreground/70">{displayStudent.xp}/{displayStudent.xpForNextLevel} XP</span>
                 </div>
                 <div className="h-2 bg-secondary-foreground/20 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${(student.xp / student.xpForNextLevel) * 100}%` }}
+                    animate={{ width: `${(displayStudent.xp / displayStudent.xpForNextLevel) * 100}%` }}
                     transition={{ duration: 1, ease: "easeOut" }}
                     className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                   />
@@ -355,29 +448,36 @@ export default function StudentHome() {
             </Link>
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-            {demoBadges.map((badge, index) => (
-              <motion.div
-                key={badge.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.35 + index * 0.05 }}
-                className={`flex-shrink-0 bg-card border rounded-xl p-4 min-w-[140px] ${
-                  badge.earned ? "border-gold/50" : "border-border opacity-60"
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full mb-2 flex items-center justify-center ${
-                  badge.earned ? "bg-gold/10 text-gold" : "bg-muted text-muted-foreground"
-                }`}>
-                  <Award className="w-5 h-5" />
-                </div>
-                <p className="font-medium text-sm text-foreground">{badge.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {badge.earned ? "Earned" : "Locked"}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          {badges.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {badges.map((badge, index) => (
+                <motion.div
+                  key={badge.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.35 + index * 0.05 }}
+                  className={`flex-shrink-0 bg-card border rounded-xl p-4 min-w-[140px] ${
+                    badge.earned ? "border-gold/50" : "border-border opacity-60"
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full mb-2 flex items-center justify-center ${
+                    badge.earned ? "bg-gold/10 text-gold" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <p className="font-medium text-sm text-foreground">{badge.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {badge.earned ? "Earned" : "Locked"}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-6 text-center">
+              <Award className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">Complete assignments to earn badges!</p>
+            </div>
+          )}
         </motion.section>
       </main>
 
