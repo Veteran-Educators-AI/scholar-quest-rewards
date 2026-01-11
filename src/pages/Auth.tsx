@@ -299,6 +299,29 @@ export default function Auth() {
               {mode === "login" ? "Sign up" : "Log in"}
             </Button>
           </div>
+
+          {/* Legal links and disclaimers */}
+          <div className="mt-6 pt-4 border-t border-border">
+            <div className="flex justify-center gap-4 text-xs">
+              <a
+                href="/privacy-policy"
+                className="text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+              >
+                Privacy Policy
+              </a>
+              <span className="text-muted-foreground">•</span>
+              <a
+                href="/terms-of-service"
+                className="text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+              >
+                Terms of Service
+              </a>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center mt-3 leading-relaxed">
+              By signing in or creating an account, you agree to our Terms of Service and Privacy Policy. 
+              This application is designed for educational purposes. Student data is protected in accordance with FERPA and COPPA regulations.
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>
