@@ -164,10 +164,15 @@ export default function Auth() {
         <div className="bg-card rounded-3xl shadow-xl border border-border p-8">
           {/* Mascot */}
           <div className="flex flex-col items-center mb-6">
-            <ScholarBuddy size="md" message={messages[role][mode]} />
+            <ScholarBuddy size="md" />
             <div className="text-center mt-3">
-              <h1 className="text-2xl font-bold text-foreground tracking-wide">NYCologic AI</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-wide">
+                NYCologic <span className="text-destructive">Ai</span>
+              </h1>
               <span className="text-xs text-muted-foreground tracking-widest uppercase">High School</span>
+            </div>
+            <div className="bg-card rounded-xl px-5 py-3 shadow-lg border border-border max-w-sm text-center backdrop-blur-sm mt-4">
+              <p className="text-sm font-medium text-foreground">{messages[role][mode]}</p>
             </div>
           </div>
 
