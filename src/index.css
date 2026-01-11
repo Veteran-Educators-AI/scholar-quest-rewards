@@ -1,140 +1,141 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Scan Scholar Design System - NYCologic Ai Branded */
+/* Scholar Quest Design System - High School Edition */
 
 @layer base {
   :root {
-    /* Core brand colors - Bold Red & Gray from NYCologic logo */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 15%;
+    /* Modern, sophisticated palette for high schoolers */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary - NYCologic Red */
-    --primary: 0 85% 50%;
+    /* Primary - Deep Indigo */
+    --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Dark Gray (Brain circuit color) */
-    --secondary: 0 0% 40%;
+    /* Secondary - Slate */
+    --secondary: 215 25% 27%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted - Soft gray */
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted - Cool gray */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Accent - Deep Red */
-    --accent: 0 75% 42%;
+    /* Accent - Electric Blue */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success - Fresh Green */
-    --success: 142 71% 45%;
+    /* Success - Emerald */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning - Warm Orange */
-    --warning: 25 95% 53%;
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 15%;
 
-    /* Destructive - Soft Red */
-    --destructive: 0 84% 60%;
+    /* Destructive - Rose */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* XP/Coins - Gold */
-    --gold: 43 96% 56%;
+    /* XP/Coins - Warm Gold */
+    --gold: 45 93% 47%;
     --gold-foreground: 0 0% 15%;
 
-    /* Streak - Fire Orange */
-    --streak: 17 88% 55%;
+    /* Streak - Coral/Orange */
+    --streak: 24 95% 53%;
     --streak-foreground: 0 0% 100%;
 
-    /* Rarity colors */
-    --rarity-common: 0 0% 53%;
+    /* Rarity colors - More sophisticated */
+    --rarity-common: 220 9% 46%;
     --rarity-rare: 217 91% 60%;
-    --rarity-epic: 0 75% 42%;
-    --rarity-legendary: 43 96% 56%;
+    --rarity-epic: 280 87% 65%;
+    --rarity-legendary: 45 93% 47%;
 
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 0 85% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 243 75% 59%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 0 85% 50%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 243 75% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 15%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 0 85% 50%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 243 75% 59%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 85% 50%) 0%, hsl(0 75% 42%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 40%) 0%, hsl(0 0% 30%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(160 84% 39%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(43 96% 56%) 0%, hsl(25 95% 53%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(0 85% 50%) 0%, hsl(0 75% 42%) 50%, hsl(0 0% 40%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
-    --gradient-streak: linear-gradient(135deg, hsl(17 88% 55%) 0%, hsl(43 96% 56%) 100%);
+    /* Gradients - Refined */
+    --gradient-primary: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(280 87% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(215 25% 27%) 0%, hsl(222 47% 11%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(172 66% 50%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(38 92% 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(280 87% 65%) 50%, hsl(217 91% 60%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%);
+    --gradient-streak: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(45 93% 47%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(215 25% 17%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 2px 8px -2px hsl(0 0% 15% / 0.08);
-    --shadow-md: 0 4px 16px -4px hsl(0 0% 15% / 0.12);
-    --shadow-lg: 0 8px 32px -8px hsl(0 0% 15% / 0.16);
-    --shadow-glow-primary: 0 4px 24px -4px hsl(0 85% 50% / 0.4);
-    --shadow-glow-secondary: 0 4px 24px -4px hsl(0 0% 40% / 0.4);
-    --shadow-glow-success: 0 4px 24px -4px hsl(142 71% 45% / 0.4);
-    --shadow-glow-gold: 0 4px 24px -4px hsl(43 96% 56% / 0.5);
+    /* Shadows - Subtle, professional */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+    --shadow-glow-primary: 0 4px 24px -4px hsl(243 75% 59% / 0.35);
+    --shadow-glow-secondary: 0 4px 24px -4px hsl(215 25% 27% / 0.35);
+    --shadow-glow-success: 0 4px 24px -4px hsl(160 84% 39% / 0.35);
+    --shadow-glow-gold: 0 4px 24px -4px hsl(45 93% 47% / 0.4);
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 0 85% 55%;
-    --primary-foreground: 0 0% 8%;
+    --primary: 243 75% 65%;
+    --primary-foreground: 222 47% 6%;
 
-    --secondary: 0 0% 50%;
-    --secondary-foreground: 0 0% 8%;
+    --secondary: 215 20% 65%;
+    --secondary-foreground: 222 47% 6%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 0 75% 50%;
-    --accent-foreground: 0 0% 8%;
+    --accent: 217 91% 65%;
+    --accent-foreground: 222 47% 6%;
 
-    --success: 142 71% 50%;
-    --success-foreground: 0 0% 8%;
+    --success: 160 84% 45%;
+    --success-foreground: 222 47% 6%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 95%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 85% 55%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 243 75% 65%;
 
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 85% 55%;
-    --sidebar-primary-foreground: 0 0% 8%;
-    --sidebar-accent: 0 0% 18%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 0 85% 55%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 243 75% 65%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 243 75% 65%;
   }
 }
 
@@ -144,7 +145,12 @@
   }
 
   body {
-    @apply bg-background text-foreground font-nunito antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
   }
 }
 
