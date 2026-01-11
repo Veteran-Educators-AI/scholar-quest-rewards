@@ -10,7 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 interface Notification {
   id: string;
   type: string;
@@ -25,6 +25,7 @@ interface Notification {
 
 export function NotificationBell() {
   const { toast } = useToast();
+  const { notifyUser } = useNotificationSound();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -75,7 +76,10 @@ export function NotificationBell() {
               setNotifications(prev => [newNotification, ...prev]);
               setUnreadCount(prev => prev + 1);
               
-              // Show toast for new notification with sound-like visual feedback
+              // Play sound and vibrate for new notification
+              notifyUser();
+              
+              // Show toast for new notification
               toast({
                 title: newNotification.title,
                 description: newNotification.message,
@@ -91,7 +95,7 @@ export function NotificationBell() {
     };
 
     setupRealtimeSubscription();
-  }, [fetchNotifications, toast]);
+  }, [fetchNotifications, toast, notifyUser]);
 
   const checkStreakWarning = async () => {
     try {
