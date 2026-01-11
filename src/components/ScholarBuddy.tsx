@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import brainLogo from "@/assets/brain-logo.png";
+import highschoolLogo from "@/assets/highschool-logo.png";
 
 interface ScholarBuddyProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -48,10 +48,10 @@ export function ScholarBuddy({
           }}
         />
         
-        {/* Brain image */}
+        {/* Logo image */}
         <img 
-          src={brainLogo} 
-          alt="NYCologic Brain" 
+          src={highschoolLogo} 
+          alt="NYCologic Logo" 
           className="w-full h-full object-contain drop-shadow-2xl relative z-10"
         />
         
