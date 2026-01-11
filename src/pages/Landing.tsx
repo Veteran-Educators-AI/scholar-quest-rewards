@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,8 +37,31 @@ export default function Landing() {
   }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      {/* Fixed Header with Theme Toggle */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src={nycologicLogo} 
+              alt="NYCologic Ai" 
+              className="w-8 h-8 object-contain"
+            />
+            <span className="font-semibold text-foreground">Scholar Quest</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link to="/auth">
+              <Button variant="ghost" size="sm">Sign In</Button>
+            </Link>
+            <Link to="/auth">
+              <Button size="sm">Get Started</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 py-20">
+      <section className="relative min-h-screen flex items-center justify-center px-4 py-20 pt-24">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />

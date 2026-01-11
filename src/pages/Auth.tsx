@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart } from "lucide-react";
@@ -146,16 +147,18 @@ export default function Auth() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/")}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to home
-        </Button>
+        {/* Header with back button and theme toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to home
+          </Button>
+          <ThemeToggle />
+        </div>
 
         <div className="bg-card rounded-3xl shadow-xl border border-primary/20 p-8">
           {/* Mascot */}
