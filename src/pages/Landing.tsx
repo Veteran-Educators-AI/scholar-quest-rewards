@@ -147,7 +147,7 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col items-center"
             >
-              <ScholarBuddy size="xl" message="Ready to take your learning to the next level?" />
+              <ScholarBuddy size="xl" />
               <h2 className="text-2xl md:text-3xl font-bold mt-4 text-foreground">
                 NYCologic <span className="text-destructive">Ai</span> Scholar
               </h2>
