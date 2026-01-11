@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   Sparkles,
   TrendingUp,
-  Award
+  Award,
+  Loader2
 } from "lucide-react";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { XPBar } from "@/components/XPBar";
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Rarity = "common" | "rare" | "epic" | "legendary";
 type Slot = "frame" | "background" | "hat" | "pet" | "accessory";
@@ -45,82 +47,183 @@ interface EquippedItems {
   pet?: Collectible;
 }
 
-// Demo data - High School Student
-const demoProfile = {
-  name: "Alex Johnson",
-  avatar: null,
-  level: 8,
-  xp: 720,
-  xpForNextLevel: 1000,
-  coins: 285,
-  streak: 7,
-  longestStreak: 21,
-  hasShield: true,
-  joinedAt: new Date("2025-09-01"),
-  gradeLevel: 10,
-  gradeBand: "9-10",
-  totalAssignmentsCompleted: 89,
-  totalXpEarned: 7200,
-  totalCoinsEarned: 1450,
-  averageScore: 84,
-};
+interface ProfileData {
+  name: string;
+  avatar: string | null;
+  level: number;
+  xp: number;
+  xpForNextLevel: number;
+  coins: number;
+  streak: number;
+  longestStreak: number;
+  hasShield: boolean;
+  joinedAt: Date;
+  gradeLevel: number | null;
+  totalAssignmentsCompleted: number;
+  totalXpEarned: number;
+  averageScore: number;
+}
 
-const demoStats = {
-  readingLevel: "10th Grade",
-  mathLevel: "Algebra II",
-  strengths: ["Quadratic Equations", "Literary Analysis", "Lab Reports", "Historical Context"],
-  areasToImprove: ["Trigonometry", "Thesis Statements"],
-  recentSubjects: [
-    { name: "Algebra II", assignments: 18, avgScore: 86, standard: "AII-A.APR.1" },
-    { name: "English", assignments: 14, avgScore: 82, standard: "RL.9-10.2" },
-    { name: "Biology", assignments: 12, avgScore: 88, standard: "LE.2.1" },
-    { name: "Global History", assignments: 11, avgScore: 79, standard: "GH.9-10.2" },
-  ],
-};
+interface StatsData {
+  readingLevel: string;
+  mathLevel: string;
+  strengths: string[];
+  areasToImprove: string[];
+  recentSubjects: { name: string; assignments: number; avgScore: number }[];
+}
 
-const demoBadges = [
-  { id: "1", name: "First Steps", description: "Complete your first assignment", iconUrl: null, earned: true, earnedAt: "2025-09-02" },
-  { id: "2", name: "Streak Starter", description: "Achieve a 3-day streak", iconUrl: null, earned: true, earnedAt: "2025-09-05" },
-  { id: "3", name: "Math Wizard", description: "Score 100% on 5 math assignments", iconUrl: null, earned: true, earnedAt: "2025-10-15" },
-  { id: "4", name: "Bookworm", description: "Complete 10 reading assignments", iconUrl: null, earned: true, earnedAt: "2025-11-01" },
-  { id: "5", name: "Perfect Week", description: "Complete all assignments for a week", iconUrl: null, earned: false },
-  { id: "6", name: "Science Explorer", description: "Complete 15 science assignments", iconUrl: null, earned: false },
-];
-
-const demoCollectibles: Collectible[] = [
-  // Frames
-  { id: "c1", name: "Golden Frame", description: "A shimmering golden border", imageUrl: null, rarity: "legendary", slot: "frame", earned: true },
-  { id: "c2", name: "Star Frame", description: "Surrounded by twinkling stars", imageUrl: null, rarity: "epic", slot: "frame", earned: true },
-  { id: "c3", name: "Rainbow Frame", description: "A colorful rainbow border", imageUrl: null, rarity: "rare", slot: "frame", earned: false },
-  { id: "c4", name: "Basic Frame", description: "A simple decorative frame", imageUrl: null, rarity: "common", slot: "frame", earned: true },
-  // Backgrounds
-  { id: "c5", name: "Galaxy Background", description: "A cosmic starfield", imageUrl: null, rarity: "legendary", slot: "background", earned: false },
-  { id: "c6", name: "Forest Background", description: "A peaceful forest scene", imageUrl: null, rarity: "epic", slot: "background", earned: true },
-  { id: "c7", name: "Ocean Background", description: "Calm ocean waves", imageUrl: null, rarity: "rare", slot: "background", earned: true },
-  { id: "c8", name: "Sky Background", description: "Blue sky with clouds", imageUrl: null, rarity: "common", slot: "background", earned: true },
-  // Hats
-  { id: "c9", name: "Wizard Hat", description: "The hat of a scholar wizard", imageUrl: null, rarity: "legendary", slot: "hat", earned: false },
-  { id: "c10", name: "Crown", description: "A royal crown for champions", imageUrl: null, rarity: "epic", slot: "hat", earned: true },
-  { id: "c11", name: "Graduation Cap", description: "Celebrate your journey", imageUrl: null, rarity: "rare", slot: "hat", earned: true },
-  { id: "c12", name: "Baseball Cap", description: "A cool casual cap", imageUrl: null, rarity: "common", slot: "hat", earned: true },
-  // Pets
-  { id: "c13", name: "Phoenix Companion", description: "A magical fire bird", imageUrl: null, rarity: "legendary", slot: "pet", earned: false },
-  { id: "c14", name: "Owl Companion", description: "A wise owl friend", imageUrl: null, rarity: "epic", slot: "pet", earned: true },
-  { id: "c15", name: "Cat Companion", description: "A curious cat buddy", imageUrl: null, rarity: "rare", slot: "pet", earned: false },
-  { id: "c16", name: "Puppy Companion", description: "A loyal puppy friend", imageUrl: null, rarity: "common", slot: "pet", earned: true },
-];
+interface BadgeData {
+  id: string;
+  name: string;
+  description: string | null;
+  iconUrl: string | null;
+  earned: boolean;
+  earnedAt?: string;
+}
 
 export default function StudentProfile() {
-  const [profile] = useState(demoProfile);
-  const [stats] = useState(demoStats);
-  const [badges] = useState(demoBadges);
-  const [collectibles] = useState(demoCollectibles);
-  const [equippedItems, setEquippedItems] = useState<EquippedItems>({
-    frame: demoCollectibles.find((c) => c.id === "c2"), // Star Frame
-    background: demoCollectibles.find((c) => c.id === "c6"), // Forest Background
-    hat: demoCollectibles.find((c) => c.id === "c11"), // Graduation Cap
-    pet: demoCollectibles.find((c) => c.id === "c14"), // Owl Companion
-  });
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [badges, setBadges] = useState<BadgeData[]>([]);
+  const [collectibles, setCollectibles] = useState<Collectible[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [equippedItems, setEquippedItems] = useState<EquippedItems>({});
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch profile
+        const { data: userProfile } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url, created_at")
+          .eq("id", user.id)
+          .single();
+
+        // Fetch student profile
+        const { data: studentProfile } = await supabase
+          .from("student_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        // Calculate stats from attempts
+        const { data: attempts } = await supabase
+          .from("attempts")
+          .select("score, status")
+          .eq("student_id", user.id)
+          .eq("status", "verified");
+
+        const completedCount = attempts?.length || 0;
+        const avgScore = completedCount > 0 
+          ? Math.round((attempts?.reduce((sum, a) => sum + (a.score || 0), 0) || 0) / completedCount)
+          : 0;
+
+        const totalXp = studentProfile?.xp || 0;
+        const level = Math.floor(totalXp / 500) + 1;
+        const currentLevelXp = totalXp - ((level - 1) * 500);
+
+        setProfile({
+          name: userProfile?.full_name || user.email?.split("@")[0] || "Scholar",
+          avatar: userProfile?.avatar_url || null,
+          level,
+          xp: currentLevelXp,
+          xpForNextLevel: 500,
+          coins: studentProfile?.coins || 0,
+          streak: studentProfile?.current_streak || 0,
+          longestStreak: studentProfile?.longest_streak || 0,
+          hasShield: studentProfile?.streak_shield_available || false,
+          joinedAt: new Date(userProfile?.created_at || Date.now()),
+          gradeLevel: studentProfile?.grade_level || null,
+          totalAssignmentsCompleted: completedCount,
+          totalXpEarned: totalXp,
+          averageScore: avgScore,
+        });
+
+        setStats({
+          readingLevel: studentProfile?.reading_level || "Not assessed",
+          mathLevel: studentProfile?.math_level || "Not assessed",
+          strengths: studentProfile?.strengths || [],
+          areasToImprove: studentProfile?.weaknesses || [],
+          recentSubjects: [],
+        });
+
+        // Fetch badges
+        const { data: allBadges } = await supabase
+          .from("badges")
+          .select("id, name, description, icon_url");
+
+        const { data: earnedBadges } = await supabase
+          .from("student_badges")
+          .select("badge_id, earned_at")
+          .eq("student_id", user.id);
+
+        const earnedMap = new Map(earnedBadges?.map(eb => [eb.badge_id, eb.earned_at]) || []);
+
+        setBadges((allBadges || []).map(b => ({
+          id: b.id,
+          name: b.name,
+          description: b.description,
+          iconUrl: b.icon_url,
+          earned: earnedMap.has(b.id),
+          earnedAt: earnedMap.get(b.id),
+        })));
+
+        // Fetch collectibles
+        const { data: allCollectibles } = await supabase
+          .from("collectibles")
+          .select("id, name, description, image_url, rarity, slot");
+
+        const { data: earnedCollectibles } = await supabase
+          .from("student_collectibles")
+          .select("collectible_id")
+          .eq("student_id", user.id);
+
+        const earnedCollectibleIds = new Set(earnedCollectibles?.map(ec => ec.collectible_id) || []);
+
+        const mappedCollectibles: Collectible[] = (allCollectibles || []).map(c => ({
+          id: c.id,
+          name: c.name,
+          description: c.description || undefined,
+          imageUrl: c.image_url,
+          rarity: c.rarity as Rarity,
+          slot: (c.slot as Slot) || "accessory",
+          earned: earnedCollectibleIds.has(c.id),
+        }));
+
+        setCollectibles(mappedCollectibles);
+
+        // Fetch equipped items
+        const { data: equipped } = await supabase
+          .from("equipped_items")
+          .select("slot, collectible_id")
+          .eq("student_id", user.id);
+
+        if (equipped) {
+          const equippedMap: EquippedItems = {};
+          equipped.forEach(e => {
+            const collectible = mappedCollectibles.find(c => c.id === e.collectible_id);
+            if (collectible && e.slot) {
+              equippedMap[e.slot as Slot] = collectible;
+            }
+          });
+          setEquippedItems(equippedMap);
+        }
+
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const handleEquip = useCallback((slot: Slot, collectible: Collectible | null) => {
     setEquippedItems((prev) => ({
@@ -134,9 +237,43 @@ export default function StudentProfile() {
     }
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Default values for new users
+  const displayProfile = profile || {
+    name: "Scholar",
+    avatar: null,
+    level: 1,
+    xp: 0,
+    xpForNextLevel: 500,
+    coins: 0,
+    streak: 0,
+    longestStreak: 0,
+    hasShield: false,
+    joinedAt: new Date(),
+    gradeLevel: null,
+    totalAssignmentsCompleted: 0,
+    totalXpEarned: 0,
+    averageScore: 0,
+  };
+
+  const displayStats = stats || {
+    readingLevel: "Not assessed",
+    mathLevel: "Not assessed",
+    strengths: [],
+    areasToImprove: [],
+    recentSubjects: [],
+  };
+
   const earnedBadges = badges.filter(b => b.earned);
   const earnedCollectibles = collectibles.filter(c => c.earned);
-  const daysSinceJoin = Math.floor((Date.now() - profile.joinedAt.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceJoin = Math.floor((Date.now() - displayProfile.joinedAt.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -165,16 +302,16 @@ export default function StudentProfile() {
                 collectibles={collectibles}
                 equippedItems={equippedItems}
                 onEquip={handleEquip}
-                userName={profile.name}
+                userName={displayProfile.name}
               />
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-foreground">{profile.name}</h2>
+                <h2 className="text-xl font-bold text-foreground">{displayProfile.name}</h2>
                 <p className="text-muted-foreground">
-                  {profile.gradeLevel === 9 ? "Freshman" : 
-                   profile.gradeLevel === 10 ? "Sophomore" : 
-                   profile.gradeLevel === 11 ? "Junior" : 
-                   profile.gradeLevel === 12 ? "Senior" : 
-                   `Grade ${profile.gradeLevel}`} Scholar
+                  {displayProfile.gradeLevel === 9 ? "Freshman" : 
+                   displayProfile.gradeLevel === 10 ? "Sophomore" : 
+                   displayProfile.gradeLevel === 11 ? "Junior" : 
+                   displayProfile.gradeLevel === 12 ? "Senior" : 
+                   displayProfile.gradeLevel ? `Grade ${displayProfile.gradeLevel}` : ""} Scholar
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -184,19 +321,19 @@ export default function StudentProfile() {
             </div>
 
             <XPBar
-              currentXP={profile.xp}
-              xpForNextLevel={profile.xpForNextLevel}
-              level={profile.level}
+              currentXP={displayProfile.xp}
+              xpForNextLevel={displayProfile.xpForNextLevel}
+              level={displayProfile.level}
             />
 
             <div className="grid grid-cols-2 gap-3 mt-6">
               <div className="bg-muted rounded-xl p-3 text-center">
-                <CoinCounter coins={profile.coins} size="sm" />
+                <CoinCounter coins={displayProfile.coins} size="sm" />
                 <p className="text-xs text-muted-foreground mt-1">Total Coins</p>
               </div>
               <div className="flex justify-center">
                 <div className="text-center">
-                  <StreakCounter streak={profile.streak} hasShield={profile.hasShield} size="sm" />
+                  <StreakCounter streak={displayProfile.streak} hasShield={displayProfile.hasShield} size="sm" />
                   <p className="text-xs text-muted-foreground mt-1">Current Streak</p>
                 </div>
               </div>
@@ -215,22 +352,22 @@ export default function StudentProfile() {
         >
           <StatCard
             icon={<Target className="w-5 h-5 text-primary" />}
-            value={profile.totalAssignmentsCompleted}
+            value={displayProfile.totalAssignmentsCompleted}
             label="Missions Complete"
           />
           <StatCard
             icon={<Sparkles className="w-5 h-5 text-gold" />}
-            value={profile.totalXpEarned.toLocaleString()}
+            value={displayProfile.totalXpEarned.toLocaleString()}
             label="Total XP Earned"
           />
           <StatCard
             icon={<Flame className="w-5 h-5 text-streak" />}
-            value={profile.longestStreak}
+            value={displayProfile.longestStreak}
             label="Longest Streak"
           />
           <StatCard
             icon={<TrendingUp className="w-5 h-5 text-success" />}
-            value={`${profile.averageScore}%`}
+            value={`${displayProfile.averageScore}%`}
             label="Average Score"
           />
         </motion.div>
@@ -338,14 +475,14 @@ export default function StudentProfile() {
                     <BookOpen className="w-8 h-8 text-primary" />
                     <div>
                       <p className="font-semibold text-foreground">Reading</p>
-                      <p className="text-sm text-muted-foreground">{stats.readingLevel}</p>
+                      <p className="text-sm text-muted-foreground">{displayStats.readingLevel}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                     <Calculator className="w-8 h-8 text-secondary" />
                     <div>
                       <p className="font-semibold text-foreground">Math</p>
-                      <p className="text-sm text-muted-foreground">{stats.mathLevel}</p>
+                      <p className="text-sm text-muted-foreground">{displayStats.mathLevel}</p>
                     </div>
                   </div>
                 </div>
@@ -357,16 +494,20 @@ export default function StudentProfile() {
                   <Sparkles className="w-5 h-5 text-gold" />
                   Strengths
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {stats.strengths.map((strength, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1.5 bg-success/10 text-success rounded-full text-sm font-medium"
-                    >
-                      {strength}
-                    </span>
-                  ))}
-                </div>
+                {displayStats.strengths.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {displayStats.strengths.map((strength, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-1.5 bg-success/10 text-success rounded-full text-sm font-medium"
+                      >
+                        {strength}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Complete more assignments to discover your strengths!</p>
+                )}
               </div>
 
               {/* Areas to Improve */}
@@ -375,34 +516,42 @@ export default function StudentProfile() {
                   <Target className="w-5 h-5 text-secondary" />
                   Keep Practicing
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {stats.areasToImprove.map((area, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1.5 bg-secondary/10 text-secondary rounded-full text-sm font-medium"
-                    >
-                      {area}
-                    </span>
-                  ))}
-                </div>
+                {displayStats.areasToImprove.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {displayStats.areasToImprove.map((area, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-1.5 bg-secondary/10 text-secondary rounded-full text-sm font-medium"
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Keep completing assignments to track areas for improvement!</p>
+                )}
               </div>
 
               {/* Subject Performance */}
               <div className="bg-card rounded-2xl p-6 border border-border">
                 <h3 className="font-bold text-lg text-foreground mb-4">Subject Performance</h3>
-                <div className="space-y-4">
-                  {stats.recentSubjects.map((subject, i) => (
-                    <div key={i}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-foreground">{subject.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {subject.assignments} assignments · {subject.avgScore}% avg
-                        </span>
+                {displayStats.recentSubjects.length > 0 ? (
+                  <div className="space-y-4">
+                    {displayStats.recentSubjects.map((subject, i) => (
+                      <div key={i}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-foreground">{subject.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {subject.assignments} assignments · {subject.avgScore}% avg
+                          </span>
+                        </div>
+                        <Progress value={subject.avgScore} className="h-2" />
                       </div>
-                      <Progress value={subject.avgScore} className="h-2" />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Complete assignments to see subject performance!</p>
+                )}
               </div>
             </motion.div>
           </TabsContent>
