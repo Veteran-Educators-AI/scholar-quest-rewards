@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 import { PointDeductionDialog } from "@/components/PointDeductionDialog";
+import { StudentStatusRecorder } from "@/components/StudentStatusRecorder";
 
 // Demo data
 const demoTeacher = {
@@ -203,6 +204,16 @@ export default function TeacherDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-foreground">Your Classes</h3>
             <div className="flex items-center gap-2">
+              <StudentStatusRecorder
+                students={demoStudents}
+                classId="demo-class-1"
+                onStatusRecorded={() => {
+                  toast({
+                    title: "Status Logged",
+                    description: "Student status has been recorded.",
+                  });
+                }}
+              />
               <PointDeductionDialog 
                 students={demoStudents} 
                 classId="demo-class-1"
