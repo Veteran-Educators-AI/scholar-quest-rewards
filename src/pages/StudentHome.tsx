@@ -160,28 +160,81 @@ export default function StudentHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-8">
-        {/* Greeting & Stats */}
+        {/* Welcome Hero Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-primary/10 via-card to-gold/10 rounded-3xl p-6 md:p-8 border border-border shadow-xl"
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-shrink-0">
+              <ScholarBuddy size="lg" message={`${getGreeting()}, ${student.name}! 🌟`} />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
                 {getGreeting()}, <span className="text-gradient-primary">{student.name}!</span>
               </h2>
-              <p className="text-muted-foreground">{t.greeting.readyForAdventure}</p>
+              <p className="text-muted-foreground text-lg mb-4">{t.greeting.readyForAdventure}</p>
+              
+              {/* New Assignments Alert */}
+              {missions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-card border-2 border-primary/30 rounded-2xl p-4 shadow-lg"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                      <span className="text-xl">📚</span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">{missions.length} New Assignments!</h3>
+                      <p className="text-sm text-muted-foreground">Your teacher just pushed these for you</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {missions.slice(0, 3).map((mission, idx) => (
+                      <motion.div
+                        key={mission.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + idx * 0.1 }}
+                        className="flex items-center justify-between bg-muted/50 rounded-xl px-4 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {mission.subject === "math" ? "🔢" : mission.subject === "reading" ? "📖" : "🔬"}
+                          </span>
+                          <div>
+                            <p className="font-medium text-foreground text-sm">{mission.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Due: {mission.dueAt.toLocaleDateString()} at {mission.dueAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
+                            +{mission.xpReward} XP
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
-            
-            <StreakCounter streak={student.streak} hasShield={student.hasShield} />
           </div>
-
-          <XPBar
-            currentXP={student.xp}
-            xpForNextLevel={student.xpForNextLevel}
-            level={student.level}
-            className="bg-card rounded-2xl p-4 shadow-md border border-border"
-          />
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-6">
+            <StreakCounter streak={student.streak} hasShield={student.hasShield} />
+            <XPBar
+              currentXP={student.xp}
+              xpForNextLevel={student.xpForNextLevel}
+              level={student.level}
+              className="bg-card rounded-2xl p-4 shadow-md border border-border flex-1 md:max-w-md"
+            />
+          </div>
         </motion.section>
 
         {/* Today's Missions */}

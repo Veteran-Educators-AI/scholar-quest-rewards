@@ -1,11 +1,39 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if user is logged in and redirect to student dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/student", { replace: true });
+      } else {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <ScholarBuddy size="lg" animate={true} />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Hero Section */}
