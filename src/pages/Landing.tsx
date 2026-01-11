@@ -52,10 +52,10 @@ export default function Landing() {
             <div className="flex items-center gap-2">
               <img 
                 src={nycologicLogo} 
-                alt="NYCologic Ai Student" 
+                alt="NYCologic Scholar" 
                 className="w-8 h-8 object-contain"
               />
-              <span className="font-semibold text-foreground">NYCologic Ai Student</span>
+              <span className="font-semibold text-foreground">NYCologic Scholar</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export default function Landing() {
             >
               <ScholarBuddy size="xl" message="Ready to take your learning to the next level?" />
               <h2 className="text-2xl md:text-3xl font-bold mt-4 text-foreground">
-                NYCologic <span className="text-destructive">Ai</span> - Student
+                NYCologic <span className="text-destructive">Ai</span> Scholar
               </h2>
               
               {/* Feature cards */}
@@ -439,7 +439,7 @@ export default function Landing() {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto text-center text-muted-foreground">
           <p className="text-sm">
-            © 2026 Scan Scholar. Powered by NYCologic Ai™ 🧠
+            © 2026 NYCologic Scholar. Powered by NYCologic Ai™ 🧠
           </p>
         </div>
       </footer>

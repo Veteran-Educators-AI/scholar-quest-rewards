@@ -103,7 +103,7 @@ export default function TeacherDashboard() {
                 </div>
               </div>
               <div>
-                <h1 className="font-bold text-foreground text-xl">Scan Scholar</h1>
+                <h1 className="font-bold text-foreground text-xl">NYCologic Scholar</h1>
                 <p className="text-sm text-muted-foreground">Teacher Dashboard</p>
               </div>
             </div>
