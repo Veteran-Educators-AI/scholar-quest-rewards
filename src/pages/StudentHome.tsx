@@ -15,6 +15,7 @@ import { GuidedTour } from "@/components/GuidedTour";
 import { ClassSchedule } from "@/components/ClassSchedule";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { StudyTimer } from "@/components/StudyTimer";
 import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -146,6 +147,7 @@ export default function StudentHome() {
             </Link>
             
             <div className="flex items-center gap-1">
+              <StudyTimer />
               <ThemeToggle />
               <LanguageSelector />
               <CoinCounter coins={student.coins} size="sm" />
