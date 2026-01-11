@@ -36,7 +36,7 @@ export default function Auth() {
       if (mode === "signup") {
         const redirectUrl = `${window.location.origin}/`;
         
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -58,7 +58,32 @@ export default function Auth() {
           } else {
             throw error;
           }
-        } else {
+        } else if (data.user) {
+          // Create profile record which triggers student_profiles creation
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              id: data.user.id,
+              full_name: fullName,
+              role: role,
+            });
+
+          if (profileError && !profileError.message.includes("duplicate")) {
+            console.error("Profile creation error:", profileError);
+          }
+
+          // Create user_roles record
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: data.user.id,
+              role: role,
+            });
+
+          if (roleError && !roleError.message.includes("duplicate")) {
+            console.error("Role creation error:", roleError);
+          }
+
           toast({
             title: "Welcome to Scan Scholar! 🎉",
             description: role === "parent" 
