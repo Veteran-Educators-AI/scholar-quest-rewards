@@ -9,7 +9,7 @@
 @layer base {
   :root {
     /* Warm, sophisticated palette inspired by NYCologic AI logo */
-    --background: 30 30% 97%;
+    --background: 0 0% 100%;
     --foreground: 20 20% 15%;
 
     --card: 0 0% 100%;
