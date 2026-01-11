@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Trophy, Star, Flame, Check, Trash2, X } from "lucide-react";
+import { Bell, Trophy, Star, Flame, Check, Trash2, X, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -20,6 +20,7 @@ interface Notification {
   read: boolean;
   data: unknown;
   created_at: string;
+  user_id: string;
 }
 
 export function NotificationBell() {
@@ -28,41 +29,9 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchNotifications();
-    checkStreakWarning();
-
-    // Subscribe to realtime notifications
-    const channel = supabase
-      .channel('user-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Show toast for new notification
-          toast({
-            title: newNotification.title,
-            description: newNotification.message,
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -79,7 +48,50 @@ export function NotificationBell() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Get current user and set up realtime subscription
+    const setupRealtimeSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        fetchNotifications();
+        checkStreakWarning();
+
+        // Subscribe to realtime notifications for this user only
+        const channel = supabase
+          .channel(`user-notifications-${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`,
+            },
+            (payload) => {
+              const newNotification = payload.new as Notification;
+              setNotifications(prev => [newNotification, ...prev]);
+              setUnreadCount(prev => prev + 1);
+              
+              // Show toast for new notification with sound-like visual feedback
+              toast({
+                title: newNotification.title,
+                description: newNotification.message,
+              });
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    };
+
+    setupRealtimeSubscription();
+  }, [fetchNotifications, toast]);
 
   const checkStreakWarning = async () => {
     try {
@@ -153,6 +165,8 @@ export function NotificationBell() {
         return <Star className="w-5 h-5 text-primary" />;
       case 'streak_warning':
         return <Flame className="w-5 h-5 text-streak" />;
+      case 'new_assignment':
+        return <BookOpen className="w-5 h-5 text-blue-500" />;
       default:
         return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
