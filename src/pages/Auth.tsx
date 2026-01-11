@@ -139,10 +139,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      {/* Background decoration */}
+      {/* Background decoration - Red themed */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-48 h-48 bg-secondary/10 rounded-full blur-3xl" />
+        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-48 h-48 bg-destructive/15 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-secondary/10 rounded-full blur-2xl" />
       </div>
 
       <motion.div
@@ -161,7 +162,7 @@ export default function Auth() {
           Back to home
         </Button>
 
-        <div className="bg-card rounded-3xl shadow-xl border border-border p-8">
+        <div className="bg-card rounded-3xl shadow-xl border border-primary/20 p-8">
           {/* Mascot */}
           <div className="flex flex-col items-center mb-6">
             <ScholarBuddy size="md" />
@@ -171,7 +172,7 @@ export default function Auth() {
               </h1>
               <span className="text-xs text-muted-foreground tracking-widest uppercase">High School</span>
             </div>
-            <div className="bg-card rounded-xl px-5 py-3 shadow-lg border border-border max-w-sm text-center backdrop-blur-sm mt-4">
+            <div className="bg-primary/5 rounded-xl px-5 py-3 shadow-lg border border-primary/20 max-w-sm text-center backdrop-blur-sm mt-4">
               <p className="text-sm font-medium text-foreground">{messages[role][mode]}</p>
             </div>
           </div>
