@@ -34,19 +34,6 @@ export function ScholarBuddy({
           ease: "easeInOut",
         }}
       >
-        {/* Glow effect */}
-        <motion.div 
-          className="absolute inset-0 bg-primary/30 rounded-full blur-xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
         
         {/* Logo image */}
         <img 
