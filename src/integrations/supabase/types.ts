@@ -967,6 +967,47 @@ export type Database = {
           },
         ]
       }
+      student_status_logs: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_at: string
+          status: Database["public"]["Enums"]["student_status_type"]
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          status: Database["public"]["Enums"]["student_status_type"]
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          status?: Database["public"]["Enums"]["student_status_type"]
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_status_logs_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submission_assets: {
         Row: {
           attempt_id: string
@@ -1063,6 +1104,13 @@ export type Database = {
         | "numeric"
         | "drag_order"
         | "matching"
+      student_status_type:
+        | "on_task"
+        | "off_task"
+        | "needs_support"
+        | "excellent"
+        | "absent"
+        | "late"
       user_role: "student" | "teacher" | "parent" | "admin"
     }
     CompositeTypes: {
@@ -1207,6 +1255,14 @@ export const Constants = {
         "numeric",
         "drag_order",
         "matching",
+      ],
+      student_status_type: [
+        "on_task",
+        "off_task",
+        "needs_support",
+        "excellent",
+        "absent",
+        "late",
       ],
       user_role: ["student", "teacher", "parent", "admin"],
     },
