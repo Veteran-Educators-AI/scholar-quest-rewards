@@ -163,8 +163,12 @@ export default function Auth() {
 
         <div className="bg-card rounded-3xl shadow-xl border border-border p-8">
           {/* Mascot */}
-          <div className="flex justify-center mb-6">
+          <div className="flex flex-col items-center mb-6">
             <ScholarBuddy size="md" message={messages[role][mode]} />
+            <div className="text-center mt-3">
+              <h1 className="text-2xl font-bold text-foreground tracking-wide">NYCologic AI</h1>
+              <span className="text-xs text-muted-foreground tracking-widest uppercase">High School</span>
+            </div>
           </div>
 
           {/* Role selector */}
