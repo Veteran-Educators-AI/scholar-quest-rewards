@@ -141,10 +141,18 @@ const TermsOfService = () => {
             <p className="text-muted-foreground leading-relaxed">
               For questions about these Terms, contact us at:
             </p>
-            <p className="text-muted-foreground mt-2">
-              Email: legal@scholarquest.edu<br />
-              Address: Scholar Quest Legal Team
-            </p>
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-foreground font-medium mb-2">Legal & General Support</p>
+              <a 
+                href="mailto:support@scholarquest.edu?subject=Terms%20of%20Service%20Inquiry"
+                className="text-primary hover:underline flex items-center gap-2"
+              >
+                📧 support@scholarquest.edu
+              </a>
+              <p className="text-muted-foreground text-sm mt-3">
+                We aim to respond to all inquiries within 48 hours.
+              </p>
+            </div>
           </section>
         </div>
       </div>

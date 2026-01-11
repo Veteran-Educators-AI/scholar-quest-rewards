@@ -129,10 +129,18 @@ const PrivacyPolicy = () => {
             <p className="text-muted-foreground leading-relaxed">
               For privacy-related questions or to exercise your rights, please contact us at:
             </p>
-            <p className="text-muted-foreground mt-2">
-              Email: privacy@scholarquest.edu<br />
-              Address: Scholar Quest Privacy Team
-            </p>
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-foreground font-medium mb-2">Privacy Support</p>
+              <a 
+                href="mailto:privacy@scholarquest.edu?subject=Privacy%20Inquiry"
+                className="text-primary hover:underline flex items-center gap-2"
+              >
+                📧 privacy@scholarquest.edu
+              </a>
+              <p className="text-muted-foreground text-sm mt-3">
+                We aim to respond to all privacy inquiries within 48 hours.
+              </p>
+            </div>
           </section>
 
           <section>
