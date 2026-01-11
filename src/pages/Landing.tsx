@@ -131,10 +131,10 @@ export default function Landing() {
                     Start Learning
                   </Button>
                 </Link>
-                <Link to="/auth?role=teacher">
+                <Link to="/auth?role=parent">
                   <Button variant="outline" size="xl">
-                    <Users className="w-6 h-6" />
-                    I'm a Teacher
+                    <Heart className="w-6 h-6" />
+                    I'm a Parent
                   </Button>
                 </Link>
               </div>
