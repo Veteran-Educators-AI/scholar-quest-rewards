@@ -530,6 +530,7 @@ export type Database = {
       }
       parent_point_pledges: {
         Row: {
+          bonus_coins: number
           claimed: boolean
           claimed_at: string | null
           coin_threshold: number
@@ -543,6 +544,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bonus_coins?: number
           claimed?: boolean
           claimed_at?: string | null
           coin_threshold: number
@@ -556,6 +558,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bonus_coins?: number
           claimed?: boolean
           claimed_at?: string | null
           coin_threshold?: number

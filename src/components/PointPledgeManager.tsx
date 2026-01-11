@@ -46,6 +46,7 @@ interface PointPledge {
   coin_threshold: number;
   reward_description: string;
   reward_type: string;
+  bonus_coins: number;
   is_active: boolean;
   claimed: boolean;
   claimed_at: string | null;
@@ -84,6 +85,7 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
   const [customThreshold, setCustomThreshold] = useState<string>("");
   const [rewardType, setRewardType] = useState<string>("");
   const [customReward, setCustomReward] = useState<string>("");
+  const [bonusCoins, setBonusCoins] = useState<number>(0);
 
   useEffect(() => {
     fetchPledges();
@@ -160,6 +162,7 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
         coin_threshold: finalThreshold,
         reward_description: rewardDesc,
         reward_type: rewardType || 'custom',
+        bonus_coins: bonusCoins,
       });
 
       if (error) throw error;
@@ -238,6 +241,7 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
     setCustomThreshold("");
     setRewardType("");
     setCustomReward("");
+    setBonusCoins(0);
   };
 
   const getProgressPercent = (current: number, target: number) => {
@@ -321,6 +325,11 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
                       </div>
                       <p className="text-sm text-muted-foreground">
                         For: <span className="font-medium">{pledge.student_name}</span>
+                        {pledge.bonus_coins > 0 && (
+                          <span className="ml-2 text-gold font-medium">
+                            +{pledge.bonus_coins} bonus coins
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -497,6 +506,34 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
               </div>
             </div>
 
+            {/* Bonus Coins */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Coins className="w-4 h-4 text-gold" />
+                Celebration Bonus Coins (Optional)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Award extra coins when you mark this pledge as given!
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {[0, 10, 25, 50, 100].map((amount) => (
+                  <motion.button
+                    key={amount}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setBonusCoins(amount)}
+                    className={`py-2 px-4 rounded-lg font-bold transition-colors flex items-center gap-1 ${
+                      bonusCoins === amount
+                        ? "bg-gold text-gold-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {amount === 0 ? 'None' : `+${amount}`}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
             {/* Preview */}
             {selectedStudentData && (threshold || customThreshold) && (rewardType || customReward) && (
               <motion.div
@@ -514,6 +551,11 @@ export function PointPledgeManager({ students, onPledgeChange }: PointPledgeMana
                     ? customReward 
                     : REWARD_SUGGESTIONS.find(r => r.type === rewardType)?.label}
                 </p>
+                {bonusCoins > 0 && (
+                  <p className="text-sm text-gold font-medium mt-1">
+                    + {bonusCoins} bonus coins celebration reward!
+                  </p>
+                )}
               </motion.div>
             )}
           </div>
