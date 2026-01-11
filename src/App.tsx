@@ -15,6 +15,7 @@ import { LanguageProvider } from "./i18n/LanguageContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import StudentHome from "./pages/StudentHome";
+import StudentOnboarding from "./pages/StudentOnboarding";
 import StudentProfile from "./pages/StudentProfile";
 import Rewards from "./pages/Rewards";
 import AssignmentDetail from "./pages/AssignmentDetail";
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/student" element={<StudentHome />} />
+                <Route path="/student/onboarding" element={<StudentOnboarding />} />
                 <Route path="/student/profile" element={<StudentProfile />} />
                 <Route path="/student/rewards" element={<Rewards />} />
                 <Route path="/student/leaderboard" element={<Leaderboard />} />
