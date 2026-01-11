@@ -167,10 +167,10 @@ export default function Auth() {
           <div className="flex flex-col items-center mb-6">
             <ScholarBuddy size="md" />
             <div className="text-center mt-3">
-              <h1 className="text-2xl font-bold text-foreground tracking-wide">
+              <h1 className="text-2xl font-bold text-foreground tracking-wide leading-none">
                 NYCologic <span className="text-destructive">Ai</span>
               </h1>
-              <span className="text-xs text-muted-foreground tracking-widest uppercase">High School</span>
+              <span className="text-sm font-bold text-secondary leading-none">Student</span>
             </div>
             <div className="bg-primary/5 rounded-xl px-5 py-3 shadow-lg border border-primary/20 max-w-sm text-center backdrop-blur-sm mt-4">
               <p className="text-sm font-medium text-foreground">{messages[role][mode]}</p>
