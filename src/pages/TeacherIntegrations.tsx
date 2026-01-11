@@ -37,6 +37,7 @@ export default function TeacherIntegrations() {
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const webhookUrl = `https://${projectId}.supabase.co/functions/v1/nycologic-webhook`;
+  const teacherPushUrl = `https://${projectId}.supabase.co/functions/v1/teacher-push`;
 
   useEffect(() => {
     fetchTokens();
@@ -185,28 +186,52 @@ export default function TeacherIntegrations() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-8 max-w-3xl">
-        {/* Webhook URL */}
+        {/* API Endpoints */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <h2 className="font-bold text-foreground text-lg mb-2">Webhook URL</h2>
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+            <h2 className="font-bold text-foreground text-lg mb-2">API Endpoints</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Configure NYCologic Ai to send data to this endpoint.
+              Use these endpoints to connect NYCologic Ai with this Scholar app.
             </p>
             
-            <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
-              <code className="flex-1 text-sm text-foreground font-mono break-all">
-                {webhookUrl}
-              </code>
-              <Button 
-                variant="ghost" 
-                size="icon-sm"
-                onClick={() => copyToClipboard(webhookUrl)}
-              >
-                {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-              </Button>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold">RECOMMENDED</span>
+                  Teacher Push API
+                </p>
+                <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
+                  <code className="flex-1 text-sm text-foreground font-mono break-all">
+                    {teacherPushUrl}
+                  </code>
+                  <Button 
+                    variant="ghost" 
+                    size="icon-sm"
+                    onClick={() => copyToClipboard(teacherPushUrl)}
+                  >
+                    {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Legacy Webhook</p>
+                <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
+                  <code className="flex-1 text-sm text-foreground font-mono break-all">
+                    {webhookUrl}
+                  </code>
+                  <Button 
+                    variant="ghost" 
+                    size="icon-sm"
+                    onClick={() => copyToClipboard(webhookUrl)}
+                  >
+                    {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </motion.section>
@@ -262,7 +287,7 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6">
             <h2 className="font-bold text-foreground text-lg mb-2">Create API Key</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Generate a new API key for NYCologic Ai to authenticate with Scan Scholar.
+              Generate a new API key for NYCologic Ai to authenticate with NYCologic Scholar.
             </p>
             
             <div className="flex gap-3">
@@ -382,19 +407,27 @@ export default function TeacherIntegrations() {
           transition={{ delay: 0.35 }}
         >
           <div className="bg-card rounded-2xl border border-border p-6">
-            <h3 className="font-bold text-foreground mb-4">Supported Webhook Events</h3>
+            <h3 className="font-bold text-foreground mb-4">Available API Actions</h3>
             <div className="space-y-4">
               <div className="border-l-4 border-primary pl-4">
-                <p className="font-semibold text-foreground">assignment</p>
-                <p className="text-sm text-muted-foreground">Push new assignments from NYCologic Ai to Scan Scholar. Includes title, due date, questions, and rewards.</p>
+                <p className="font-semibold text-foreground">Push Assignment</p>
+                <p className="text-sm text-muted-foreground">Send assignments with class_id, title, due_at, standard_code, and optional questions.</p>
+              </div>
+              <div className="border-l-4 border-success pl-4">
+                <p className="font-semibold text-foreground">Bulk Assignments</p>
+                <p className="text-sm text-muted-foreground">Push multiple assignments at once with an array of assignments.</p>
               </div>
               <div className="border-l-4 border-secondary pl-4">
-                <p className="font-semibold text-foreground">student_profile</p>
-                <p className="text-sm text-muted-foreground">Sync student learning data (reading level, math level, skill tags, accommodations).</p>
+                <p className="font-semibold text-foreground">List Classes</p>
+                <p className="text-sm text-muted-foreground">Get all your classes to know which class_id to use when pushing assignments.</p>
               </div>
               <div className="border-l-4 border-accent pl-4">
-                <p className="font-semibold text-foreground">status_query</p>
-                <p className="text-sm text-muted-foreground">Query assignment completion status and student attempts.</p>
+                <p className="font-semibold text-foreground">List NYS Standards</p>
+                <p className="text-sm text-muted-foreground">Browse available standards by grade band and subject to align assignments.</p>
+              </div>
+              <div className="border-l-4 border-gold pl-4">
+                <p className="font-semibold text-foreground">Get Student Progress</p>
+                <p className="text-sm text-muted-foreground">Query student XP, coins, streaks, completion rates, and mastery data.</p>
               </div>
             </div>
           </div>
@@ -409,69 +442,109 @@ export default function TeacherIntegrations() {
           <div className="bg-muted/50 rounded-2xl p-6">
             <h3 className="font-bold text-foreground mb-3">API Documentation</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Send requests to the webhook URL with your API key in the <code className="bg-muted px-1 rounded">x-api-key</code> header.
+              Send POST requests with your API key in the <code className="bg-muted px-1 rounded">x-api-key</code> header.
             </p>
             
             <div className="space-y-4">
               <div className="bg-card rounded-xl p-4 border border-border">
-                <p className="text-xs text-muted-foreground mb-2">Example: Push Assignment</p>
+                <p className="text-xs text-muted-foreground mb-2">Example: Push Single Assignment</p>
                 <pre className="text-xs text-foreground overflow-x-auto">
-{`POST ${webhookUrl}
+{`POST ${teacherPushUrl}
 Headers:
   x-api-key: your-api-key
   Content-Type: application/json
 
 Body:
 {
-  "type": "assignment",
-  "data": {
-    "external_ref": "sg-12345",
-    "class_code": "MATH101",
-    "title": "Fractions Practice",
-    "subject": "Math",
-    "due_at": "2026-01-15T23:59:00Z",
-    "xp_reward": 50,
-    "coin_reward": 10,
-    "questions": [
-      {
-        "prompt": "What is 1/2 + 1/4?",
-        "question_type": "multiple_choice",
-        "options": ["1/4", "3/4", "1/2", "1"],
-        "answer_key": "3/4"
-      }
-    ]
-  }
+  "class_id": "your-class-uuid",
+  "title": "Algebra Practice",
+  "description": "Complete problems 1-10",
+  "due_at": "2026-01-15T23:59:00Z",
+  "standard_code": "6.EE.A.1",
+  "xp_reward": 50,
+  "coin_reward": 25,
+  "printable_url": "https://...",
+  "questions": [
+    {
+      "prompt": "Solve: 2x + 5 = 11",
+      "question_type": "numeric",
+      "answer_key": 3
+    }
+  ]
 }`}
                 </pre>
               </div>
 
               <div className="bg-card rounded-xl p-4 border border-border">
-                <p className="text-xs text-muted-foreground mb-2">Example: Query Status</p>
+                <p className="text-xs text-muted-foreground mb-2">Example: List Your Classes</p>
                 <pre className="text-xs text-foreground overflow-x-auto">
-{`POST ${webhookUrl}
+{`POST ${teacherPushUrl}
 Headers:
   x-api-key: your-api-key
   Content-Type: application/json
 
 Body:
+{ "action": "list_classes" }
+
+Response:
 {
-  "type": "status_query",
-  "data": {
-    "external_ref": "sg-12345"
-  }
+  "classes": [
+    { "id": "uuid", "name": "Math 6A", "class_code": "MATH6A", "grade_level": 6 }
+  ]
+}`}
+                </pre>
+              </div>
+
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: List NYS Standards</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
+{`POST ${teacherPushUrl}
+Headers:
+  x-api-key: your-api-key
+  Content-Type: application/json
+
+Body:
+{ 
+  "action": "list_standards",
+  "grade_band": "6-8",
+  "subject": "Math"
 }
 
 Response:
 {
-  "success": true,
-  "assignment_id": "uuid",
-  "status": "active",
-  "attempts": [
+  "standards": [
+    { "id": "uuid", "code": "6.EE.A.1", "standard_text": "..." }
+  ]
+}`}
+                </pre>
+              </div>
+
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: Get Student Progress</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
+{`POST ${teacherPushUrl}
+Headers:
+  x-api-key: your-api-key
+  Content-Type: application/json
+
+Body:
+{ 
+  "action": "get_student_progress",
+  "class_id": "your-class-uuid"
+}
+
+Response:
+{
+  "students": [
     {
       "student_id": "uuid",
-      "status": "verified",
-      "score": 85,
-      "submitted_at": "2026-01-10T14:30:00Z"
+      "name": "John Doe",
+      "xp": 1250,
+      "coins": 340,
+      "streak": 5,
+      "assignments_completed": 12,
+      "average_score": 85,
+      "standards_mastered": 8
     }
   ]
 }`}
