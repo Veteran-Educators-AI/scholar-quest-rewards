@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import TeacherVerify from "./pages/TeacherVerify";
 import ParentDashboard from "./pages/ParentDashboard";
 import Leaderboard from "./pages/Leaderboard";
@@ -25,32 +26,34 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/student" element={<StudentHome />} />
-            <Route path="/student/profile" element={<StudentProfile />} />
-            <Route path="/student/rewards" element={<Rewards />} />
-            <Route path="/student/leaderboard" element={<Leaderboard />} />
-            <Route path="/student/challenges" element={<Challenges />} />
-            <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
-            <Route path="/teacher" element={<TeacherDashboard />} />
-            <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
-            <Route path="/teacher/verify" element={<TeacherVerify />} />
-            <Route path="/teacher/api" element={<APISettings />} />
-            <Route path="/parent" element={<ParentDashboard />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </LanguageProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/student" element={<StudentHome />} />
+              <Route path="/student/profile" element={<StudentProfile />} />
+              <Route path="/student/rewards" element={<Rewards />} />
+              <Route path="/student/leaderboard" element={<Leaderboard />} />
+              <Route path="/student/challenges" element={<Challenges />} />
+              <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
+              <Route path="/teacher" element={<TeacherDashboard />} />
+              <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
+              <Route path="/teacher/verify" element={<TeacherVerify />} />
+              <Route path="/teacher/api" element={<APISettings />} />
+              <Route path="/parent" element={<ParentDashboard />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
