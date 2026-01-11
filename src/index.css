@@ -4,138 +4,138 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scholar Quest Design System - High School Edition */
+/* Scholar Quest Design System - NYCologic AI Theme */
 
 @layer base {
   :root {
-    /* Modern, sophisticated palette for high schoolers */
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    /* Warm, sophisticated palette inspired by NYCologic AI logo */
+    --background: 30 30% 97%;
+    --foreground: 20 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 20 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 20 20% 15%;
 
-    /* Primary - Deep Indigo */
-    --primary: 243 75% 59%;
+    /* Primary - Terracotta/Coral (from logo) */
+    --primary: 14 68% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Slate */
-    --secondary: 215 25% 27%;
+    /* Secondary - Warm Slate */
+    --secondary: 20 15% 30%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted - Cool gray */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* Muted - Warm gray */
+    --muted: 30 15% 94%;
+    --muted-foreground: 20 10% 45%;
 
-    /* Accent - Electric Blue */
-    --accent: 217 91% 60%;
+    /* Accent - Dusty Rose/Pink (from "AI" text) */
+    --accent: 350 45% 65%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success - Emerald */
-    --success: 160 84% 39%;
+    /* Success - Sage Green */
+    --success: 145 45% 42%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning - Amber */
-    --warning: 38 92% 50%;
+    /* Warning - Warm Amber */
+    --warning: 35 90% 52%;
     --warning-foreground: 0 0% 15%;
 
-    /* Destructive - Rose */
-    --destructive: 0 72% 51%;
+    /* Destructive - Deep Rose */
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
     /* XP/Coins - Warm Gold */
-    --gold: 45 93% 47%;
+    --gold: 42 85% 50%;
     --gold-foreground: 0 0% 15%;
 
     /* Streak - Coral/Orange */
-    --streak: 24 95% 53%;
+    --streak: 18 80% 55%;
     --streak-foreground: 0 0% 100%;
 
-    /* Rarity colors - More sophisticated */
-    --rarity-common: 220 9% 46%;
-    --rarity-rare: 217 91% 60%;
-    --rarity-epic: 280 87% 65%;
-    --rarity-legendary: 45 93% 47%;
+    /* Rarity colors - Warm tones */
+    --rarity-common: 20 10% 50%;
+    --rarity-rare: 200 60% 55%;
+    --rarity-epic: 280 60% 60%;
+    --rarity-legendary: 42 85% 50%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 14 68% 58%;
 
     --radius: 0.75rem;
 
     /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 243 75% 59%;
+    --sidebar-background: 20 20% 12%;
+    --sidebar-foreground: 30 20% 96%;
+    --sidebar-primary: 14 68% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 243 75% 59%;
+    --sidebar-accent: 20 15% 20%;
+    --sidebar-accent-foreground: 30 20% 96%;
+    --sidebar-border: 20 15% 20%;
+    --sidebar-ring: 14 68% 58%;
 
-    /* Gradients - Refined */
-    --gradient-primary: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(280 87% 65%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(215 25% 27%) 0%, hsl(222 47% 11%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(172 66% 50%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(38 92% 50%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(280 87% 65%) 50%, hsl(217 91% 60%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%);
-    --gradient-streak: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(45 93% 47%) 100%);
-    --gradient-dark: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(215 25% 17%) 100%);
+    /* Gradients - Warm, cohesive */
+    --gradient-primary: linear-gradient(135deg, hsl(14 68% 58%) 0%, hsl(350 45% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(20 15% 30%) 0%, hsl(20 20% 15%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(145 45% 42%) 0%, hsl(160 50% 48%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(42 85% 50%) 0%, hsl(35 90% 52%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(14 68% 58%) 0%, hsl(350 45% 65%) 50%, hsl(18 80% 55%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 30% 97%) 100%);
+    --gradient-streak: linear-gradient(135deg, hsl(18 80% 55%) 0%, hsl(42 85% 50%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(20 20% 12%) 0%, hsl(20 15% 18%) 100%);
 
-    /* Shadows - Subtle, professional */
+    /* Shadows - Warm undertones */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
-    --shadow-glow-primary: 0 4px 24px -4px hsl(243 75% 59% / 0.35);
-    --shadow-glow-secondary: 0 4px 24px -4px hsl(215 25% 27% / 0.35);
-    --shadow-glow-success: 0 4px 24px -4px hsl(160 84% 39% / 0.35);
-    --shadow-glow-gold: 0 4px 24px -4px hsl(45 93% 47% / 0.4);
+    --shadow-glow-primary: 0 4px 24px -4px hsl(14 68% 58% / 0.35);
+    --shadow-glow-secondary: 0 4px 24px -4px hsl(20 15% 30% / 0.35);
+    --shadow-glow-success: 0 4px 24px -4px hsl(145 45% 42% / 0.35);
+    --shadow-glow-gold: 0 4px 24px -4px hsl(42 85% 50% / 0.4);
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    --background: 20 20% 8%;
+    --foreground: 30 20% 96%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 20 18% 12%;
+    --card-foreground: 30 20% 96%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 20 18% 12%;
+    --popover-foreground: 30 20% 96%;
 
-    --primary: 243 75% 65%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 14 65% 62%;
+    --primary-foreground: 20 20% 8%;
 
-    --secondary: 215 20% 65%;
-    --secondary-foreground: 222 47% 6%;
+    --secondary: 30 15% 65%;
+    --secondary-foreground: 20 20% 8%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 20 15% 18%;
+    --muted-foreground: 30 15% 60%;
 
-    --accent: 217 91% 65%;
-    --accent-foreground: 222 47% 6%;
+    --accent: 350 40% 68%;
+    --accent-foreground: 20 20% 8%;
 
-    --success: 160 84% 45%;
-    --success-foreground: 222 47% 6%;
+    --success: 145 45% 48%;
+    --success-foreground: 20 20% 8%;
 
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 55% 48%;
+    --destructive-foreground: 30 20% 96%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 243 75% 65%;
+    --border: 20 15% 20%;
+    --input: 20 15% 20%;
+    --ring: 14 65% 62%;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 243 75% 65%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 243 75% 65%;
+    --sidebar-background: 20 20% 6%;
+    --sidebar-foreground: 30 20% 96%;
+    --sidebar-primary: 14 65% 62%;
+    --sidebar-primary-foreground: 20 20% 8%;
+    --sidebar-accent: 20 15% 18%;
+    --sidebar-accent-foreground: 30 20% 96%;
+    --sidebar-border: 20 15% 18%;
+    --sidebar-ring: 14 65% 62%;
   }
 }
 
