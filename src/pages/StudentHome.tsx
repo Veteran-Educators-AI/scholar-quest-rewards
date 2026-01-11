@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
@@ -49,6 +50,7 @@ interface Badge {
 }
 
 export default function StudentHome() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { startTimerForAssignment, getTimeForAssignment } = useStudyTimer();
@@ -58,7 +60,6 @@ export default function StudentHome() {
   const [loading, setLoading] = useState(true);
   const [showTour, setShowTour] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
-
   // Fetch real user data
   useEffect(() => {
     const fetchUserData = async () => {
@@ -76,12 +77,18 @@ export default function StudentHome() {
           .eq("id", user.id)
           .single();
 
-        // Fetch student profile with XP, coins, streak
+        // Fetch student profile with XP, coins, streak, and onboarding status
         const { data: studentProfile } = await supabase
           .from("student_profiles")
-          .select("xp, coins, current_streak, streak_shield_available")
+          .select("xp, coins, current_streak, streak_shield_available, grade_level")
           .eq("user_id", user.id)
           .single();
+
+        // Check if student needs onboarding (grade_level not set)
+        if (studentProfile && studentProfile.grade_level === null) {
+          navigate("/student/onboarding");
+          return;
+        }
 
         // Calculate level from XP (every 500 XP = 1 level)
         const xp = studentProfile?.xp || 0;
