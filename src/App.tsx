@@ -3,6 +3,8 @@ import TeacherVerify from "./pages/TeacherVerify";
 import ParentDashboard from "./pages/ParentDashboard";
 import Leaderboard from "./pages/Leaderboard";
 import Challenges from "./pages/Challenges";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -42,6 +44,8 @@ const App = () => (
             <Route path="/teacher/verify" element={<TeacherVerify />} />
             <Route path="/teacher/api" element={<APISettings />} />
             <Route path="/parent" element={<ParentDashboard />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
