@@ -11,6 +11,8 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TranslatedText } from "@/components/TranslatedText";
 import { StudentRewardPledges } from "@/components/StudentRewardPledges";
+import { GuidedTour } from "@/components/GuidedTour";
+import { ClassSchedule } from "@/components/ClassSchedule";
 import { Button } from "@/components/ui/button";
 import { Trophy, Gift, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +71,41 @@ export default function StudentHome() {
   const { t, language } = useLanguage();
   const [student] = useState(demoStudent);
   const [missions] = useState(demoMissions);
+  const [showTour, setShowTour] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+  // Check if this is first visit and show guided tour
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem("scholar_tour_completed");
+    if (!hasSeenTour) {
+      setIsFirstVisit(true);
+      setShowTour(true);
+    }
+  }, []);
+
+  // Show welcome notification for new assignment
+  useEffect(() => {
+    // Simulate receiving a new assignment notification
+    const hasShownAssignmentNotif = sessionStorage.getItem("shown_assignment_notif");
+    if (!hasShownAssignmentNotif) {
+      setTimeout(() => {
+        toast({
+          title: "📚 New Assignment!",
+          description: "Your teacher just assigned 'Math Magic: Multiplication'. Due in 2 hours!",
+        });
+        sessionStorage.setItem("shown_assignment_notif", "true");
+      }, 2000);
+    }
+  }, [toast]);
+
+  const handleTourComplete = () => {
+    setShowTour(false);
+    localStorage.setItem("scholar_tour_completed", "true");
+    toast({
+      title: "🎉 You're all set!",
+      description: "Start completing missions to earn XP and coins!",
+    });
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -86,7 +123,11 @@ export default function StudentHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <>
+      {/* Guided Tour for first-time students */}
+      <GuidedTour isOpen={showTour} onComplete={handleTourComplete} />
+      
+      <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
@@ -177,6 +218,15 @@ export default function StudentHome() {
           </div>
         </motion.section>
 
+        {/* Class Schedule */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          <ClassSchedule />
+        </motion.section>
+
         {/* Student Reward Pledges */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -254,7 +304,8 @@ export default function StudentHome() {
           </div>
         </div>
       </nav>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart } from "lucide-react";
 
 type AuthMode = "login" | "signup";
-type UserRole = "student" | "teacher" | "parent";
+type UserRole = "student" | "parent";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -19,7 +19,6 @@ export default function Auth() {
   
   const [mode, setMode] = useState<AuthMode>("login");
   const [role, setRole] = useState<UserRole>(
-    searchParams.get("role") === "teacher" ? "teacher" : 
     searchParams.get("role") === "parent" ? "parent" : "student"
   );
   const [loading, setLoading] = useState(false);
@@ -65,7 +64,7 @@ export default function Auth() {
               ? "Your account has been created. Let's connect with your child!"
               : "Your account has been created. Let's start learning!",
           });
-          navigate(role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student");
+          navigate(role === "parent" ? "/parent" : "/student");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -127,10 +126,6 @@ export default function Auth() {
       login: "Welcome back, scholar! Ready for more adventures?",
       signup: "Hi there! Let's set up your account and start earning rewards!",
     },
-    teacher: {
-      login: "Welcome back! Your students are waiting.",
-      signup: "Great to have you! Let's get your classroom set up.",
-    },
     parent: {
       login: "Welcome back! Let's see how your child is doing.",
       signup: "Hi there! Let's connect you with your child's progress.",
@@ -178,7 +173,7 @@ export default function Auth() {
           </div>
 
           {/* Role selector */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-6">
             <Button
               variant={role === "student" ? "default" : "outline"}
               className="flex-1"
@@ -187,15 +182,6 @@ export default function Auth() {
             >
               <GraduationCap className="w-4 h-4 mr-1" />
               Student
-            </Button>
-            <Button
-              variant={role === "teacher" ? "default" : "outline"}
-              className="flex-1"
-              onClick={() => setRole("teacher")}
-              size="sm"
-            >
-              <Users className="w-4 h-4 mr-1" />
-              Teacher
             </Button>
             <Button
               variant={role === "parent" ? "default" : "outline"}
