@@ -152,11 +152,29 @@ export default function Landing() {
               className="flex flex-col items-center"
             >
               <ScholarBuddy size="xl" />
-              <div className="text-center mt-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-none">
-                  NYClogic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
+              
+              {/* Hero Logo and App Name */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="flex flex-col items-center mt-6"
+              >
+                <img 
+                  src={nycologicLogo} 
+                  alt="NYClogic Scholar Ai" 
+                  className="w-20 h-20 object-contain mb-3"
+                />
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-none text-center">
+                  NYClogic
                 </h2>
-              </div>
+                <span 
+                  className="text-4xl md:text-5xl font-black text-destructive leading-tight tracking-tight" 
+                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
+                >
+                  SCHOLAR Ai<sup className="text-lg">™</sup>
+                </span>
+              </motion.div>
               
               {/* Feature cards */}
               <div className="grid grid-cols-2 gap-4 mt-8 w-full max-w-md">
