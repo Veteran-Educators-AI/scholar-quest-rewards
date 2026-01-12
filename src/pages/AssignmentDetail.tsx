@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { Confetti } from "@/components/Confetti";
 import { ArrowLeft, FileText, Smartphone, Clock, Star, Upload, Camera } from "lucide-react";
+import { useSyncToNYCologic } from "@/hooks/useSyncToNYCologic";
+import { supabase } from "@/integrations/supabase/client";
 
 // Demo data
 const demoAssignment = {
@@ -36,6 +38,7 @@ export default function AssignmentDetail() {
   const navigate = useNavigate();
   const [assignment] = useState(demoAssignment);
   const [mode, setMode] = useState<Mode>("select");
+  const { syncAssignmentCompleted } = useSyncToNYCologic();
   
   // Quiz state
   const [quizState, setQuizState] = useState<QuizState>("intro");
@@ -44,6 +47,34 @@ export default function AssignmentDetail() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [hasSynced, setHasSynced] = useState(false);
+
+  // Auto-sync when quiz is completed
+  useEffect(() => {
+    const syncCompletion = async () => {
+      if (quizState === "complete" && !hasSynced) {
+        setHasSynced(true);
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await syncAssignmentCompleted({
+            studentId: user.id,
+            assignmentId: id || "demo-assignment",
+            score: score,
+            totalQuestions: demoQuestions.length,
+            xpEarned: assignment.xpReward,
+            coinsEarned: assignment.coinReward,
+            completedAt: new Date().toISOString(),
+          });
+          console.log("✅ Assignment completion synced to NYCologic AI");
+        }
+      }
+    };
+    
+    syncCompletion();
+  }, [quizState, hasSynced, score, id, assignment, syncAssignmentCompleted]);
 
   const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
