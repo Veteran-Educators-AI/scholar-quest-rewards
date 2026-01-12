@@ -193,7 +193,7 @@ export default function Auth() {
               <h1 className="text-xl font-bold text-foreground tracking-wide leading-none">
                 NYCologic
               </h1>
-              <span className="text-3xl font-black text-success leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
+              <span className="text-3xl font-black text-destructive leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
                 SCHOLAR
               </span>
             </div>
@@ -205,7 +205,7 @@ export default function Auth() {
           {/* Role selector */}
           <div className="grid grid-cols-2 gap-2 mb-6">
             <Button
-              variant={role === "student" ? "default" : "outline"}
+              variant={role === "student" ? "destructive" : "outline"}
               className="flex-1"
               onClick={() => setRole("student")}
               size="sm"
@@ -214,7 +214,7 @@ export default function Auth() {
               Student
             </Button>
             <Button
-              variant={role === "parent" ? "default" : "outline"}
+              variant={role === "parent" ? "destructive" : "outline"}
               className="flex-1"
               onClick={() => setRole("parent")}
               size="sm"
@@ -279,7 +279,7 @@ export default function Auth() {
 
             <Button
               type="submit"
-              variant="hero"
+              variant="destructive"
               className="w-full"
               size="lg"
               disabled={loading}
@@ -324,7 +324,7 @@ export default function Auth() {
             <Button
               variant="link"
               onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="text-primary font-semibold"
+              className="text-destructive font-semibold"
             >
               {mode === "login" ? "Sign up" : "Log in"}
             </Button>
