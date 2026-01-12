@@ -2,20 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { XPBar } from "@/components/XPBar";
 import { CoinCounter } from "@/components/CoinCounter";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { StudentRewardPledges } from "@/components/StudentRewardPledges";
 import { GuidedTour } from "@/components/GuidedTour";
 import { ClassSchedule } from "@/components/ClassSchedule";
+import { StandardsMasteryWidget } from "@/components/StandardsMasteryWidget";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
 import { 
   Trophy, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, 
   Home, Award, Zap, BarChart3, Timer, Loader2, Flame, Shield, 
-  Calendar, GraduationCap, Ticket
+  GraduationCap, Ticket
 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
@@ -463,11 +463,20 @@ export default function StudentHome() {
             </div>
           </motion.section>
 
-          {/* Schedule Section */}
+          {/* Standards Mastery Widget */}
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
+          >
+            <StandardsMasteryWidget />
+          </motion.section>
+
+          {/* Schedule Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
           >
             <ClassSchedule />
           </motion.section>
