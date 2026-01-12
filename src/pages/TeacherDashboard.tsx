@@ -135,6 +135,12 @@ export default function TeacherDashboard() {
                   Dashboard
                 </Button>
               </Link>
+              <Link to="/teacher/students">
+                <Button variant="ghost" size="sm">
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Students
+                </Button>
+              </Link>
               <Link to="/teacher/verify">
                 <Button variant="ghost" size="sm">
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
