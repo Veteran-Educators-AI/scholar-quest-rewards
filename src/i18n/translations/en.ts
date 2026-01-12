@@ -34,7 +34,7 @@ export const en = {
 
   // Student Home
   studentHome: {
-    title: 'NYCologic Scholar',
+    title: 'NYClogic Scholar Ai',
     levelScholar: 'Level {level} Scholar',
     todaysMissions: "Today's Missions",
     yourBadges: 'Your Badges',

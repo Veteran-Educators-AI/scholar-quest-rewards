@@ -32,7 +32,7 @@ export const ht: TranslationKeys = {
   },
 
   studentHome: {
-    title: 'NYCologic Scholar',
+    title: 'NYClogic Scholar Ai',
     levelScholar: 'Nivo {level} Elèv',
     todaysMissions: 'Misyon Jodi a',
     yourBadges: 'Badj Ou yo',

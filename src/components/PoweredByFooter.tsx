@@ -17,10 +17,10 @@ export function PoweredByFooter({ className = "" }: PoweredByFooterProps) {
         >
           <img 
             src={nycologicLogo} 
-            alt="NYCologic AI" 
+            alt="NYClogic Ai" 
             className="w-5 h-5 object-contain"
           />
-          <span className="text-xs font-semibold text-foreground">NYCologic Ai™</span>
+          <span className="text-xs font-semibold text-foreground">NYClogic Ai™</span>
         </a>
       </div>
     </footer>

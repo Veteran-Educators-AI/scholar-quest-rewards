@@ -48,17 +48,17 @@ export default function Landing() {
               rel="noopener noreferrer"
               className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
             >
-              ← NYCologic AI
+              ← NYClogic Ai
             </a>
             <div className="flex items-center gap-2">
               <img 
                 src={nycologicLogo} 
-                alt="NYCologic Scholar" 
+                alt="NYClogic Scholar Ai" 
                 className="w-8 h-8 object-contain"
               />
               <div className="flex items-baseline gap-1">
-                <span className="font-semibold text-foreground">NYCologic</span>
-                <span className="text-lg font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR</span>
+                <span className="font-semibold text-foreground">NYClogic</span>
+                <span className="text-lg font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR Ai</span>
               </div>
             </div>
           </div>
@@ -101,12 +101,12 @@ export default function Landing() {
                 <div className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 shadow-md">
                   <img 
                     src={nycologicLogo} 
-                    alt="NYCologic Ai" 
+                    alt="NYClogic Ai" 
                     className="w-12 h-12 object-contain"
                   />
                   <div className="text-left">
                     <span className="text-xs text-muted-foreground">Powered by</span>
-                    <p className="font-bold text-foreground">NYCologic Ai™</p>
+                    <p className="font-bold text-foreground">NYClogic Ai™</p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
@@ -154,7 +154,7 @@ export default function Landing() {
               <ScholarBuddy size="xl" />
               <div className="text-center mt-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-none">
-                  NYCologic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
+                  NYClogic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
                 </h2>
               </div>
               
@@ -445,8 +445,8 @@ export default function Landing() {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto flex flex-col items-center gap-4">
           <div className="text-center">
-            <span className="text-sm text-muted-foreground">© 2026 NYCologic </span>
-            <span className="text-sm font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR</span>
+            <span className="text-sm text-muted-foreground">© 2026 NYClogic </span>
+            <span className="text-sm font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR Ai</span>
           </div>
           <PoweredByFooter />
         </div>
