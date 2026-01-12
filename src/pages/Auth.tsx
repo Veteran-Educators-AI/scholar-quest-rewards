@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart } from "lucide-react";
@@ -352,6 +353,9 @@ export default function Auth() {
               This application is designed for educational purposes. Student data is protected in accordance with FERPA and COPPA regulations.
             </p>
           </div>
+
+          {/* Powered by footer */}
+          <PoweredByFooter className="mt-4 border-t border-border pt-4" />
         </div>
       </motion.div>
     </div>
