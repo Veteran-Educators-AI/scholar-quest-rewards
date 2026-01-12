@@ -11,7 +11,10 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  Ticket
+  Ticket,
+  Key,
+  Link as LinkIcon,
+  LayoutDashboard
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -90,7 +93,7 @@ export default function TeacherDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
@@ -104,20 +107,64 @@ export default function TeacherDashboard() {
                   <p className="text-sm font-semibold text-foreground leading-tight">NYCologic Ai™</p>
                 </div>
               </div>
-              <div>
+              <div className="hidden md:block">
                 <h1 className="font-bold text-foreground text-xl">NYCologic Scholar</h1>
                 <p className="text-sm text-muted-foreground">Teacher Dashboard</p>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon-sm">
-                <Settings className="w-5 h-5 text-muted-foreground" />
-              </Button>
               <Button variant="ghost" size="icon-sm" onClick={handleLogout}>
                 <LogOut className="w-5 h-5 text-muted-foreground" />
               </Button>
             </div>
+          </div>
+        </div>
+        
+        {/* Navigation Bar */}
+        <div className="border-t border-border bg-muted/30">
+          <div className="container mx-auto px-4">
+            <nav className="flex items-center gap-1 overflow-x-auto py-2">
+              <Link to="/teacher">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-primary font-medium"
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-1.5" />
+                  Dashboard
+                </Button>
+              </Link>
+              <Link to="/teacher/verify">
+                <Button variant="ghost" size="sm">
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  Verify
+                  {demoStats.pendingVerifications > 0 && (
+                    <span className="ml-1.5 bg-warning text-warning-foreground text-xs px-1.5 py-0.5 rounded-full">
+                      {demoStats.pendingVerifications}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+              <Link to="/teacher/raffle">
+                <Button variant="ghost" size="sm">
+                  <Ticket className="w-4 h-4 mr-1.5" />
+                  Raffle
+                </Button>
+              </Link>
+              <Link to="/teacher/integrations">
+                <Button variant="ghost" size="sm">
+                  <LinkIcon className="w-4 h-4 mr-1.5" />
+                  Integrations
+                </Button>
+              </Link>
+              <Link to="/teacher/api">
+                <Button variant="ghost" size="sm">
+                  <Key className="w-4 h-4 mr-1.5" />
+                  API Settings
+                </Button>
+              </Link>
+            </nav>
           </div>
         </div>
       </header>
