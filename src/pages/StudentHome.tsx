@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
 import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3, Timer, Loader2 } from "lucide-react";
+import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage, interpolate } from "@/i18n/LanguageContext";
@@ -505,6 +506,9 @@ export default function StudentHome() {
           </div>
         </div>
       </nav>
+
+      {/* Powered by Footer */}
+      <PoweredByFooter className="pb-24" />
       </div>
     </>
   );
