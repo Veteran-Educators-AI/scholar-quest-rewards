@@ -18,7 +18,7 @@ import {
   GraduationCap, Ticket
 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
-import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+import highschoolLogo from "@/assets/highschool-logo-new.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -228,9 +228,9 @@ export default function StudentHome() {
               <Link to="/student/profile" className="flex items-center gap-3 group">
                 <div className="relative">
                   <img 
-                    src={nycologicLogo} 
-                    alt="NYCologic Scholar" 
-                    className="w-9 h-9 object-contain"
+                    src={highschoolLogo} 
+                    alt="Scholar" 
+                    className="w-10 h-10 object-contain"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border-2 border-card">
                     {displayStudent.level}
