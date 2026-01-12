@@ -9,10 +9,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart, Shield } from "lucide-react";
 
 type AuthMode = "login" | "signup";
-type UserRole = "student" | "parent";
+type UserRole = "student" | "parent" | "teacher";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -87,11 +87,13 @@ export default function Auth() {
 
           toast({
             title: "Welcome to NYCologic Scholar! 🎉",
-            description: role === "parent" 
-              ? "Your account has been created. Let's connect with your child!"
-              : "Your account has been created. Let's start learning!",
+            description: role === "teacher" 
+              ? "Your teacher account has been created!"
+              : role === "parent" 
+                ? "Your account has been created. Let's connect with your child!"
+                : "Your account has been created. Let's start learning!",
           });
-          navigate(role === "parent" ? "/parent" : "/student");
+          navigate(role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -157,6 +159,10 @@ export default function Auth() {
       login: "Welcome back! Let's see how your child is doing.",
       signup: "Hi there! Let's connect you with your child's progress.",
     },
+    teacher: {
+      login: "Welcome back, educator! Let's check on your class.",
+      signup: "Hi there! Let's set up your teacher account.",
+    },
   };
 
   return (
@@ -204,7 +210,7 @@ export default function Auth() {
           </div>
 
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             <Button
               variant={role === "student" ? "destructive" : "outline"}
               className="flex-1"
@@ -222,6 +228,15 @@ export default function Auth() {
             >
               <Heart className="w-4 h-4 mr-1" />
               Parent
+            </Button>
+            <Button
+              variant={role === "teacher" ? "destructive" : "outline"}
+              className="flex-1"
+              onClick={() => setRole("teacher")}
+              size="sm"
+            >
+              <Shield className="w-4 h-4 mr-1" />
+              Teacher
             </Button>
           </div>
 
