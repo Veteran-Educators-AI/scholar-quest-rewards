@@ -84,44 +84,61 @@ export default function Landing() {
         </div>
 
         <div className="container mx-auto relative z-10">
+          {/* Hero: Mascot and App Name First */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center mb-12"
+          >
+            <ScholarBuddy size="xl" />
+            
+            {/* App Name */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-col items-center mt-6"
+            >
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-none text-center">
+                NYClogic
+              </h1>
+              <span 
+                className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight" 
+                style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
+              >
+                SCHOLAR Ai<sup className="text-lg">™</sup>
+              </span>
+            </motion.div>
+          </motion.div>
+
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Text content */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               className="text-center lg:text-left"
             >
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.4 }}
                 className="flex flex-col items-center lg:items-start gap-4 mb-6"
               >
-                <div className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 shadow-md">
-                  <img 
-                    src={nycologicLogo} 
-                    alt="NYClogic Ai" 
-                    className="w-12 h-12 object-contain"
-                  />
-                  <div className="text-left">
-                    <span className="text-xs text-muted-foreground">Powered by</span>
-                    <p className="font-bold text-foreground">NYClogic Ai™</p>
-                  </div>
-                </div>
                 <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
                   <Sparkles className="w-4 h-4" />
                   <span className="text-sm font-semibold">Learning made fun!</span>
                 </div>
               </motion.div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6 leading-tight">
                 <span className="text-gradient-hero">Master Your Standards.</span>
                 <br />
                 <span className="text-foreground">Track Your Progress.</span>
                 <br />
                 <span className="text-gradient-primary">Achieve Excellence.</span>
-              </h1>
+              </h2>
 
               <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
                 Your personalized learning companion for grades 6-12 and beyond. Complete assignments, 
@@ -144,40 +161,15 @@ export default function Landing() {
               </div>
             </motion.div>
 
-            {/* Right: Mascot and features */}
+            {/* Right: Feature cards */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
               className="flex flex-col items-center"
             >
-              <ScholarBuddy size="xl" />
-              
-              {/* Hero Logo and App Name */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="flex flex-col items-center mt-6"
-              >
-                <img 
-                  src={nycologicLogo} 
-                  alt="NYClogic Scholar Ai" 
-                  className="w-20 h-20 object-contain mb-3"
-                />
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-none text-center">
-                  NYClogic
-                </h2>
-                <span 
-                  className="text-4xl md:text-5xl font-black text-destructive leading-tight tracking-tight" 
-                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
-                >
-                  SCHOLAR Ai<sup className="text-lg">™</sup>
-                </span>
-              </motion.div>
-              
               {/* Feature cards */}
-              <div className="grid grid-cols-2 gap-4 mt-8 w-full max-w-md">
+              <div className="grid grid-cols-2 gap-4 w-full max-w-md">
                 <FeatureCard
                   icon={<Trophy className="w-6 h-6" />}
                   title="Achievements"
