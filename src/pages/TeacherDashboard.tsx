@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Users, 
   BookOpen, 
@@ -14,7 +17,9 @@ import {
   Ticket,
   Key,
   Link as LinkIcon,
-  LayoutDashboard
+  LayoutDashboard,
+  Copy,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,64 +27,352 @@ import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 import { PointDeductionDialog } from "@/components/PointDeductionDialog";
 import { StudentStatusRecorder } from "@/components/StudentStatusRecorder";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Demo data
-const demoTeacher = {
-  name: "Ms. Johnson",
-};
+interface ClassData {
+  id: string;
+  name: string;
+  class_code: string;
+  grade_band: string | null;
+  subject: string | null;
+  studentCount: number;
+  pendingVerifications: number;
+}
 
-const demoClasses = [
-  {
-    id: "1",
-    name: "Algebra II - Period 2",
-    code: "ALG2-P2",
-    gradeBand: "11-12",
-    studentCount: 28,
-    pendingVerifications: 3,
-  },
-  {
-    id: "2",
-    name: "Geometry - Period 4",
-    code: "GEO-P4",
-    gradeBand: "9-10",
-    studentCount: 26,
-    pendingVerifications: 1,
-  },
-  {
-    id: "3",
-    name: "AP Calculus AB",
-    code: "APCALC",
-    gradeBand: "11-12",
-    studentCount: 22,
-    pendingVerifications: 0,
-  },
+interface StudentData {
+  id: string;
+  full_name: string;
+  coins: number;
+}
+
+interface TeacherStats {
+  totalStudents: number;
+  activeAssignments: number;
+  completionRate: number;
+  pendingVerifications: number;
+}
+
+interface RecentActivity {
+  id: string;
+  student: string;
+  action: string;
+  assignment: string;
+  time: string;
+}
+
+const GRADE_BANDS = [
+  { value: "K-2", label: "Grades K-2" },
+  { value: "3-5", label: "Grades 3-5" },
+  { value: "6-8", label: "Grades 6-8" },
+  { value: "9-10", label: "Grades 9-10" },
+  { value: "11-12", label: "Grades 11-12" },
 ];
 
-const demoStats = {
-  totalStudents: 46,
-  activeAssignments: 5,
-  completionRate: 78,
-  pendingVerifications: 4,
-};
-
-// Demo students for point deduction
-const demoStudents = [
-  { id: "demo-1", full_name: "Alex Johnson", coins: 150 },
-  { id: "demo-2", full_name: "Jordan Smith", coins: 230 },
-  { id: "demo-3", full_name: "Taylor Brown", coins: 85 },
-  { id: "demo-4", full_name: "Morgan Davis", coins: 320 },
-  { id: "demo-5", full_name: "Casey Wilson", coins: 175 },
+const SUBJECTS = [
+  { value: "Math", label: "Math" },
+  { value: "ELA", label: "English Language Arts" },
+  { value: "Science", label: "Science" },
+  { value: "Social Studies", label: "Social Studies" },
+  { value: "Other", label: "Other" },
 ];
 
-const demoRecentActivity = [
-  { id: "1", student: "Alex", action: "completed", assignment: "Quadratic Equations (AI-A.REI.3)", time: "5 min ago" },
-  { id: "2", student: "Jordan", action: "submitted", assignment: "Hamlet Analysis (RL.9-10.2)", time: "12 min ago" },
-  { id: "3", student: "Taylor", action: "started", assignment: "Cell Division Lab (LE.1.1)", time: "25 min ago" },
-  { id: "4", student: "Morgan", action: "completed", assignment: "Triangle Proofs (GEO-G.SRT.4)", time: "45 min ago" },
-];
+function generateClassCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const [loading, setLoading] = useState(true);
+  const [teacherName, setTeacherName] = useState("");
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [stats, setStats] = useState<TeacherStats>({
+    totalStudents: 0,
+    activeAssignments: 0,
+    completionRate: 0,
+    pendingVerifications: 0,
+  });
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  
+  // Create class dialog
+  const [createClassOpen, setCreateClassOpen] = useState(false);
+  const [newClassName, setNewClassName] = useState("");
+  const [newClassSubject, setNewClassSubject] = useState("");
+  const [newClassGradeBand, setNewClassGradeBand] = useState("");
+  const [creatingClass, setCreatingClass] = useState(false);
+
+  useEffect(() => {
+    fetchTeacherData();
+  }, []);
+
+  const fetchTeacherData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      // Fetch teacher profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        setTeacherName(profile.full_name || "Teacher");
+        
+        // Verify teacher role
+        if (profile.role !== "teacher") {
+          toast({
+            title: "Access Denied",
+            description: "This area is for teachers only.",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+      }
+
+      // Fetch classes
+      const { data: classesData } = await supabase
+        .from("classes")
+        .select("id, name, class_code, grade_band, subject")
+        .eq("teacher_id", user.id);
+
+      if (classesData && classesData.length > 0) {
+        // For each class, get student count and pending verifications
+        const classIds = classesData.map(c => c.id);
+        
+        // Get enrollments count per class
+        const { data: enrollments } = await supabase
+          .from("enrollments")
+          .select("class_id, student_id")
+          .in("class_id", classIds);
+
+        // Get pending verifications
+        const { data: pendingAttempts } = await supabase
+          .from("attempts")
+          .select("id, assignment_id, assignments!inner(class_id)")
+          .eq("status", "submitted")
+          .in("assignments.class_id", classIds);
+
+        const classesWithCounts = classesData.map(cls => {
+          const studentCount = enrollments?.filter(e => e.class_id === cls.id).length || 0;
+          const pendingCount = pendingAttempts?.filter(
+            (a: any) => a.assignments?.class_id === cls.id
+          ).length || 0;
+
+          return {
+            ...cls,
+            studentCount,
+            pendingVerifications: pendingCount,
+          };
+        });
+
+        setClasses(classesWithCounts);
+
+        // Calculate stats
+        const totalStudents = enrollments?.length || 0;
+        const totalPending = pendingAttempts?.length || 0;
+
+        // Get active assignments
+        const { data: activeAssignments } = await supabase
+          .from("assignments")
+          .select("id")
+          .in("class_id", classIds)
+          .eq("status", "active");
+
+        // Get completion rate
+        const { data: allAttempts } = await supabase
+          .from("attempts")
+          .select("status, assignments!inner(class_id)")
+          .in("assignments.class_id", classIds);
+
+        const totalAttempts = allAttempts?.length || 0;
+        const completedAttempts = allAttempts?.filter(
+          a => a.status === "verified"
+        ).length || 0;
+        const completionRate = totalAttempts > 0 
+          ? Math.round((completedAttempts / totalAttempts) * 100) 
+          : 0;
+
+        setStats({
+          totalStudents,
+          activeAssignments: activeAssignments?.length || 0,
+          completionRate,
+          pendingVerifications: totalPending,
+        });
+
+        // Get students for point deduction
+        if (enrollments && enrollments.length > 0) {
+          const studentIds = [...new Set(enrollments.map(e => e.student_id))];
+          
+          const { data: studentProfiles } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", studentIds);
+
+          const { data: studentData } = await supabase
+            .from("student_profiles")
+            .select("user_id, coins")
+            .in("user_id", studentIds);
+
+          if (studentProfiles) {
+            const studentsWithCoins = studentProfiles.map(s => ({
+              id: s.id,
+              full_name: s.full_name,
+              coins: studentData?.find(sd => sd.user_id === s.id)?.coins || 0,
+            }));
+            setStudents(studentsWithCoins);
+          }
+        }
+
+        // Get recent activity
+        const { data: recentAttempts } = await supabase
+          .from("attempts")
+          .select(`
+            id,
+            status,
+            submitted_at,
+            student_id,
+            assignments!inner(title, class_id)
+          `)
+          .in("assignments.class_id", classIds)
+          .order("submitted_at", { ascending: false })
+          .limit(5);
+
+        if (recentAttempts && recentAttempts.length > 0) {
+          const studentIds = recentAttempts.map(a => a.student_id);
+          const { data: names } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", studentIds);
+
+          const activities = recentAttempts.map(attempt => {
+            const studentName = names?.find(n => n.id === attempt.student_id)?.full_name || "Student";
+            const firstName = studentName.split(" ")[0];
+            const action = attempt.status === "verified" ? "completed" : 
+                          attempt.status === "submitted" ? "submitted" : "started";
+            const time = attempt.submitted_at 
+              ? formatTimeAgo(new Date(attempt.submitted_at))
+              : "recently";
+
+            return {
+              id: attempt.id,
+              student: firstName,
+              action,
+              assignment: (attempt.assignments as any)?.title || "Assignment",
+              time,
+            };
+          });
+
+          setRecentActivity(activities);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching teacher data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
+
+  const handleCreateClass = async () => {
+    if (!newClassName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a class name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingClass(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const classCode = generateClassCode();
+
+      const { data, error } = await supabase
+        .from("classes")
+        .insert({
+          name: newClassName,
+          class_code: classCode,
+          teacher_id: user.id,
+          subject: newClassSubject || null,
+          grade_band: newClassGradeBand || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Class Created! 🎉",
+        description: `Your class code is ${classCode}. Share it with students!`,
+      });
+
+      setNewClassName("");
+      setNewClassSubject("");
+      setNewClassGradeBand("");
+      setCreateClassOpen(false);
+      
+      // Refresh data
+      fetchTeacherData();
+    } catch (error: any) {
+      toast({
+        title: "Error creating class",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingClass(false);
+    }
+  };
+
+  const copyClassCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Copied!",
+      description: "Class code copied to clipboard.",
+    });
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -87,7 +380,21 @@ export default function TeacherDashboard() {
       title: "Logged out",
       description: "See you next time!",
     });
+    navigate("/");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isNewTeacher = classes.length === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,9 +452,9 @@ export default function TeacherDashboard() {
                 <Button variant="ghost" size="sm">
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   Verify
-                  {demoStats.pendingVerifications > 0 && (
+                  {stats.pendingVerifications > 0 && (
                     <span className="ml-1.5 bg-warning text-warning-foreground text-xs px-1.5 py-0.5 rounded-full">
-                      {demoStats.pendingVerifications}
+                      {stats.pendingVerifications}
                     </span>
                   )}
                 </Button>
@@ -182,48 +489,144 @@ export default function TeacherDashboard() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h2 className="text-2xl font-extrabold text-foreground mb-2">
-            Welcome back, <span className="text-gradient-primary">{demoTeacher.name}</span>
+            Welcome{isNewTeacher ? "" : " back"}, <span className="text-gradient-primary">{teacherName}</span>
           </h2>
-          <p className="text-muted-foreground">Here's what's happening with your classes today.</p>
+          <p className="text-muted-foreground">
+            {isNewTeacher 
+              ? "Let's get started by creating your first class!"
+              : "Here's what's happening with your classes today."
+            }
+          </p>
         </motion.section>
 
-        {/* Stats Grid */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              icon={<Users className="w-6 h-6" />}
-              label="Students"
-              value={demoStats.totalStudents}
-              color="primary"
-            />
-            <StatCard
-              icon={<BookOpen className="w-6 h-6" />}
-              label="Active Assignments"
-              value={demoStats.activeAssignments}
-              color="secondary"
-            />
-            <StatCard
-              icon={<CheckCircle2 className="w-6 h-6" />}
-              label="Completion Rate"
-              value={`${demoStats.completionRate}%`}
-              color="success"
-            />
-            <StatCard
-              icon={<Clock className="w-6 h-6" />}
-              label="Pending Review"
-              value={demoStats.pendingVerifications}
-              color="warning"
-              highlight={demoStats.pendingVerifications > 0}
-            />
-          </div>
-        </motion.section>
+        {/* New Teacher Welcome */}
+        {isNewTeacher && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Create Your First Class</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Create a class to get a unique code that students can use to join. 
+                You can also pre-register students by email.
+              </p>
+              <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
+                <DialogTrigger asChild>
+                  <Button size="lg" variant="default">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Your First Class
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create a New Class</DialogTitle>
+                    <DialogDescription>
+                      Set up your class and get a unique code for students to join.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="className">Class Name *</Label>
+                      <Input
+                        id="className"
+                        placeholder="e.g., Algebra II - Period 2"
+                        value={newClassName}
+                        onChange={(e) => setNewClassName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">Subject</Label>
+                      <Select value={newClassSubject} onValueChange={setNewClassSubject}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUBJECTS.map(s => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gradeBand">Grade Level</Label>
+                      <Select value={newClassGradeBand} onValueChange={setNewClassGradeBand}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select grade level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADE_BANDS.map(g => (
+                            <SelectItem key={g.value} value={g.value}>
+                              {g.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleCreateClass}
+                      disabled={creatingClass}
+                    >
+                      {creatingClass ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-2" />
+                      )}
+                      Create Class
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Stats Grid - Only show if teacher has classes */}
+        {!isNewTeacher && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                icon={<Users className="w-6 h-6" />}
+                label="Students"
+                value={stats.totalStudents}
+                color="primary"
+              />
+              <StatCard
+                icon={<BookOpen className="w-6 h-6" />}
+                label="Active Assignments"
+                value={stats.activeAssignments}
+                color="secondary"
+              />
+              <StatCard
+                icon={<CheckCircle2 className="w-6 h-6" />}
+                label="Completion Rate"
+                value={`${stats.completionRate}%`}
+                color="success"
+              />
+              <StatCard
+                icon={<Clock className="w-6 h-6" />}
+                label="Pending Review"
+                value={stats.pendingVerifications}
+                color="warning"
+                highlight={stats.pendingVerifications > 0}
+              />
+            </div>
+          </motion.section>
+        )}
 
         {/* Pending Verifications Alert */}
-        {demoStats.pendingVerifications > 0 && (
+        {stats.pendingVerifications > 0 && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -234,7 +637,7 @@ export default function TeacherDashboard() {
                 <AlertCircle className="w-6 h-6 text-warning" />
                 <div>
                   <p className="font-bold text-foreground">
-                    {demoStats.pendingVerifications} paper submissions need review
+                    {stats.pendingVerifications} paper submissions need review
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Students are waiting for their rewards!
@@ -251,59 +654,142 @@ export default function TeacherDashboard() {
         )}
 
         {/* Classes */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">Your Classes</h3>
-            <div className="flex items-center gap-2">
-              <StudentStatusRecorder
-                students={demoStudents}
-                classId="demo-class-1"
-                onStatusRecorded={() => {
-                  toast({
-                    title: "Status Logged",
-                    description: "Student status has been recorded.",
-                  });
-                }}
-              />
-              <PointDeductionDialog 
-                students={demoStudents} 
-                classId="demo-class-1"
-                onDeductionComplete={() => {
-                  toast({
-                    title: "Points Updated",
-                    description: "Student points have been updated.",
-                  });
-                }}
-              />
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-1" />
-                Add Class
-              </Button>
+        {!isNewTeacher && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-foreground">Your Classes</h3>
+              <div className="flex items-center gap-2">
+                {students.length > 0 && (
+                  <>
+                    <StudentStatusRecorder
+                      students={students}
+                      classId={classes[0]?.id}
+                      onStatusRecorded={() => {
+                        toast({
+                          title: "Status Logged",
+                          description: "Student status has been recorded.",
+                        });
+                      }}
+                    />
+                    <PointDeductionDialog 
+                      students={students} 
+                      classId={classes[0]?.id}
+                      onDeductionComplete={() => {
+                        toast({
+                          title: "Points Updated",
+                          description: "Student points have been updated.",
+                        });
+                        fetchTeacherData();
+                      }}
+                    />
+                  </>
+                )}
+                <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Class
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create a New Class</DialogTitle>
+                      <DialogDescription>
+                        Set up your class and get a unique code for students to join.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="className2">Class Name *</Label>
+                        <Input
+                          id="className2"
+                          placeholder="e.g., Algebra II - Period 2"
+                          value={newClassName}
+                          onChange={(e) => setNewClassName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="subject2">Subject</Label>
+                        <Select value={newClassSubject} onValueChange={setNewClassSubject}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a subject" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SUBJECTS.map(s => (
+                              <SelectItem key={s.value} value={s.value}>
+                                {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="gradeBand2">Grade Level</Label>
+                        <Select value={newClassGradeBand} onValueChange={setNewClassGradeBand}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select grade level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GRADE_BANDS.map(g => (
+                              <SelectItem key={g.value} value={g.value}>
+                                {g.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleCreateClass}
+                        disabled={creatingClass}
+                      >
+                        {creatingClass ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4 mr-2" />
+                        )}
+                        Create Class
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {demoClasses.map((cls, index) => (
-              <motion.div
-                key={cls.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + index * 0.1 }}
-              >
-                <Link to={`/teacher/class/${cls.id}`}>
+            <div className="grid gap-4 md:grid-cols-2">
+              {classes.map((cls, index) => (
+                <motion.div
+                  key={cls.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                >
                   <div className="bg-card rounded-2xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
-                      <div>
+                      <div className="flex-1">
                         <h4 className="font-bold text-foreground text-lg">{cls.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-muted-foreground">Code: {cls.code}</p>
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            Grades {cls.gradeBand}
-                          </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => copyClassCode(cls.class_code)}
+                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            Code: <span className="font-mono font-bold">{cls.class_code}</span>
+                            <Copy className="w-3 h-3" />
+                          </button>
+                          {cls.grade_band && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              Grades {cls.grade_band}
+                            </span>
+                          )}
+                          {cls.subject && (
+                            <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
+                              {cls.subject}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -322,50 +808,52 @@ export default function TeacherDashboard() {
                       )}
                     </div>
                   </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Recent Activity */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h3 className="text-xl font-bold text-foreground mb-4">Recent Activity</h3>
-          
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            {demoRecentActivity.map((activity, index) => (
-              <div
-                key={activity.id}
-                className={`px-5 py-4 flex items-center justify-between ${
-                  index !== demoRecentActivity.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    activity.action === "completed" ? "bg-success/10" :
-                    activity.action === "submitted" ? "bg-warning/10" :
-                    "bg-primary/10"
-                  }`}>
-                    {activity.action === "completed" ? "✅" :
-                     activity.action === "submitted" ? "📝" : "▶️"}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      <span className="text-primary">{activity.student}</span>
-                      {" "}{activity.action}{" "}
-                      <span className="text-muted-foreground">{activity.assignment}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+        {recentActivity.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <h3 className="text-xl font-bold text-foreground mb-4">Recent Activity</h3>
+            
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              {recentActivity.map((activity, index) => (
+                <div
+                  key={activity.id}
+                  className={`px-5 py-4 flex items-center justify-between ${
+                    index !== recentActivity.length - 1 ? "border-b border-border" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      activity.action === "completed" ? "bg-success/10" :
+                      activity.action === "submitted" ? "bg-warning/10" :
+                      "bg-primary/10"
+                    }`}>
+                      {activity.action === "completed" ? "✅" :
+                       activity.action === "submitted" ? "📝" : "▶️"}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">
+                        <span className="text-primary">{activity.student}</span>
+                        {" "}{activity.action}{" "}
+                        <span className="text-muted-foreground">{activity.assignment}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </motion.section>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Integration Info */}
         <motion.section
