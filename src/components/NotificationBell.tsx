@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Trophy, Star, Flame, Check, Trash2, X, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bell, Trophy, Star, Flame, Check, Trash2, X, BookOpen, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -215,17 +216,25 @@ export function NotificationBell() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b border-border">
           <h3 className="font-bold text-foreground">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-7"
-              onClick={markAllAsRead}
-            >
-              <Check className="w-3 h-3 mr-1" />
-              Mark all read
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={markAllAsRead}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Mark all read
+              </Button>
+            )}
+            <Link to="/student/notifications" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="sm" className="text-xs h-7">
+                View all
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <ScrollArea className="max-h-[400px]">
