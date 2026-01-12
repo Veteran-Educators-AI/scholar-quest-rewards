@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { Confetti } from "@/components/Confetti";
-import { ArrowLeft, FileText, Smartphone, Clock, Star, Upload, Camera } from "lucide-react";
+import { ArrowLeft, FileText, Clock, Star, Upload, Camera, HelpCircle, Loader2 } from "lucide-react";
 import { useSyncToNYCologic } from "@/hooks/useSyncToNYCologic";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,11 +31,14 @@ const demoQuestions = [
 ];
 
 type Mode = "select" | "paper" | "in_app";
-type QuizState = "intro" | "question" | "feedback" | "complete";
+type QuizState = "intro" | "question" | "feedback" | "submitting" | "complete";
 
 export default function AssignmentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isRetry = searchParams.get("retry") === "true";
+  
   const [assignment] = useState(demoAssignment);
   const [mode, setMode] = useState<Mode>("select");
   const { syncAssignmentCompleted } = useSyncToNYCologic();
@@ -47,40 +50,23 @@ export default function AssignmentDetail() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [hasSynced, setHasSynced] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
 
-  // Auto-sync when quiz is completed
-  useEffect(() => {
-    const syncCompletion = async () => {
-      if (quizState === "complete" && !hasSynced) {
-        setHasSynced(true);
-        
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          await syncAssignmentCompleted({
-            studentId: user.id,
-            assignmentId: id || "demo-assignment",
-            score: score,
-            totalQuestions: demoQuestions.length,
-            xpEarned: assignment.xpReward,
-            coinsEarned: assignment.coinReward,
-            completedAt: new Date().toISOString(),
-          });
-          console.log("✅ Assignment completion synced to NYCologic AI");
-        }
-      }
-    };
-    
-    syncCompletion();
-  }, [quizState, hasSynced, score, id, assignment, syncAssignmentCompleted]);
+  // Paper mode state
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
     const correct = answer === demoQuestions[currentQuestion].answer;
     setIsCorrect(correct);
     if (correct) setScore((s) => s + 1);
+    
+    setUserAnswers((prev) => ({
+      ...prev,
+      [demoQuestions[currentQuestion].id]: answer,
+    }));
+    
     setQuizState("feedback");
   };
 
@@ -91,9 +77,29 @@ export default function AssignmentDetail() {
       setIsCorrect(null);
       setQuizState("question");
     } else {
-      setShowConfetti(true);
-      setQuizState("complete");
+      // Submit to AI grader
+      setQuizState("submitting");
+      submitToAIGrader();
     }
+  };
+
+  const submitToAIGrader = async () => {
+    // Simulate AI grading delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    // Navigate to grading result page
+    navigate(`/student/grading?assignment=${id}&score=${score}&total=${demoQuestions.length}`);
+  };
+
+  const handlePaperSubmit = async () => {
+    if (!uploadedFile) return;
+    
+    setIsUploading(true);
+    // Simulate upload and AI grading
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    // Navigate to grading result
+    navigate(`/student/grading?assignment=${id}&mode=paper`);
   };
 
   const formatTimeLeft = () => {
@@ -119,35 +125,47 @@ export default function AssignmentDetail() {
                 onClick={() => {
                   if (quizState === "intro") {
                     setMode("select");
-                  } else {
-                    // Confirm before leaving
+                  } else if (quizState !== "submitting") {
                     if (confirm("Are you sure? Your progress will be lost.")) {
                       setMode("select");
                       setQuizState("intro");
                       setCurrentQuestion(0);
                       setScore(0);
+                      setUserAnswers({});
                     }
                   }
                 }}
+                disabled={quizState === "submitting"}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               
-              {quizState === "question" || quizState === "feedback" ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {currentQuestion + 1} / {demoQuestions.length}
-                  </span>
-                  <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-primary"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${((currentQuestion + 1) / demoQuestions.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {(quizState === "question" || quizState === "feedback") && (
+                  <>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {currentQuestion + 1} / {demoQuestions.length}
+                    </span>
+                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${((currentQuestion + 1) / demoQuestions.length) * 100}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/student/support?assignment=${id}`)}
+                disabled={quizState === "submitting"}
+              >
+                <HelpCircle className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </header>
@@ -159,7 +177,7 @@ export default function AssignmentDetail() {
               animate={{ opacity: 1, y: 0 }}
               className="max-w-md mx-auto text-center"
             >
-              <ScholarBuddy size="lg" message="Ready to show what you know? Let's do this!" />
+              <ScholarBuddy size="lg" message={isRetry ? "Let's try again! You've got this!" : "Ready to show what you know? Let's do this!"} />
               
               <h1 className="text-2xl font-extrabold mt-6 mb-2">{assignment.title}</h1>
               <p className="text-muted-foreground mb-6">{demoQuestions.length} questions • ~{assignment.estimatedTime} min</p>
@@ -178,7 +196,7 @@ export default function AssignmentDetail() {
               </div>
 
               <Button variant="hero" size="xl" onClick={() => setQuizState("question")} className="w-full">
-                Start Quiz
+                {isRetry ? "Start Retry" : "Start Quiz"}
               </Button>
             </motion.div>
           )}
@@ -247,46 +265,23 @@ export default function AssignmentDetail() {
 
               {quizState === "feedback" && (
                 <Button variant="hero" size="lg" onClick={handleNext} className="w-full">
-                  {currentQuestion < demoQuestions.length - 1 ? "Next Question" : "See Results"}
+                  {currentQuestion < demoQuestions.length - 1 ? "Next Question" : "Submit to AI Grader"}
                 </Button>
               )}
             </motion.div>
           )}
 
-          {quizState === "complete" && (
+          {quizState === "submitting" && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="max-w-md mx-auto text-center"
             >
-              <ScholarBuddy size="lg" message="Amazing work! You're a superstar! 🌟" />
-              
-              <h1 className="text-3xl font-extrabold mt-6 mb-2">Mission Complete!</h1>
-              <p className="text-muted-foreground mb-6">
-                You got {score} out of {demoQuestions.length} correct!
-              </p>
-
-              <div className="bg-gradient-gold rounded-2xl p-6 shadow-glow-gold mb-6">
-                <p className="text-gold-foreground font-bold text-lg mb-4">Rewards Earned</p>
-                <div className="flex items-center justify-center gap-8">
-                  <div className="text-center">
-                    <Star className="w-10 h-10 text-gold-foreground mx-auto mb-1" />
-                    <p className="text-2xl font-extrabold text-gold-foreground">+{assignment.xpReward}</p>
-                    <p className="text-sm text-gold-foreground/80">XP</p>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-4xl">🪙</span>
-                    <p className="text-2xl font-extrabold text-gold-foreground">+{assignment.coinReward}</p>
-                    <p className="text-sm text-gold-foreground/80">Coins</p>
-                  </div>
-                </div>
+              <ScholarBuddy size="lg" message="Submitting your answers to the AI grader..." />
+              <div className="mt-8 flex items-center justify-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <span className="text-lg font-medium text-muted-foreground">Processing...</span>
               </div>
-
-              <Link to="/student">
-                <Button variant="hero" size="xl" className="w-full">
-                  Back to Home
-                </Button>
-              </Link>
             </motion.div>
           )}
         </main>
@@ -299,10 +294,19 @@ export default function AssignmentDetail() {
       <div className="min-h-screen bg-background">
         <header className="bg-card border-b border-border sticky top-0 z-40">
           <div className="container mx-auto px-4 py-4">
-            <Button variant="ghost" size="sm" onClick={() => setMode("select")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => setMode("select")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/student/support?assignment=${id}`)}
+              >
+                <HelpCircle className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -334,19 +338,68 @@ export default function AssignmentDetail() {
                 </div>
               </div>
 
-              <Button variant="hero" size="lg" className="w-full">
-                <Camera className="w-5 h-5 mr-2" />
-                Take Photo of Work
-              </Button>
+              <div className="space-y-3">
+                <label className="block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                  />
+                  <Button variant="hero" size="lg" className="w-full" asChild>
+                    <span>
+                      <Camera className="w-5 h-5 mr-2" />
+                      Take Photo of Work
+                    </span>
+                  </Button>
+                </label>
 
-              <Button variant="secondary" size="lg" className="w-full">
-                <Upload className="w-5 h-5 mr-2" />
-                Upload Photo
-              </Button>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                  />
+                  <Button variant="secondary" size="lg" className="w-full" asChild>
+                    <span>
+                      <Upload className="w-5 h-5 mr-2" />
+                      Upload Photo/PDF
+                    </span>
+                  </Button>
+                </label>
+              </div>
+
+              {uploadedFile && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-success/10 border border-success/30 rounded-xl p-4"
+                >
+                  <p className="text-success font-medium">✓ {uploadedFile.name}</p>
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="w-full mt-4"
+                    onClick={handlePaperSubmit}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Submitting to AI Grader...
+                      </>
+                    ) : (
+                      "Submit to AI Grader"
+                    )}
+                  </Button>
+                </motion.div>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground mt-6">
-              📝 Your teacher will review your submission and award your rewards!
+              📝 AI will grade your work and award your rewards!
             </p>
           </motion.div>
         </main>
@@ -359,12 +412,21 @@ export default function AssignmentDetail() {
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
-          <Link to="/student">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+          <div className="flex items-center justify-between">
+            <Link to="/student">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/student/support?assignment=${id}`)}
+            >
+              <HelpCircle className="w-4 h-4" />
             </Button>
-          </Link>
+          </div>
         </div>
       </header>
 
@@ -431,8 +493,11 @@ export default function AssignmentDetail() {
                 </div>
                 <div className="flex-1 text-primary-foreground">
                   <h3 className="font-bold text-lg">Do in App</h3>
-                  <p className="text-sm opacity-90">
-                    Answer {demoQuestions.length} questions right here and get instant rewards!
+                  <p className="text-sm opacity-80">
+                    Answer questions directly here with instant feedback
+                  </p>
+                  <p className="text-xs mt-2 bg-primary-foreground/20 px-2 py-1 rounded-full inline-block">
+                    ⚡ Instant grading
                   </p>
                 </div>
               </div>

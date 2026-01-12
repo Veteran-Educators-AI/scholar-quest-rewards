@@ -19,6 +19,10 @@ import StudentOnboarding from "./pages/StudentOnboarding";
 import StudentProfile from "./pages/StudentProfile";
 import Rewards from "./pages/Rewards";
 import AssignmentDetail from "./pages/AssignmentDetail";
+import Support from "./pages/Support";
+import GradingResult from "./pages/GradingResult";
+import PracticeSet from "./pages/PracticeSet";
+import RewardsEarned from "./pages/RewardsEarned";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherIntegrations from "./pages/TeacherIntegrations";
 import APISettings from "./pages/APISettings";
@@ -45,6 +49,10 @@ const App = () => (
                 <Route path="/student/leaderboard" element={<Leaderboard />} />
                 <Route path="/student/challenges" element={<Challenges />} />
                 <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
+                <Route path="/student/support" element={<Support />} />
+                <Route path="/student/grading" element={<GradingResult />} />
+                <Route path="/student/practice" element={<PracticeSet />} />
+                <Route path="/student/rewards-earned" element={<RewardsEarned />} />
                 <Route path="/teacher" element={<TeacherDashboard />} />
                 <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
                 <Route path="/teacher/verify" element={<TeacherVerify />} />
