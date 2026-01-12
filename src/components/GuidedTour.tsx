@@ -23,7 +23,7 @@ interface TourStep {
 
 const tourSteps: TourStep[] = [
   {
-    title: "Welcome to NYCologic Ai! 🎉",
+    title: "Welcome to NYClogic Scholar Ai! 🎉",
     description: "I'm your Scholar Buddy! I'll help you complete assignments, earn rewards, and become a learning superstar!",
     icon: <BookOpen className="w-8 h-8 text-primary" />,
   },
