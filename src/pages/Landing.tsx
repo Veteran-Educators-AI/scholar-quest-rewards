@@ -154,11 +154,8 @@ export default function Landing() {
               <ScholarBuddy size="xl" />
               <div className="text-center mt-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-none">
-                  NYCologic
+                  NYCologic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
                 </h2>
-                <span className="text-4xl md:text-5xl font-black text-destructive leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
-                  SCHOLAR
-                </span>
               </div>
               
               {/* Feature cards */}
