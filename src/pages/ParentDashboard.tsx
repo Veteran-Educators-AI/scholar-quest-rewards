@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PoweredByFooter } from "@/components/PoweredByFooter";
 
 interface Badge {
   id: string;
@@ -955,6 +956,9 @@ export default function ParentDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Powered by Footer */}
+      <PoweredByFooter />
     </div>
   );
 }

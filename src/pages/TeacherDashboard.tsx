@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 import { PointDeductionDialog } from "@/components/PointDeductionDialog";
 import { StudentStatusRecorder } from "@/components/StudentStatusRecorder";
+import { PoweredByFooter } from "@/components/PoweredByFooter";
 
 // Demo data
 const demoTeacher = {
@@ -358,6 +359,9 @@ export default function TeacherDashboard() {
             </Link>
           </div>
         </motion.section>
+
+        {/* Powered by Footer */}
+        <PoweredByFooter />
       </main>
     </div>
   );
