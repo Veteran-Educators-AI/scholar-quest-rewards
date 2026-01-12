@@ -194,6 +194,9 @@ export default function Auth() {
               <h1 className="text-xl font-bold text-foreground tracking-wide leading-none">
                 NYCologic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
               </h1>
+              <span className="text-3xl font-black text-destructive leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
+                SCHOLAR
+              </span>
             </div>
             <div className="bg-primary/5 rounded-xl px-5 py-3 shadow-lg border border-primary/20 max-w-sm text-center backdrop-blur-sm mt-4">
               <p className="text-sm font-medium text-foreground">{messages[role][mode]}</p>
