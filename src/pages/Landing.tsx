@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,7 +56,10 @@ export default function Landing() {
                 alt="NYCologic Scholar" 
                 className="w-8 h-8 object-contain"
               />
-              <span className="font-semibold text-foreground">NYCologic Scholar</span>
+              <div className="flex items-baseline gap-1">
+                <span className="font-semibold text-foreground">NYCologic</span>
+                <span className="text-lg font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -148,9 +152,14 @@ export default function Landing() {
               className="flex flex-col items-center"
             >
               <ScholarBuddy size="xl" />
-              <h2 className="text-2xl md:text-3xl font-bold mt-4 text-foreground">
-                NYCologic <span className="text-destructive">Ai</span> Scholar
-              </h2>
+              <div className="text-center mt-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-none">
+                  NYCologic
+                </h2>
+                <span className="text-4xl md:text-5xl font-black text-destructive leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
+                  SCHOLAR
+                </span>
+              </div>
               
               {/* Feature cards */}
               <div className="grid grid-cols-2 gap-4 mt-8 w-full max-w-md">
@@ -437,10 +446,12 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border">
-        <div className="container mx-auto text-center text-muted-foreground">
-          <p className="text-sm">
-            © 2026 NYCologic Scholar. Powered by NYCologic Ai™ 🧠
-          </p>
+        <div className="container mx-auto flex flex-col items-center gap-4">
+          <div className="text-center">
+            <span className="text-sm text-muted-foreground">© 2026 NYCologic </span>
+            <span className="text-sm font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR</span>
+          </div>
+          <PoweredByFooter />
         </div>
       </footer>
     </div>
