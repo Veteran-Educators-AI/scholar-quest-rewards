@@ -32,7 +32,7 @@ export const ar: TranslationKeys = {
   },
 
   studentHome: {
-    title: 'سكان سكولار',
+    title: 'NYCologic Scholar',
     levelScholar: 'عالم المستوى {level}',
     todaysMissions: 'مهام اليوم',
     yourBadges: 'شاراتك',

@@ -85,7 +85,7 @@ export default function Auth() {
           }
 
           toast({
-            title: "Welcome to Scan Scholar! 🎉",
+            title: "Welcome to NYCologic Scholar! 🎉",
             description: role === "parent" 
               ? "Your account has been created. Let's connect with your child!"
               : "Your account has been created. Let's start learning!",
