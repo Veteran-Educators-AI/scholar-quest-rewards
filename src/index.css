@@ -4,11 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scholar Quest Design System - NYCologic AI Theme */
+/* Scholar Quest Design System - NYClogic AI Theme */
 
 @layer base {
   :root {
-    /* NYCologic Scholar Theme - Bold Red Primary */
+    /* NYClogic Scholar Theme - Bold Red Primary */
     --background: 0 0% 100%;
     --foreground: 0 0% 10%;
 
@@ -18,7 +18,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    /* Primary - Bold Red (matching NYCologic logo) */
+    /* Primary - Bold Red (matching NYClogic logo) */
     --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
 

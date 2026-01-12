@@ -116,7 +116,7 @@ export default function StudentOnboarding() {
       if (error) throw error;
 
       toast({
-        title: "Welcome to Scan Scholar! 🎉",
+        title: "Welcome to NYClogic Scholar Ai! 🎉",
         description: "Your profile is all set up. Let's start learning!",
       });
 

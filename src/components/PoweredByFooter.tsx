@@ -10,8 +10,8 @@ export function PoweredByFooter({ className = "" }: PoweredByFooterProps) {
       <div className="flex items-center justify-center gap-2 text-muted-foreground">
         <span className="text-xs">Powered by</span>
         <a 
-          href="https://nycologic.ai" 
-          target="_blank" 
+          href="https://thescangeniusapp.com" 
+          target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
         >

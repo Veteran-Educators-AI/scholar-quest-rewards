@@ -283,7 +283,7 @@ export default function TeacherVerify() {
             <div className="flex items-center gap-2">
               <img 
                 src={nycologicLogo} 
-                alt="NYCologic Ai" 
+                alt="NYClogic Ai" 
                 className="w-8 h-8 object-contain"
               />
               <div>

@@ -173,11 +173,11 @@ export default function TeacherIntegrations() {
             <div className="flex items-center gap-3">
               <img 
                 src={nycologicLogo} 
-                alt="NYCologic Ai" 
+                alt="NYClogic Ai" 
                 className="w-10 h-10 object-contain"
               />
               <div>
-                <h1 className="font-bold text-foreground text-xl">NYCologic Ai Integration</h1>
+                <h1 className="font-bold text-foreground text-xl">NYClogic Ai Integration</h1>
                 <p className="text-sm text-muted-foreground">Manage API keys & webhook</p>
               </div>
             </div>
@@ -194,7 +194,7 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
             <h2 className="font-bold text-foreground text-lg mb-2">API Endpoints</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Use these endpoints to connect NYCologic Ai with this Scholar app.
+              Use these endpoints to connect NYClogic Ai with this Scholar app.
             </p>
             
             <div className="space-y-4">
@@ -287,7 +287,7 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6">
             <h2 className="font-bold text-foreground text-lg mb-2">Create API Key</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Generate a new API key for NYCologic Ai to authenticate with NYCologic Scholar.
+              Generate a new API key for NYClogic Ai to authenticate with NYClogic Scholar.
             </p>
             
             <div className="flex gap-3">
@@ -373,12 +373,12 @@ export default function TeacherIntegrations() {
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
             <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
               <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
-              Setup in NYCologic Ai
+              Setup in NYClogic Ai
             </h3>
             <ol className="text-sm text-muted-foreground space-y-3 ml-8">
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">a.</span>
-                Go to <a href="https://nycologic.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">nycologic.com <ExternalLink className="w-3 h-3" /></a> and log in
+                Go to <a href="https://thescangeniusapp.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">thescangeniusapp.com <ExternalLink className="w-3 h-3" /></a> and log in
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">b.</span>
@@ -390,7 +390,7 @@ export default function TeacherIntegrations() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">d.</span>
-                Create an API key above and paste it in NYCologic Ai as the <span className="font-medium text-foreground">API Key</span>
+                Create an API key above and paste it in NYClogic Ai as the <span className="font-medium text-foreground">API Key</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold text-foreground">e.</span>
