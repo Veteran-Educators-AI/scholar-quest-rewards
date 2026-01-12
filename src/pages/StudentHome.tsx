@@ -19,6 +19,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
 import { Trophy, Gift, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, Home, Award, Zap, BarChart3, Timer, Loader2 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
+import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage, interpolate } from "@/i18n/LanguageContext";
@@ -238,11 +239,16 @@ export default function StudentHome() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link to="/student/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-                {displayStudent.name.charAt(0)}
-              </div>
+              <img 
+                src={nycologicLogo} 
+                alt="NYCologic Scholar" 
+                className="w-10 h-10 object-contain"
+              />
               <div>
-                <h1 className="font-semibold text-foreground">{t.studentHome.title}</h1>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-semibold text-foreground">NYCologic</span>
+                  <span className="text-lg font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR</span>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Level {displayStudent.level} • {displayStudent.xp}/{displayStudent.xpForNextLevel} XP
                 </p>
