@@ -738,6 +738,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_enrollments: {
+        Row: {
+          class_id: string
+          created_at: string
+          email: string
+          id: string
+          processed: boolean
+          processed_at: string | null
+          student_name: string | null
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          email: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          student_name?: string | null
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          student_name?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       point_deductions: {
         Row: {
           class_id: string

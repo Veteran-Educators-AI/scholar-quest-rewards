@@ -328,11 +328,177 @@ Deno.serve(async (req) => {
         JSON.stringify({ students: progressData }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    } else if (body.action === "pre_register_students") {
+      // Pre-register students for auto-enrollment
+      const { class_id, students } = body;
+      
+      if (!class_id) {
+        return new Response(
+          JSON.stringify({ error: "class_id is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!students || !Array.isArray(students) || students.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "students array is required with at least one student" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify the class belongs to this teacher
+      const { data: classData, error: classError } = await supabase
+        .from("classes")
+        .select("id, name")
+        .eq("id", class_id)
+        .eq("teacher_id", tokenData.created_by)
+        .single();
+
+      if (classError || !classData) {
+        return new Response(
+          JSON.stringify({ error: "Class not found or you don't have access" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Insert pending enrollments
+      const results = [];
+      for (const student of students) {
+        const email = student.email?.toLowerCase();
+        if (!email) {
+          results.push({ email: null, success: false, error: "Email is required" });
+          continue;
+        }
+
+        // Check if student already exists by looking up auth users via listUsers filter
+        const { data: usersData } = await supabase.auth.admin.listUsers();
+        const existingAuthUser = usersData?.users?.find(
+          (u: { email?: string }) => u.email?.toLowerCase() === email
+        );
+
+        if (existingAuthUser) {
+          // Student already exists, enroll them directly
+          const { error: enrollError } = await supabase
+            .from("enrollments")
+            .insert({ student_id: existingAuthUser.id, class_id })
+            .select()
+            .single();
+
+          if (enrollError && !enrollError.message.includes("duplicate")) {
+            results.push({ email, success: false, error: enrollError.message });
+          } else {
+            results.push({ email, success: true, status: "enrolled_immediately" });
+          }
+        } else {
+          // Create pending enrollment
+          const { error: pendingError } = await supabase
+            .from("pending_enrollments")
+            .upsert({
+              email,
+              class_id,
+              teacher_id: tokenData.created_by,
+              student_name: student.name || null,
+            }, { onConflict: "email,class_id" });
+
+          if (pendingError) {
+            results.push({ email, success: false, error: pendingError.message });
+          } else {
+            results.push({ email, success: true, status: "pending_signup" });
+          }
+        }
+      }
+
+      const successful = results.filter((r) => r.success).length;
+      const pending = results.filter((r) => r.status === "pending_signup").length;
+      const enrolled = results.filter((r) => r.status === "enrolled_immediately").length;
+
+      return new Response(
+        JSON.stringify({
+          message: `Processed ${successful} students: ${enrolled} enrolled immediately, ${pending} pending signup`,
+          class_name: classData.name,
+          results,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    } else if (body.action === "list_pending_enrollments") {
+      // List pending enrollments for a class
+      const { class_id } = body;
+
+      let query = supabase
+        .from("pending_enrollments")
+        .select("id, email, student_name, class_id, created_at, processed, processed_at, classes(name)")
+        .eq("teacher_id", tokenData.created_by);
+
+      if (class_id) {
+        query = query.eq("class_id", class_id);
+      }
+
+      const { data: pending, error } = await query.order("created_at", { ascending: false });
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          pending_enrollments: pending,
+          total: pending?.length || 0,
+          unprocessed: pending?.filter(p => !p.processed).length || 0
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    } else if (body.action === "create_class") {
+      // Create a new class
+      const { name, grade_level, grade_band, subject } = body;
+
+      if (!name) {
+        return new Response(
+          JSON.stringify({ error: "Class name is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate a unique class code
+      const classCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      const { data: newClass, error: createError } = await supabase
+        .from("classes")
+        .insert({
+          name,
+          teacher_id: tokenData.created_by,
+          class_code: classCode,
+          grade_level: grade_level || null,
+          grade_band: grade_band || null,
+          subject: subject || null,
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        return new Response(
+          JSON.stringify({ error: createError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          message: "Class created successfully",
+          class: newClass,
+        }),
+        { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
     } else {
       return new Response(
         JSON.stringify({ 
           error: "Invalid request body",
-          hint: "Send an assignment object with class_id and title, or use action: 'list_classes' | 'list_standards' | 'get_student_progress'"
+          hint: "Send an assignment object with class_id and title, or use action: 'list_classes' | 'list_standards' | 'get_student_progress' | 'pre_register_students' | 'list_pending_enrollments' | 'create_class'"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
