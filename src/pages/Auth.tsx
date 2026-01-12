@@ -96,7 +96,7 @@ export default function Auth() {
           navigate(role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -111,12 +111,33 @@ export default function Auth() {
           } else {
             throw error;
           }
-        } else {
+        } else if (data.user) {
+          // Fetch user role from profiles table
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.user.id)
+            .single();
+
+          const userRole = profile?.role || "student";
+          
           toast({
             title: "Welcome back! 🦉",
-            description: "Ready for another learning adventure?",
+            description: userRole === "teacher" 
+              ? "Let's check on your class!"
+              : userRole === "parent"
+                ? "Let's see how your child is doing!"
+                : "Ready for another learning adventure?",
           });
-          // Navigation will be handled by auth state listener in App
+          
+          // Navigate based on role
+          if (userRole === "teacher") {
+            navigate("/teacher");
+          } else if (userRole === "parent") {
+            navigate("/parent");
+          } else {
+            navigate("/student");
+          }
         }
       }
     } catch (error: any) {
