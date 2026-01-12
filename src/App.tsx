@@ -27,6 +27,7 @@ import NotificationCenter from "./pages/NotificationCenter";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherIntegrations from "./pages/TeacherIntegrations";
 import TeacherRaffle from "./pages/TeacherRaffle";
+import TeacherStudents from "./pages/TeacherStudents";
 import APISettings from "./pages/APISettings";
 import Raffle from "./pages/Raffle";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/student/raffle" element={<Raffle />} />
                 <Route path="/student/notifications" element={<NotificationCenter />} />
                 <Route path="/teacher" element={<TeacherDashboard />} />
+                <Route path="/teacher/students" element={<TeacherStudents />} />
                 <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
                 <Route path="/teacher/verify" element={<TeacherVerify />} />
                 <Route path="/teacher/raffle" element={<TeacherRaffle />} />
