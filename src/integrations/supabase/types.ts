@@ -459,6 +459,90 @@ export type Database = {
         }
         Relationships: []
       }
+      lotto_draws: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          prize_description: string
+          prize_image_url: string | null
+          start_date: string
+          title: string
+          winner_id: string | null
+          winner_selected_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          prize_description: string
+          prize_image_url?: string | null
+          start_date?: string
+          title: string
+          winner_id?: string | null
+          winner_selected_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          prize_description?: string
+          prize_image_url?: string | null
+          start_date?: string
+          title?: string
+          winner_id?: string | null
+          winner_selected_at?: string | null
+        }
+        Relationships: []
+      }
+      lotto_entries: {
+        Row: {
+          assignment_id: string | null
+          draw_id: string
+          earned_at: string
+          id: string
+          reason: string
+          student_id: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          draw_id: string
+          earned_at?: string
+          id?: string
+          reason?: string
+          student_id: string
+        }
+        Update: {
+          assignment_id?: string | null
+          draw_id?: string
+          earned_at?: string
+          id?: string
+          reason?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lotto_entries_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotto_entries_draw_id_fkey"
+            columns: ["draw_id"]
+            isOneToOne: false
+            referencedRelation: "lotto_draws"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

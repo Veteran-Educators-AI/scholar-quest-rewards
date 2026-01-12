@@ -23,6 +23,7 @@ export default function RewardsEarned() {
     xp: 50,
     coins: 10,
     percentage: 80,
+    lottoEntry: true, // Always show lotto entry for completed assignments
   };
 
   useEffect(() => {
@@ -118,23 +119,21 @@ export default function RewardsEarned() {
               </motion.div>
             )}
 
-            {/* Lotto Entry (if applicable) */}
-            {rewards.lottoEntry && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={animationStep >= 4 ? { opacity: 1, y: 0 } : {}}
-                transition={{ type: "spring", stiffness: 200 }}
-                className="bg-gradient-to-r from-success to-success/80 rounded-2xl p-4 flex items-center gap-4"
-              >
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Ticket className="w-8 h-8 text-white" />
-                </div>
-                <div className="text-left text-white">
-                  <p className="text-sm opacity-80">Lotto Entry!</p>
-                  <p className="text-lg font-extrabold">You're in the draw!</p>
-                </div>
-              </motion.div>
-            )}
+            {/* Lotto Entry - Always shown for completed assignments */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={animationStep >= 3 ? { opacity: 1, y: 0 } : {}}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-gradient-to-r from-success to-success/80 rounded-2xl p-4 flex items-center gap-4"
+            >
+              <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <Ticket className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-left text-white">
+                <p className="text-sm opacity-80">Raffle Entry!</p>
+                <p className="text-lg font-extrabold">+1 Ticket Earned!</p>
+              </div>
+            </motion.div>
           </div>
 
           {/* Points Visibility Notice */}
@@ -159,10 +158,10 @@ export default function RewardsEarned() {
               </Button>
             </Link>
             
-            <Link to="/student/rewards" className="block">
+            <Link to="/student/raffle" className="block">
               <Button variant="outline" size="lg" className="w-full">
-                <Gift className="w-4 h-4 mr-2" />
-                Visit Reward Store
+                <Ticket className="w-4 h-4 mr-2" />
+                View Raffle Entries
               </Button>
             </Link>
           </motion.div>
