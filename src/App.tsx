@@ -25,6 +25,7 @@ import PracticeSet from "./pages/PracticeSet";
 import RewardsEarned from "./pages/RewardsEarned";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherIntegrations from "./pages/TeacherIntegrations";
+import TeacherRaffle from "./pages/TeacherRaffle";
 import APISettings from "./pages/APISettings";
 import Raffle from "./pages/Raffle";
 import NotFound from "./pages/NotFound";
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="/teacher" element={<TeacherDashboard />} />
                 <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
                 <Route path="/teacher/verify" element={<TeacherVerify />} />
+                <Route path="/teacher/raffle" element={<TeacherRaffle />} />
                 <Route path="/teacher/api" element={<APISettings />} />
                 <Route path="/parent" element={<ParentDashboard />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />

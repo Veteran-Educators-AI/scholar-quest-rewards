@@ -10,7 +10,8 @@ import {
   Plus,
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Ticket
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -337,6 +338,26 @@ export default function TeacherDashboard() {
                 </Button>
               </Link>
             </div>
+          </div>
+
+          <div className="bg-gold/5 rounded-2xl p-6 border border-gold/20">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
+                <Ticket className="w-6 h-6 text-gold" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Raffle Manager</h3>
+                <p className="text-xs text-muted-foreground">Create & draw winners</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create raffles, manage entries, and select winners with animated reveals!
+            </p>
+            <Link to="/teacher/raffle">
+              <Button variant="outline" size="sm">
+                Manage Raffles
+              </Button>
+            </Link>
           </div>
 
           <div className="bg-primary/5 rounded-2xl p-6 border border-primary/20">
