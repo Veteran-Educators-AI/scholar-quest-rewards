@@ -38,7 +38,7 @@ export function ScholarBuddy({
         {/* Logo image */}
         <img 
           src={highschoolLogo} 
-          alt="NYCologic Logo" 
+          alt="NYClogic Logo" 
           className="w-full h-full object-contain drop-shadow-2xl relative z-10"
         />
         
