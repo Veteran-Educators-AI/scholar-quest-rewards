@@ -12,7 +12,11 @@ import {
   Sparkles,
   TrendingUp,
   Award,
-  Loader2
+  Loader2,
+  Users,
+  Plus,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { XPBar } from "@/components/XPBar";
@@ -24,6 +28,9 @@ import { AvatarCustomizer, AvatarPreview } from "@/components/AvatarCustomizer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
@@ -89,6 +96,86 @@ export default function StudentProfile() {
   const [collectibles, setCollectibles] = useState<Collectible[]>([]);
   const [loading, setLoading] = useState(true);
   const [equippedItems, setEquippedItems] = useState<EquippedItems>({});
+  const [joinClassOpen, setJoinClassOpen] = useState(false);
+  const [classCode, setClassCode] = useState("");
+  const [joiningClass, setJoiningClass] = useState(false);
+  const [joinResult, setJoinResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [enrolledClasses, setEnrolledClasses] = useState<{ id: string; name: string; teacherName: string }[]>([]);
+
+  const handleJoinClass = async () => {
+    if (!classCode.trim()) return;
+    
+    setJoiningClass(true);
+    setJoinResult(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Find the class by code
+      const { data: classData, error: classError } = await supabase
+        .from("classes")
+        .select("id, name")
+        .eq("class_code", classCode.trim().toUpperCase())
+        .single();
+
+      if (classError || !classData) {
+        setJoinResult({ success: false, message: "Class not found. Check the code and try again." });
+        return;
+      }
+
+      // Check if already enrolled
+      const { data: existingEnrollment } = await supabase
+        .from("enrollments")
+        .select("id")
+        .eq("student_id", user.id)
+        .eq("class_id", classData.id)
+        .single();
+
+      if (existingEnrollment) {
+        setJoinResult({ success: true, message: `You're already enrolled in ${classData.name}!` });
+        return;
+      }
+
+      // Enroll the student
+      const { error: enrollError } = await supabase
+        .from("enrollments")
+        .insert({
+          student_id: user.id,
+          class_id: classData.id,
+        });
+
+      if (enrollError) throw enrollError;
+
+      setJoinResult({ success: true, message: `Successfully joined ${classData.name}!` });
+      toast.success(`Joined ${classData.name}! 🎉`);
+      setClassCode("");
+      
+      // Refresh enrolled classes
+      fetchEnrolledClasses(user.id);
+    } catch (error) {
+      console.error("Error joining class:", error);
+      setJoinResult({ success: false, message: "Something went wrong. Please try again." });
+    } finally {
+      setJoiningClass(false);
+    }
+  };
+
+  const fetchEnrolledClasses = async (userId: string) => {
+    const { data: enrollments } = await supabase
+      .from("enrollments")
+      .select("class_id, classes(id, name, teacher_id, profiles:teacher_id(full_name))")
+      .eq("student_id", userId);
+
+    if (enrollments) {
+      const classes = enrollments.map((e: any) => ({
+        id: e.classes?.id || "",
+        name: e.classes?.name || "Unknown Class",
+        teacherName: e.classes?.profiles?.full_name || "Unknown Teacher",
+      })).filter(c => c.id);
+      setEnrolledClasses(classes);
+    }
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -215,6 +302,9 @@ export default function StudentProfile() {
           });
           setEquippedItems(equippedMap);
         }
+
+        // Fetch enrolled classes
+        fetchEnrolledClasses(user.id);
 
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -371,6 +461,108 @@ export default function StudentProfile() {
             value={`${displayProfile.averageScore}%`}
             label="Average Score"
           />
+        </motion.div>
+
+        {/* My Classes Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card rounded-2xl p-6 border border-border"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-lg text-foreground">My Classes</h3>
+            </div>
+            <Dialog open={joinClassOpen} onOpenChange={setJoinClassOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <Plus className="w-4 h-4" />
+                  Join Class
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Join a Class</DialogTitle>
+                  <DialogDescription>
+                    Enter the class code from your teacher to join their class.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="classCodeInput">Class Code</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="classCodeInput"
+                        placeholder="Enter code (e.g., ABC123)"
+                        value={classCode}
+                        onChange={(e) => {
+                          setClassCode(e.target.value.toUpperCase());
+                          setJoinResult(null);
+                        }}
+                        className="text-center text-lg font-mono tracking-widest uppercase"
+                        maxLength={10}
+                        disabled={joiningClass}
+                      />
+                      <Button
+                        onClick={handleJoinClass}
+                        disabled={!classCode.trim() || joiningClass}
+                      >
+                        {joiningClass ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Join"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {joinResult && (
+                    <div
+                      className={`flex items-center gap-2 p-3 rounded-lg ${
+                        joinResult.success
+                          ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {joinResult.success ? (
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      )}
+                      <span className="text-sm">{joinResult.message}</span>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {enrolledClasses.length > 0 ? (
+            <div className="space-y-2">
+              {enrolledClasses.map((cls) => (
+                <div
+                  key={cls.id}
+                  className="flex items-center justify-between p-3 bg-muted rounded-xl"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{cls.name}</p>
+                    <p className="text-sm text-muted-foreground">Teacher: {cls.teacherName}</p>
+                  </div>
+                  <CheckCircle2 className="w-5 h-5 text-success" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-muted-foreground">No classes yet</p>
+              <p className="text-sm text-muted-foreground">
+                Get a class code from your teacher to join
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Tabs */}
