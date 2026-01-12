@@ -212,7 +212,7 @@ export default function Auth() {
               size="sm"
             >
               <GraduationCap className="w-4 h-4 mr-1" />
-              Student
+              Scholar
             </Button>
             <Button
               variant={role === "parent" ? "destructive" : "outline"}
