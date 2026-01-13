@@ -16,7 +16,7 @@ import { StudyTimer } from "@/components/StudyTimer";
 import { 
   Trophy, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, 
   Home, Award, Zap, BarChart3, Timer, Loader2, Flame, Shield, 
-  GraduationCap, Ticket, Brain
+  GraduationCap, Ticket, Brain, Sparkles
 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import highschoolLogo from "@/assets/highschool-logo-new.png";
@@ -444,13 +444,21 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Link to="/study-plan">
+                <QuickActionCard 
+                  icon={<Sparkles className="w-5 h-5" />}
+                  title="Study Plan"
+                  description="AI-powered"
+                  accent="primary"
+                />
+              </Link>
               <Link to="/regents-prep">
                 <QuickActionCard 
                   icon={<GraduationCap className="w-5 h-5" />}
                   title="Regents Prep"
                   description="Exam practice"
-                  accent="primary"
+                  accent="success"
                 />
               </Link>
               <Link to="/games">
