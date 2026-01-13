@@ -56,10 +56,12 @@ export default function Landing() {
                 alt="NYClogic Scholar Ai" 
                 className="w-8 h-8 object-contain"
               />
-              <div className="flex items-baseline gap-1">
-                <span className="font-semibold text-foreground">NYClogic</span>
-                <span className="text-lg font-black text-destructive" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>SCHOLAR Ai</span>
-              </div>
+              <span 
+                className="text-lg font-black text-destructive" 
+                style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
+              >
+                NYClogic Ai
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -100,15 +102,12 @@ export default function Landing() {
               transition={{ delay: 0.3 }}
               className="flex flex-col items-center mt-6"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-none text-center">
-                NYClogic
-              </h1>
-              <span 
-                className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight" 
+              <h1 
+                className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight text-center" 
                 style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
               >
-                SCHOLAR Ai<sup className="text-lg">™</sup>
-              </span>
+                NYClogic Ai<sup className="text-lg">™</sup>
+              </h1>
             </motion.div>
           </motion.div>
 
