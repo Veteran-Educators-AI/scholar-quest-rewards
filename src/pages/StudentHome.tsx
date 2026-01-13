@@ -444,12 +444,20 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <div className="grid grid-cols-3 gap-3">
-              <Link to="/student/practice-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link to="/regents-prep">
+                <QuickActionCard 
+                  icon={<GraduationCap className="w-5 h-5" />}
+                  title="Regents Prep"
+                  description="Exam practice"
+                  accent="primary"
+                />
+              </Link>
+              <Link to="/games">
                 <QuickActionCard 
                   icon={<Brain className="w-5 h-5" />}
-                  title="Practice Center"
-                  description="Skill exercises"
+                  title="Game Center"
+                  description="Skill games"
                   accent="success"
                 />
               </Link>
@@ -457,7 +465,7 @@ export default function StudentHome() {
                 <QuickActionCard 
                   icon={<Ticket className="w-5 h-5" />}
                   title="Weekly Raffle"
-                  description="Enter to win prizes"
+                  description="Enter to win"
                   accent="gold"
                 />
               </Link>
@@ -465,8 +473,8 @@ export default function StudentHome() {
                 <QuickActionCard 
                   icon={<Zap className="w-5 h-5" />}
                   title="Challenges"
-                  description="Earn bonus rewards"
-                  accent="primary"
+                  description="Bonus rewards"
+                  accent="gold"
                 />
               </Link>
             </div>
