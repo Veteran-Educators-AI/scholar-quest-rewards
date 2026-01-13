@@ -23,6 +23,9 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import Support from "./pages/Support";
 import GradingResult from "./pages/GradingResult";
 import PracticeSet from "./pages/PracticeSet";
+import PracticeCenter from "./pages/PracticeCenter";
+import PracticeExercise from "./pages/PracticeExercise";
+import PrintableWorksheet from "./pages/PrintableWorksheet";
 import RewardsEarned from "./pages/RewardsEarned";
 import NotificationCenter from "./pages/NotificationCenter";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -59,6 +62,9 @@ const App = () => (
                   <Route path="/student/support" element={<Support />} />
                   <Route path="/student/grading" element={<GradingResult />} />
                   <Route path="/student/practice" element={<PracticeSet />} />
+                  <Route path="/student/practice-center" element={<PracticeCenter />} />
+                  <Route path="/student/practice/:id" element={<PracticeExercise />} />
+                  <Route path="/student/practice/:id/print" element={<PrintableWorksheet />} />
                   <Route path="/student/rewards-earned" element={<RewardsEarned />} />
                   <Route path="/student/raffle" element={<Raffle />} />
                   <Route path="/student/notifications" element={<NotificationCenter />} />
