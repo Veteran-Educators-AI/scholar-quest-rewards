@@ -3,15 +3,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
-import { Confetti } from "@/components/Confetti";
 import { ArrowLeft, ArrowRight, Check, Send, Loader2, Star } from "lucide-react";
+import { DragOrderQuestion } from "./quiz/DragOrderQuestion";
+import { MatchingQuestion } from "./quiz/MatchingQuestion";
+import { FillBlankQuestion } from "./quiz/FillBlankQuestion";
 
 export interface QuizQuestion {
   id: string;
   prompt: string;
-  question_type: "multiple_choice" | "short_answer";
+  question_type: "multiple_choice" | "short_answer" | "drag_order" | "matching" | "fill_blank";
   options?: string[];
-  answer_key: string | string[];
+  // For drag_order: ordered array of items (correct order)
+  // For matching: array of {left, right} pairs
+  // For fill_blank: sentence with _____ and array of correct answers
+  answer_key: string | string[] | { left: string; right: string }[];
+  // For fill_blank, this contains the sentence template
+  fill_blank_sentence?: string;
   skill_tag?: string;
   difficulty?: number;
 }
@@ -72,7 +79,6 @@ export function SimpleQuiz({
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
-      // Restore previous short answer if going back
       const prevQuestion = questions[currentIndex - 1];
       if (prevQuestion.question_type === "short_answer" && answers[prevQuestion.id]) {
         setShortAnswerInput(answers[prevQuestion.id]);
@@ -89,6 +95,17 @@ export function SimpleQuiz({
     }
   };
 
+  const getQuestionTypeIcon = (type: QuizQuestion["question_type"]) => {
+    switch (type) {
+      case "multiple_choice": return "🔘";
+      case "short_answer": return "✏️";
+      case "drag_order": return "↕️";
+      case "matching": return "🔗";
+      case "fill_blank": return "📝";
+      default: return "❓";
+    }
+  };
+
   if (showIntro) {
     return (
       <motion.div
@@ -99,9 +116,18 @@ export function SimpleQuiz({
         <ScholarBuddy size="lg" message="Ready to show what you know? Let's do this!" />
         
         <h1 className="text-2xl font-extrabold mt-6 mb-2">{assignmentTitle}</h1>
-        <p className="text-muted-foreground mb-6">
+        <p className="text-muted-foreground mb-4">
           {questions.length} questions • Quick and simple!
         </p>
+        
+        {/* Question type preview */}
+        <div className="flex justify-center gap-2 mb-6 flex-wrap">
+          {Array.from(new Set(questions.map(q => q.question_type))).map(type => (
+            <span key={type} className="px-3 py-1 bg-muted rounded-full text-xs font-medium">
+              {getQuestionTypeIcon(type)} {type.replace("_", " ")}
+            </span>
+          ))}
+        </div>
         
         <div className="bg-card rounded-2xl p-6 shadow-md border border-border mb-6">
           <div className="flex items-center justify-center gap-6">
@@ -139,9 +165,12 @@ export function SimpleQuiz({
               <ArrowLeft className="w-4 h-4 mr-2" />
               Exit
             </Button>
-            <span className="text-sm font-medium text-muted-foreground">
-              {currentIndex + 1} / {questions.length}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{getQuestionTypeIcon(currentQuestion.question_type)}</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                {currentIndex + 1} / {questions.length}
+              </span>
+            </div>
           </div>
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <motion.div
@@ -174,6 +203,7 @@ export function SimpleQuiz({
                 </h2>
               </div>
 
+              {/* Multiple Choice */}
               {currentQuestion.question_type === "multiple_choice" && currentQuestion.options && (
                 <div className="grid gap-3">
                   {currentQuestion.options.map((option, idx) => {
@@ -197,6 +227,7 @@ export function SimpleQuiz({
                 </div>
               )}
 
+              {/* Short Answer */}
               {currentQuestion.question_type === "short_answer" && (
                 <div className="space-y-3">
                   <div className="flex gap-2">
@@ -231,6 +262,33 @@ export function SimpleQuiz({
                     </motion.div>
                   )}
                 </div>
+              )}
+
+              {/* Drag Order */}
+              {currentQuestion.question_type === "drag_order" && currentQuestion.options && (
+                <DragOrderQuestion
+                  items={currentQuestion.options}
+                  currentAnswer={answers[currentQuestion.id]}
+                  onAnswer={(answer) => handleSelectAnswer(answer)}
+                />
+              )}
+
+              {/* Matching */}
+              {currentQuestion.question_type === "matching" && Array.isArray(currentQuestion.answer_key) && (
+                <MatchingQuestion
+                  pairs={currentQuestion.answer_key as { left: string; right: string }[]}
+                  currentAnswer={answers[currentQuestion.id]}
+                  onAnswer={(answer) => handleSelectAnswer(answer)}
+                />
+              )}
+
+              {/* Fill in the Blank */}
+              {currentQuestion.question_type === "fill_blank" && currentQuestion.fill_blank_sentence && (
+                <FillBlankQuestion
+                  sentence={currentQuestion.fill_blank_sentence}
+                  currentAnswer={answers[currentQuestion.id]}
+                  onAnswer={(answer) => handleSelectAnswer(answer)}
+                />
               )}
             </div>
 
