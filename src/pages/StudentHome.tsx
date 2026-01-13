@@ -9,6 +9,7 @@ import { StudentRewardPledges } from "@/components/StudentRewardPledges";
 import { GuidedTour } from "@/components/GuidedTour";
 import { ClassSchedule } from "@/components/ClassSchedule";
 import { StandardsMasteryWidget } from "@/components/StandardsMasteryWidget";
+import { DailyQuoteCard } from "@/components/DailyQuoteCard";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
@@ -470,6 +471,9 @@ export default function StudentHome() {
               </Link>
             </div>
           </motion.section>
+
+          {/* Daily Inspirational Quote */}
+          <DailyQuoteCard />
 
           {/* Standards Mastery Widget */}
           <motion.section

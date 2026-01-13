@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Bell, Trophy, Star, Flame, Check, Trash2, X, BookOpen, ExternalLink } from "lucide-react";
+import { Bell, Trophy, Star, Flame, Check, Trash2, X, BookOpen, ExternalLink, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -172,6 +172,10 @@ export function NotificationBell() {
         return <Flame className="w-5 h-5 text-streak" />;
       case 'new_assignment':
         return <BookOpen className="w-5 h-5 text-blue-500" />;
+      case 'inspiration':
+        return <Sparkles className="w-5 h-5 text-gold" />;
+      case 'practice':
+        return <Brain className="w-5 h-5 text-success" />;
       default:
         return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
