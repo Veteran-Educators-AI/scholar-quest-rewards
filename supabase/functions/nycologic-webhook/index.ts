@@ -50,7 +50,30 @@ interface StatusQueryPayload {
   };
 }
 
-type WebhookPayload = AssignmentPayload | StudentProfilePayload | StatusQueryPayload;
+interface RemediationPayload {
+  type: "remediation";
+  data: {
+    student_id: string; // The student's user_id in Scholar
+    external_ref?: string; // Reference ID from NYCLogic AI
+    title: string;
+    description?: string;
+    skill_tags: string[]; // Skills/weaknesses being targeted
+    printable_url?: string; // URL to downloadable PDF worksheet
+    xp_reward?: number;
+    coin_reward?: number;
+    questions: Array<{
+      prompt: string;
+      question_type: "multiple_choice" | "short_answer" | "numeric" | "drag_order" | "matching";
+      options?: string[];
+      answer_key: unknown;
+      hint?: string;
+      difficulty?: number;
+      skill_tag?: string;
+    }>;
+  };
+}
+
+type WebhookPayload = AssignmentPayload | StudentProfilePayload | StatusQueryPayload | RemediationPayload;
 
 async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: string): Promise<boolean> {
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -206,6 +229,133 @@ Deno.serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, status: "profile_updated" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "remediation": {
+        const { data } = payload as RemediationPayload;
+        
+        // Verify student exists
+        const { data: studentProfile, error: studentError } = await supabase
+          .from("student_profiles")
+          .select("user_id")
+          .eq("user_id", data.student_id)
+          .single();
+
+        if (studentError || !studentProfile) {
+          return new Response(
+            JSON.stringify({ error: "Student not found", student_id: data.student_id }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Create practice set
+        const { data: practiceSet, error: practiceError } = await supabase
+          .from("practice_sets")
+          .insert({
+            student_id: data.student_id,
+            title: data.title,
+            description: data.description || `Practice exercises to strengthen: ${data.skill_tags.join(", ")}`,
+            skill_tags: data.skill_tags,
+            source: "nycologic",
+            external_ref: data.external_ref,
+            printable_url: data.printable_url,
+            xp_reward: data.xp_reward || 25,
+            coin_reward: data.coin_reward || 5,
+            total_questions: data.questions.length,
+            status: "pending",
+          })
+          .select("id")
+          .single();
+
+        if (practiceError) {
+          console.error("Failed to create practice set:", practiceError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create practice set", details: practiceError.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Create practice questions
+        if (data.questions && data.questions.length > 0) {
+          const questionsToInsert = data.questions.map((q, index) => ({
+            practice_set_id: practiceSet.id,
+            prompt: q.prompt,
+            question_type: q.question_type,
+            options: q.options ? q.options : null,
+            answer_key: q.answer_key,
+            hint: q.hint,
+            difficulty: q.difficulty || 1,
+            skill_tag: q.skill_tag,
+            order_index: index,
+          }));
+
+          const { error: questionsError } = await supabase
+            .from("practice_questions")
+            .insert(questionsToInsert);
+
+          if (questionsError) {
+            console.error("Failed to create practice questions:", questionsError);
+            // Clean up the practice set
+            await supabase.from("practice_sets").delete().eq("id", practiceSet.id);
+            return new Response(
+              JSON.stringify({ error: "Failed to create practice questions", details: questionsError.message }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+
+        // Create notification for the student
+        const skillList = data.skill_tags.slice(0, 2).join(" & ");
+        const { error: notifError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: data.student_id,
+            type: "remediation",
+            title: "📚 New Practice Available!",
+            message: `You have a new practice set: "${data.title}" to help with ${skillList}. Complete it to earn ${data.xp_reward || 25} XP and ${data.coin_reward || 5} coins!`,
+            icon: "📝",
+            data: {
+              practice_set_id: practiceSet.id,
+              skill_tags: data.skill_tags,
+              xp_reward: data.xp_reward || 25,
+              coin_reward: data.coin_reward || 5,
+            },
+          });
+
+        if (notifError) {
+          console.error("Failed to create notification:", notifError);
+          // Don't fail the whole request for notification failure
+        }
+
+        // Update student weaknesses if skill_tags provided
+        if (data.skill_tags && data.skill_tags.length > 0) {
+          const { data: currentProfile } = await supabase
+            .from("student_profiles")
+            .select("weaknesses")
+            .eq("user_id", data.student_id)
+            .single();
+
+          const existingWeaknesses = currentProfile?.weaknesses || [];
+          const newWeaknesses = [...new Set([...existingWeaknesses, ...data.skill_tags])];
+
+          await supabase
+            .from("student_profiles")
+            .update({ weaknesses: newWeaknesses })
+            .eq("user_id", data.student_id);
+        }
+
+        console.log(`Created remediation practice set ${practiceSet.id} for student ${data.student_id}`);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            practice_set_id: practiceSet.id,
+            questions_count: data.questions.length,
+            status: "remediation_created",
+            notification_sent: !notifError,
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
