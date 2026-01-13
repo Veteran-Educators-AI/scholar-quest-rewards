@@ -56,12 +56,21 @@ export default function Landing() {
                 alt="NYClogic Scholar Ai" 
                 className="w-8 h-8 object-contain"
               />
-              <span 
-                className="text-lg font-black text-destructive" 
-                style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
-              >
-                NYClogic Ai
-              </span>
+              <div className="flex items-baseline gap-0.5">
+                <span className="font-semibold text-foreground">NYClogic</span>
+                <span 
+                  className="font-bold text-destructive" 
+                  style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
+                >
+                  Ai
+                </span>
+                <span 
+                  className="text-lg font-black text-destructive ml-1" 
+                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
+                >
+                  SCHOLAR
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -102,12 +111,23 @@ export default function Landing() {
               transition={{ delay: 0.3 }}
               className="flex flex-col items-center mt-6"
             >
-              <h1 
-                className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight text-center" 
-                style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
-              >
-                NYClogic Ai<sup className="text-lg">™</sup>
-              </h1>
+              <div className="flex flex-col items-center">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl md:text-4xl font-bold text-foreground">NYClogic</span>
+                  <span 
+                    className="text-3xl md:text-4xl font-bold text-destructive" 
+                    style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
+                  >
+                    Ai
+                  </span>
+                </div>
+                <h1 
+                  className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight" 
+                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
+                >
+                  SCHOLAR<sup className="text-lg">™</sup>
+                </h1>
+              </div>
             </motion.div>
           </motion.div>
 
