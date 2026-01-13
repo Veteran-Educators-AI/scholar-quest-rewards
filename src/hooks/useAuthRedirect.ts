@@ -4,6 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const publicRoutes = ["/", "/auth", "/privacy-policy", "/terms-of-service"];
 
+// Helper to check if user is on the wrong dashboard for their role
+const isOnWrongDashboard = (pathname: string, role: string): boolean => {
+  if (role === "teacher" && pathname.startsWith("/student")) return true;
+  if (role === "teacher" && pathname.startsWith("/parent")) return true;
+  if (role === "student" && pathname.startsWith("/teacher")) return true;
+  if (role === "student" && pathname.startsWith("/parent")) return true;
+  if (role === "parent" && pathname.startsWith("/teacher")) return true;
+  if (role === "parent" && pathname.startsWith("/student")) return true;
+  return false;
+};
+
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,18 +25,18 @@ export const useAuthRedirect = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          // Fetch user role
-          const { data: profile } = await supabase
-            .from("profiles")
+          // Fetch user role from user_roles table (more secure)
+          const { data: userRole } = await supabase
+            .from("user_roles")
             .select("role")
-            .eq("id", session.user.id)
+            .eq("user_id", session.user.id)
             .single();
 
-          const role = profile?.role || "student";
+          const role = userRole?.role || "student";
           const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
 
-          // Only redirect if on a public route
-          if (publicRoutes.includes(location.pathname)) {
+          // Redirect if on a public route OR on the wrong dashboard
+          if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
             navigate(targetPath, { replace: true });
           }
         } else if (event === "SIGNED_OUT") {
@@ -40,17 +51,18 @@ export const useAuthRedirect = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
+        // Fetch user role from user_roles table (more secure)
+        const { data: userRole } = await supabase
+          .from("user_roles")
           .select("role")
-          .eq("id", session.user.id)
+          .eq("user_id", session.user.id)
           .single();
 
-        const role = profile?.role || "student";
+        const role = userRole?.role || "student";
         const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
 
-        // Only redirect if on a public route
-        if (publicRoutes.includes(location.pathname)) {
+        // Redirect if on a public route OR on the wrong dashboard
+        if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
           navigate(targetPath, { replace: true });
         }
       }
