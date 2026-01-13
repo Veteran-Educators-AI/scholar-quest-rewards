@@ -809,6 +809,113 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_questions: {
+        Row: {
+          answer_key: Json
+          created_at: string
+          difficulty: number
+          hint: string | null
+          id: string
+          options: Json | null
+          order_index: number
+          practice_set_id: string
+          prompt: string
+          question_type: string
+          skill_tag: string | null
+        }
+        Insert: {
+          answer_key: Json
+          created_at?: string
+          difficulty?: number
+          hint?: string | null
+          id?: string
+          options?: Json | null
+          order_index?: number
+          practice_set_id: string
+          prompt: string
+          question_type?: string
+          skill_tag?: string | null
+        }
+        Update: {
+          answer_key?: Json
+          created_at?: string
+          difficulty?: number
+          hint?: string | null
+          id?: string
+          options?: Json | null
+          order_index?: number
+          practice_set_id?: string
+          prompt?: string
+          question_type?: string
+          skill_tag?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_questions_practice_set_id_fkey"
+            columns: ["practice_set_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_sets: {
+        Row: {
+          coin_reward: number
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          external_ref: string | null
+          id: string
+          printable_url: string | null
+          score: number | null
+          skill_tags: string[] | null
+          source: string
+          started_at: string | null
+          status: string
+          student_id: string
+          title: string
+          total_questions: number | null
+          xp_reward: number
+        }
+        Insert: {
+          coin_reward?: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          external_ref?: string | null
+          id?: string
+          printable_url?: string | null
+          score?: number | null
+          skill_tags?: string[] | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          student_id: string
+          title: string
+          total_questions?: number | null
+          xp_reward?: number
+        }
+        Update: {
+          coin_reward?: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          external_ref?: string | null
+          id?: string
+          printable_url?: string | null
+          score?: number | null
+          skill_tags?: string[] | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          student_id?: string
+          title?: string
+          total_questions?: number | null
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
