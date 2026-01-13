@@ -29,6 +29,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherIntegrations from "./pages/TeacherIntegrations";
 import TeacherRaffle from "./pages/TeacherRaffle";
 import TeacherStudents from "./pages/TeacherStudents";
+import TeacherAssignmentBuilder from "./pages/TeacherAssignmentBuilder";
 import APISettings from "./pages/APISettings";
 import Raffle from "./pages/Raffle";
 import NotFound from "./pages/NotFound";
@@ -65,9 +66,10 @@ const App = () => (
                   <Route path="/teacher/students" element={<TeacherStudents />} />
                   <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
                   <Route path="/teacher/verify" element={<TeacherVerify />} />
-                  <Route path="/teacher/raffle" element={<TeacherRaffle />} />
-                  <Route path="/teacher/api" element={<APISettings />} />
-                  <Route path="/parent" element={<ParentDashboard />} />
+              <Route path="/teacher/raffle" element={<TeacherRaffle />} />
+              <Route path="/teacher/assignments/new" element={<TeacherAssignmentBuilder />} />
+              <Route path="/teacher/api" element={<APISettings />} />
+              <Route path="/parent" element={<ParentDashboard />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-of-service" element={<TermsOfService />} />
                   <Route path="*" element={<NotFound />} />

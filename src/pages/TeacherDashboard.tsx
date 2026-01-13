@@ -19,7 +19,8 @@ import {
   Link as LinkIcon,
   LayoutDashboard,
   Copy,
-  Loader2
+  Loader2,
+  FilePlus2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -465,6 +466,12 @@ export default function TeacherDashboard() {
                   Raffle
                 </Button>
               </Link>
+              <Link to="/teacher/assignments/new">
+                <Button variant="ghost" size="sm">
+                  <FilePlus2 className="w-4 h-4 mr-1.5" />
+                  New Assignment
+                </Button>
+              </Link>
               <Link to="/teacher/integrations">
                 <Button variant="ghost" size="sm">
                   <LinkIcon className="w-4 h-4 mr-1.5" />
@@ -688,6 +695,12 @@ export default function TeacherDashboard() {
                     />
                   </>
                 )}
+                <Link to="/teacher/assignments/new">
+                  <Button variant="default" size="sm">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Create Assignment
+                  </Button>
+                </Link>
                 <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
