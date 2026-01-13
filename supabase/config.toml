@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.send-parent-notification]
 verify_jwt = false
+
+[functions.grade-assignment]
+verify_jwt = false
+
+[functions.sync-to-nycologic]
+verify_jwt = false
