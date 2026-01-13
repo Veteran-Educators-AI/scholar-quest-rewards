@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Confetti } from "@/components/Confetti";
 
 interface PriorityArea {
   standardCode: string;
@@ -72,6 +73,7 @@ export default function StudyPlan() {
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [completedGoals, setCompletedGoals] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState("priorities");
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     loadCachedPlan();
@@ -236,6 +238,9 @@ export default function StudyPlan() {
               .eq("user_id", user.id);
           }
 
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 4000);
+
           toast({
             title: "All goals completed! 🏆",
             description: `Bonus: +${bonusXp} XP and +${bonusCoins} coins!`,
@@ -285,7 +290,9 @@ export default function StudyPlan() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <>
+      <Confetti active={showConfetti} duration={4000} />
+      <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3">
@@ -592,6 +599,7 @@ export default function StudyPlan() {
           </>
         )}
       </main>
-    </div>
+      </div>
+    </>
   );
 }
