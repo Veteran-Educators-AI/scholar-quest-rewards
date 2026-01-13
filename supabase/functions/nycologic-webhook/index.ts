@@ -344,6 +344,8 @@ Deno.serve(async (req) => {
             .from("student_profiles")
             .update({ weaknesses: newWeaknesses })
             .eq("user_id", data.student_id);
+        }
+
         // Auto-generate skill games from remediation
         const gameTypes = ["flashcard_battle", "timed_challenge", "matching_puzzle"];
         for (const skillTag of data.skill_tags.slice(0, 2)) {
