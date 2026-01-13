@@ -15,7 +15,7 @@ import { StudyTimer } from "@/components/StudyTimer";
 import { 
   Trophy, LogOut, BookOpen, Target, TrendingUp, Clock, ChevronRight, 
   Home, Award, Zap, BarChart3, Timer, Loader2, Flame, Shield, 
-  GraduationCap, Ticket
+  GraduationCap, Ticket, Brain
 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import highschoolLogo from "@/assets/highschool-logo-new.png";
@@ -443,7 +443,15 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <Link to="/student/practice-center">
+                <QuickActionCard 
+                  icon={<Brain className="w-5 h-5" />}
+                  title="Practice Center"
+                  description="Skill exercises"
+                  accent="success"
+                />
+              </Link>
               <Link to="/student/raffle">
                 <QuickActionCard 
                   icon={<Ticket className="w-5 h-5" />}
@@ -611,11 +619,12 @@ function QuickActionCard({
   icon: React.ReactNode; 
   title: string; 
   description: string;
-  accent: "primary" | "gold";
+  accent: "primary" | "gold" | "success";
 }) {
   const accentColors = {
     primary: "bg-primary/10 text-primary group-hover:bg-primary/20",
     gold: "bg-gold/10 text-gold group-hover:bg-gold/20",
+    success: "bg-success/10 text-success group-hover:bg-success/20",
   };
 
   return (
