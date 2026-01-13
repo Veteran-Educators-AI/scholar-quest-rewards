@@ -12,25 +12,101 @@ import { supabase } from "@/integrations/supabase/client";
 // Demo assignment data
 const demoAssignment = {
   id: "1",
-  title: "Math Magic: Multiplication",
+  title: "Math Magic: Multiplication & More",
   subject: "math",
-  description: "Practice your multiplication tables from 1-10. Complete all problems to earn your reward!",
+  description: "Practice multiplication with different question types! Multiple choice, short answer, ordering, matching, and fill-in-the-blank.",
   dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-  xpReward: 50,
-  coinReward: 10,
+  xpReward: 80,
+  coinReward: 16,
   printableUrl: "/demo-worksheet.pdf",
   hasInApp: true,
-  estimatedTime: 15,
+  estimatedTime: 10,
 };
 
-// Demo questions - mix of multiple choice and short answer (5-10 questions)
+// Demo questions - mix of ALL question types (8 questions)
 const demoQuestions: QuizQuestion[] = [
-  { id: "1", prompt: "What is 7 × 8?", question_type: "multiple_choice", options: ["54", "56", "63", "64"], answer_key: "56", skill_tag: "Multiplication", difficulty: 2 },
-  { id: "2", prompt: "What is 9 × 6?", question_type: "multiple_choice", options: ["54", "56", "48", "63"], answer_key: "54", skill_tag: "Multiplication", difficulty: 2 },
-  { id: "3", prompt: "What is 12 × 4?", question_type: "short_answer", answer_key: ["48", "forty-eight", "forty eight"], skill_tag: "Multi-digit Multiplication", difficulty: 3 },
-  { id: "4", prompt: "What is 8 × 8?", question_type: "multiple_choice", options: ["64", "72", "56", "81"], answer_key: "64", skill_tag: "Multiplication", difficulty: 2 },
-  { id: "5", prompt: "If you have 5 bags with 7 apples each, how many apples do you have in total?", question_type: "short_answer", answer_key: ["35", "thirty-five", "thirty five"], skill_tag: "Word Problems", difficulty: 3 },
-  { id: "6", prompt: "What is 11 × 7?", question_type: "multiple_choice", options: ["77", "74", "84", "88"], answer_key: "77", skill_tag: "Multiplication", difficulty: 3 },
+  // Multiple Choice
+  { 
+    id: "1", 
+    prompt: "What is 7 × 8?", 
+    question_type: "multiple_choice", 
+    options: ["54", "56", "63", "64"], 
+    answer_key: "56", 
+    skill_tag: "Multiplication", 
+    difficulty: 2 
+  },
+  { 
+    id: "2", 
+    prompt: "What is 9 × 6?", 
+    question_type: "multiple_choice", 
+    options: ["54", "56", "48", "63"], 
+    answer_key: "54", 
+    skill_tag: "Multiplication", 
+    difficulty: 2 
+  },
+  // Short Answer
+  { 
+    id: "3", 
+    prompt: "If you have 5 bags with 7 apples each, how many apples do you have in total?", 
+    question_type: "short_answer", 
+    answer_key: ["35", "thirty-five", "thirty five"], 
+    skill_tag: "Word Problems", 
+    difficulty: 3 
+  },
+  // Drag Order - put numbers in order
+  { 
+    id: "4", 
+    prompt: "Put these multiplication results in order from SMALLEST to LARGEST:", 
+    question_type: "drag_order", 
+    options: ["3×4=12", "5×5=25", "2×3=6", "4×4=16"],
+    answer_key: ["2×3=6", "3×4=12", "4×4=16", "5×5=25"], 
+    skill_tag: "Number Sense", 
+    difficulty: 2 
+  },
+  // Matching - match multiplication to answer
+  { 
+    id: "5", 
+    prompt: "Match each multiplication problem to its correct answer:", 
+    question_type: "matching", 
+    answer_key: [
+      { left: "6 × 6", right: "36" },
+      { left: "7 × 7", right: "49" },
+      { left: "8 × 8", right: "64" },
+      { left: "9 × 9", right: "81" }
+    ],
+    skill_tag: "Perfect Squares", 
+    difficulty: 2 
+  },
+  // Fill in the Blank
+  { 
+    id: "6", 
+    prompt: "Complete the multiplication sentence:", 
+    question_type: "fill_blank",
+    fill_blank_sentence: "If 4 × 5 = 20, then 4 × _____ = 40 and 4 × _____ = 60.",
+    answer_key: ["10", "15"], 
+    skill_tag: "Patterns", 
+    difficulty: 3 
+  },
+  // Another Multiple Choice
+  { 
+    id: "7", 
+    prompt: "What is 12 × 12?", 
+    question_type: "multiple_choice", 
+    options: ["124", "132", "144", "156"], 
+    answer_key: "144", 
+    skill_tag: "Perfect Squares", 
+    difficulty: 3 
+  },
+  // Another Drag Order
+  { 
+    id: "8", 
+    prompt: "Put these steps in order to solve 15 × 4:", 
+    question_type: "drag_order", 
+    options: ["Write the answer: 60", "Multiply: 10×4=40, 5×4=20", "Break 15 into 10+5", "Add: 40+20=60"],
+    answer_key: ["Break 15 into 10+5", "Multiply: 10×4=40, 5×4=20", "Add: 40+20=60", "Write the answer: 60"], 
+    skill_tag: "Problem Solving", 
+    difficulty: 3 
+  },
 ];
 
 type Mode = "select" | "paper" | "in_app";

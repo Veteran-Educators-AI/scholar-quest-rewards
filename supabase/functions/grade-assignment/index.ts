@@ -8,9 +8,10 @@ const corsHeaders = {
 interface Question {
   id: string;
   prompt: string;
-  question_type: "multiple_choice" | "short_answer";
+  question_type: "multiple_choice" | "short_answer" | "drag_order" | "matching" | "fill_blank";
   options?: string[];
-  answer_key: string | string[];
+  answer_key: string | string[] | { left: string; right: string }[];
+  fill_blank_sentence?: string;
   skill_tag?: string;
 }
 
@@ -44,6 +45,53 @@ interface GradeResult {
   }[];
 }
 
+// Grade drag_order questions - check if arrays match
+function gradeDragOrder(studentAnswer: string, correctOrder: string[]): boolean {
+  try {
+    const parsedAnswer = JSON.parse(studentAnswer);
+    if (!Array.isArray(parsedAnswer)) return false;
+    if (parsedAnswer.length !== correctOrder.length) return false;
+    return parsedAnswer.every((item, idx) => item === correctOrder[idx]);
+  } catch {
+    return false;
+  }
+}
+
+// Grade matching questions - check if all pairs match correctly
+function gradeMatching(studentAnswer: string, correctPairs: { left: string; right: string }[]): boolean {
+  try {
+    const parsedAnswer = JSON.parse(studentAnswer);
+    if (typeof parsedAnswer !== "object") return false;
+    
+    // Check each correct pair
+    for (const pair of correctPairs) {
+      if (parsedAnswer[pair.left] !== pair.right) {
+        return false;
+      }
+    }
+    return Object.keys(parsedAnswer).length === correctPairs.length;
+  } catch {
+    return false;
+  }
+}
+
+// Grade fill_blank questions - check if all blanks are correct
+function gradeFillBlank(studentAnswer: string, correctAnswers: string[]): boolean {
+  try {
+    const parsedAnswer = JSON.parse(studentAnswer);
+    if (!Array.isArray(parsedAnswer)) return false;
+    if (parsedAnswer.length !== correctAnswers.length) return false;
+    
+    return parsedAnswer.every((answer, idx) => {
+      const normalizedStudent = answer.toString().toLowerCase().trim();
+      const normalizedCorrect = correctAnswers[idx].toString().toLowerCase().trim();
+      return normalizedStudent === normalizedCorrect;
+    });
+  } catch {
+    return false;
+  }
+}
+
 // Use AI to grade short answer questions
 async function gradeShortAnswer(
   studentAnswer: string,
@@ -71,7 +119,7 @@ async function gradeShortAnswer(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "system",
@@ -153,21 +201,61 @@ Deno.serve(async (req) => {
       const studentAnswer = submittedAnswer?.answer || "";
       
       let isCorrect = false;
-      const correctAnswer = Array.isArray(question.answer_key) 
-        ? question.answer_key[0] 
-        : question.answer_key;
+      let correctAnswerStr = "";
 
-      if (question.question_type === "multiple_choice") {
-        // Simple exact match for multiple choice
-        isCorrect = studentAnswer === correctAnswer;
-      } else {
-        // Use AI for short answer grading
-        const gradeResult = await gradeShortAnswer(
-          studentAnswer,
-          question.answer_key,
-          question.prompt
-        );
-        isCorrect = gradeResult.isCorrect;
+      switch (question.question_type) {
+        case "multiple_choice":
+          // Simple exact match for multiple choice
+          const mcCorrect = Array.isArray(question.answer_key) 
+            ? question.answer_key[0] 
+            : question.answer_key;
+          correctAnswerStr = String(mcCorrect);
+          isCorrect = studentAnswer === correctAnswerStr;
+          break;
+
+        case "short_answer":
+          // Use AI for short answer grading
+          const gradeResult = await gradeShortAnswer(
+            studentAnswer,
+            question.answer_key as string | string[],
+            question.prompt
+          );
+          isCorrect = gradeResult.isCorrect;
+          const saAnswerKey = question.answer_key;
+          if (Array.isArray(saAnswerKey) && typeof saAnswerKey[0] === 'string') {
+            correctAnswerStr = saAnswerKey[0];
+          } else if (typeof saAnswerKey === 'string') {
+            correctAnswerStr = saAnswerKey;
+          } else {
+            correctAnswerStr = JSON.stringify(saAnswerKey);
+          }
+          break;
+
+        case "drag_order":
+          // Check if order matches
+          const orderCorrect = question.answer_key as string[];
+          isCorrect = gradeDragOrder(studentAnswer, orderCorrect);
+          correctAnswerStr = JSON.stringify(orderCorrect);
+          break;
+
+        case "matching":
+          // Check if all pairs are matched correctly
+          const pairs = question.answer_key as { left: string; right: string }[];
+          isCorrect = gradeMatching(studentAnswer, pairs);
+          correctAnswerStr = JSON.stringify(pairs);
+          break;
+
+        case "fill_blank":
+          // Check if all blanks are filled correctly
+          const blankAnswers = question.answer_key as string[];
+          isCorrect = gradeFillBlank(studentAnswer, blankAnswers);
+          correctAnswerStr = JSON.stringify(blankAnswers);
+          break;
+
+        default:
+          console.warn(`Unknown question type: ${question.question_type}`);
+          isCorrect = false;
+          correctAnswerStr = "Unknown";
       }
 
       if (isCorrect) {
@@ -179,7 +267,7 @@ Deno.serve(async (req) => {
       questionResults.push({
         question_id: question.id,
         is_correct: isCorrect,
-        correct_answer: correctAnswer,
+        correct_answer: correctAnswerStr,
         student_answer: studentAnswer,
       });
     }
@@ -291,6 +379,7 @@ Deno.serve(async (req) => {
               xp_earned: xpEarned,
               coins_earned: coinsEarned,
               incorrect_topics: incorrectTopics,
+              question_results: questionResults,
             },
           }),
         });
