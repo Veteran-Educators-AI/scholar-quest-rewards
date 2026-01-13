@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Confetti } from "@/components/Confetti";
+import { useCelebrationSound } from "@/hooks/useCelebrationSound";
 
 interface PriorityArea {
   standardCode: string;
@@ -67,6 +68,7 @@ interface StudyPlanData {
 export default function StudyPlan() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { celebrate } = useCelebrationSound();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [studyPlan, setStudyPlan] = useState<StudyPlanData | null>(null);
@@ -239,6 +241,7 @@ export default function StudyPlan() {
           }
 
           setShowConfetti(true);
+          celebrate();
           setTimeout(() => setShowConfetti(false), 4000);
 
           toast({
