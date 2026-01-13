@@ -25,6 +25,10 @@ export default function GradingResult() {
   const [searchParams] = useSearchParams();
   const assignmentId = searchParams.get("assignment");
   const attemptId = searchParams.get("attempt");
+  const urlScore = searchParams.get("score");
+  const urlTotal = searchParams.get("total");
+  const urlXp = searchParams.get("xp");
+  const urlCoins = searchParams.get("coins");
   
   const [isLoading, setIsLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -35,7 +39,38 @@ export default function GradingResult() {
   const threshold = 70; // Passing threshold percentage
 
   useEffect(() => {
-    // Simulate AI grading (in production, this would fetch from backend)
+    // Check if we have URL params (from real grading)
+    if (urlScore && urlTotal) {
+      const score = parseInt(urlScore);
+      const total = parseInt(urlTotal);
+      const percentage = Math.round((score / total) * 100);
+      const meetsThreshold = percentage >= threshold;
+      
+      const data: GradingData = {
+        score,
+        totalQuestions: total,
+        percentage,
+        meetsThreshold,
+        feedback: meetsThreshold 
+          ? percentage === 100 
+            ? "Perfect score! You're a superstar! 🌟"
+            : "Great job! You've shown strong understanding."
+          : "Keep practicing! You're getting there!",
+        incorrectTopics: meetsThreshold ? [] : ["Review the topics you missed"],
+        xpEarned: urlXp ? parseInt(urlXp) : (meetsThreshold ? score * 10 : 0),
+        coinsEarned: urlCoins ? parseInt(urlCoins) : (meetsThreshold ? score * 2 : 0),
+      };
+      
+      setGradingData(data);
+      setIsLoading(false);
+      
+      if (data.meetsThreshold) {
+        setShowConfetti(true);
+      }
+      return;
+    }
+
+    // Fallback: simulate AI grading for demo
     const simulateGrading = async () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -59,7 +94,7 @@ export default function GradingResult() {
     };
     
     simulateGrading();
-  }, [assignmentId, attemptId]);
+  }, [assignmentId, attemptId, urlScore, urlTotal, urlXp, urlCoins]);
 
   const handleFinalSubmit = async () => {
     if (!gradingData) return;
