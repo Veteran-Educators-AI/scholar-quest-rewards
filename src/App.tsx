@@ -35,6 +35,8 @@ import TeacherStudents from "./pages/TeacherStudents";
 import TeacherAssignmentBuilder from "./pages/TeacherAssignmentBuilder";
 import APISettings from "./pages/APISettings";
 import Raffle from "./pages/Raffle";
+import GameCenter from "./pages/GameCenter";
+import PlayGame from "./pages/PlayGame";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,8 @@ const App = () => (
                   <Route path="/student/rewards-earned" element={<RewardsEarned />} />
                   <Route path="/student/raffle" element={<Raffle />} />
                   <Route path="/student/notifications" element={<NotificationCenter />} />
+                  <Route path="/games" element={<GameCenter />} />
+                  <Route path="/games/:id" element={<PlayGame />} />
                   <Route path="/teacher" element={<TeacherDashboard />} />
                   <Route path="/teacher/students" element={<TeacherStudents />} />
                   <Route path="/teacher/integrations" element={<TeacherIntegrations />} />

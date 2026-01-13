@@ -344,6 +344,28 @@ Deno.serve(async (req) => {
             .from("student_profiles")
             .update({ weaknesses: newWeaknesses })
             .eq("user_id", data.student_id);
+        // Auto-generate skill games from remediation
+        const gameTypes = ["flashcard_battle", "timed_challenge", "matching_puzzle"];
+        for (const skillTag of data.skill_tags.slice(0, 2)) {
+          const gameType = gameTypes[Math.floor(Math.random() * gameTypes.length)];
+          const gameData = gameType === "flashcard_battle" 
+            ? { cards: data.questions.slice(0, 6).map((q, i) => ({ id: `card-${i}`, front: q.prompt, back: String(q.answer_key), hint: q.hint })) }
+            : gameType === "timed_challenge"
+            ? { questions: data.questions.slice(0, 6).map((q, i) => ({ id: `q-${i}`, prompt: q.prompt, options: q.options || [], correctAnswer: String(q.answer_key), hint: q.hint })), timePerQuestion: 15 }
+            : { pairs: data.questions.slice(0, 6).map((q, i) => ({ id: `pair-${i}`, term: q.prompt.substring(0, 50), definition: String(q.answer_key) })) };
+
+          await supabase.from("skill_games").insert({
+            student_id: data.student_id,
+            game_type: gameType,
+            skill_tag: skillTag,
+            title: `${skillTag} ${gameType === "flashcard_battle" ? "Flashcards" : gameType === "timed_challenge" ? "Challenge" : "Match"}`,
+            difficulty: Math.min(3, Math.max(1, data.questions[0]?.difficulty || 2)),
+            game_data: gameData,
+            xp_reward: 15,
+            coin_reward: 5,
+            source: "nycologic",
+            external_ref: data.external_ref,
+          });
         }
 
         console.log(`Created remediation practice set ${practiceSet.id} for student ${data.student_id}`);

@@ -426,6 +426,59 @@ export type Database = {
           },
         ]
       }
+      game_sessions: {
+        Row: {
+          coins_earned: number | null
+          completed_at: string | null
+          correct_count: number
+          created_at: string
+          game_id: string
+          id: string
+          score: number
+          streak_max: number | null
+          student_id: string
+          time_spent_seconds: number | null
+          total_questions: number
+          xp_earned: number | null
+        }
+        Insert: {
+          coins_earned?: number | null
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          game_id: string
+          id?: string
+          score?: number
+          streak_max?: number | null
+          student_id: string
+          time_spent_seconds?: number | null
+          total_questions?: number
+          xp_earned?: number | null
+        }
+        Update: {
+          coins_earned?: number | null
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          game_id?: string
+          id?: string
+          score?: number
+          streak_max?: number | null
+          student_id?: string
+          time_spent_seconds?: number | null
+          total_questions?: number
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "skill_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_tokens: {
         Row: {
           created_at: string
@@ -1036,6 +1089,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      skill_games: {
+        Row: {
+          attempts_count: number
+          best_time_seconds: number | null
+          coin_reward: number
+          created_at: string
+          difficulty: number
+          external_ref: string | null
+          game_data: Json
+          game_type: string
+          high_score: number | null
+          id: string
+          last_played_at: string | null
+          skill_tag: string
+          source: string
+          status: string
+          student_id: string
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          attempts_count?: number
+          best_time_seconds?: number | null
+          coin_reward?: number
+          created_at?: string
+          difficulty?: number
+          external_ref?: string | null
+          game_data?: Json
+          game_type: string
+          high_score?: number | null
+          id?: string
+          last_played_at?: string | null
+          skill_tag: string
+          source?: string
+          status?: string
+          student_id: string
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          attempts_count?: number
+          best_time_seconds?: number | null
+          coin_reward?: number
+          created_at?: string
+          difficulty?: number
+          external_ref?: string | null
+          game_data?: Json
+          game_type?: string
+          high_score?: number | null
+          id?: string
+          last_played_at?: string | null
+          skill_tag?: string
+          source?: string
+          status?: string
+          student_id?: string
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
       }
       student_badges: {
         Row: {
