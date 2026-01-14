@@ -45,6 +45,7 @@ const PlayGame = lazy(() => import("./pages/PlayGame"));
 const RegentsPrep = lazy(() => import("./pages/RegentsPrep"));
 const StudyPlan = lazy(() => import("./pages/StudyPlan"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => {
                     <Routes>
                       <Route path="/" element={<Landing />} />
                       <Route path="/auth" element={<Auth />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/student" element={<StudentHome />} />
                       <Route path="/student/onboarding" element={<StudentOnboarding />} />
                       <Route path="/student/profile" element={<StudentProfile />} />
