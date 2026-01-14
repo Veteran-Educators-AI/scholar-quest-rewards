@@ -9,7 +9,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Users, Chrome, Heart, Shield } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart, Shield, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type AuthMode = "login" | "signup";
 type UserRole = "student" | "parent" | "teacher";
@@ -24,6 +31,9 @@ export default function Auth() {
     searchParams.get("role") === "parent" ? "parent" : "student"
   );
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -178,6 +188,33 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setForgotPasswordSent(true);
+      toast({
+        title: "Check your email! 📧",
+        description: "We've sent you a password reset link.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to send reset email",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const messages = {
     student: {
       login: "Welcome back, scholar! Ready for more adventures?",
@@ -305,7 +342,19 @@ export default function Auth() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === "login" && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-xs text-muted-foreground hover:text-destructive p-0 h-auto"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Forgot password?
+                  </Button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
@@ -401,6 +450,82 @@ export default function Auth() {
           <PoweredByFooter className="mt-4 border-t border-border pt-4" />
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={(open) => {
+        setShowForgotPassword(open);
+        if (!open) {
+          setForgotPasswordSent(false);
+          setForgotPasswordEmail("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Your Password</DialogTitle>
+            <DialogDescription>
+              {forgotPasswordSent 
+                ? "Check your email for a password reset link."
+                : "Enter your email and we'll send you a reset link."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {forgotPasswordSent ? (
+            <div className="flex flex-col items-center py-6">
+              <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
+              <p className="text-center text-muted-foreground text-sm">
+                We've sent a password reset link to <strong>{forgotPasswordEmail}</strong>
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setShowForgotPassword(false)}
+              >
+                Back to Login
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgotEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="forgotEmail"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : (
+                    "Send Reset Link"
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

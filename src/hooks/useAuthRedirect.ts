@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-const publicRoutes = ["/", "/auth", "/privacy-policy", "/terms-of-service"];
+const publicRoutes = ["/", "/auth", "/privacy-policy", "/terms-of-service", "/reset-password"];
 
 // Helper to check if user is on the wrong dashboard for their role
 const isOnWrongDashboard = (pathname: string, role: string): boolean => {
