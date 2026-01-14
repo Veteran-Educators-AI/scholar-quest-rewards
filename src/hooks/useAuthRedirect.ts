@@ -13,11 +13,9 @@ const isPublicRoute = (pathname: string): boolean => {
 
 // Helper to check if user is on the wrong dashboard for their role
 const isOnWrongDashboard = (pathname: string, role: string): boolean => {
-  if (role === "teacher" && pathname.startsWith("/student")) return true;
-  if (role === "teacher" && pathname.startsWith("/parent")) return true;
-  if (role === "student" && pathname.startsWith("/teacher")) return true;
+  // Teachers are not allowed - they should use NYCologic AI
+  if (role === "teacher") return true;
   if (role === "student" && pathname.startsWith("/parent")) return true;
-  if (role === "parent" && pathname.startsWith("/teacher")) return true;
   if (role === "parent" && pathname.startsWith("/student")) return true;
   return false;
 };
@@ -40,7 +38,14 @@ export const useAuthRedirect = () => {
             .single();
 
           const role = userRole?.role || "student";
-          const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+          
+          // Teachers are not allowed in this app - sign them out
+          if (role === "teacher") {
+            await supabase.auth.signOut();
+            return;
+          }
+          
+          const targetPath = role === "parent" ? "/parent" : "/student";
 
           // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
           const onPublicNonInvite = publicRoutes.includes(location.pathname);
@@ -67,7 +72,14 @@ export const useAuthRedirect = () => {
           .single();
 
         const role = userRole?.role || "student";
-        const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+        
+        // Teachers are not allowed in this app - sign them out
+        if (role === "teacher") {
+          await supabase.auth.signOut();
+          return;
+        }
+        
+        const targetPath = role === "parent" ? "/parent" : "/student";
 
         // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
         const onPublicNonInvite = publicRoutes.includes(location.pathname);
