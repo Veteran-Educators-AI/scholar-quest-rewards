@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
@@ -11,31 +11,29 @@ import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is logged in and redirect to student dashboard
+  // Best-effort redirect for logged-in users.
+  // Important: never block rendering on Supabase/network calls, or the homepage can appear "stuck loading".
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/student", { replace: true });
-      } else {
-        setIsLoading(false);
-      }
+    let cancelled = false;
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled) return;
+        if (session) {
+          navigate("/student", { replace: true });
+        }
+      })
+      .catch(() => {
+        // Ignore auth/network errors here; the landing page should still load.
+      });
+
+    return () => {
+      cancelled = true;
     };
-    checkAuth();
   }, [navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <ScholarBuddy size="lg" animate={true} />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}

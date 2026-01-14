@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import PageLoader from "./components/PageLoader";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 
 const TeacherVerify = lazy(() => import("./pages/TeacherVerify"));
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
@@ -56,43 +57,45 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <AuthRedirectWrapper>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/student" element={<StudentHome />} />
-                    <Route path="/student/onboarding" element={<StudentOnboarding />} />
-                    <Route path="/student/profile" element={<StudentProfile />} />
-                    <Route path="/student/rewards" element={<Rewards />} />
-                    <Route path="/student/leaderboard" element={<Leaderboard />} />
-                    <Route path="/student/challenges" element={<Challenges />} />
-                    <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
-                    <Route path="/student/support" element={<Support />} />
-                    <Route path="/student/grading" element={<GradingResult />} />
-                    <Route path="/student/practice" element={<PracticeSet />} />
-                    <Route path="/student/practice-center" element={<PracticeCenter />} />
-                    <Route path="/student/practice/:id" element={<PracticeExercise />} />
-                    <Route path="/student/practice/:id/print" element={<PrintableWorksheet />} />
-                    <Route path="/student/rewards-earned" element={<RewardsEarned />} />
-                    <Route path="/student/raffle" element={<Raffle />} />
-                    <Route path="/student/notifications" element={<NotificationCenter />} />
-                    <Route path="/games" element={<GameCenter />} />
-                    <Route path="/games/:id" element={<PlayGame />} />
-                    <Route path="/regents-prep" element={<RegentsPrep />} />
-                    <Route path="/study-plan" element={<StudyPlan />} />
-                    <Route path="/teacher" element={<TeacherDashboard />} />
-                    <Route path="/teacher/students" element={<TeacherStudents />} />
-                    <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
-                    <Route path="/teacher/verify" element={<TeacherVerify />} />
-                    <Route path="/teacher/raffle" element={<TeacherRaffle />} />
-                    <Route path="/teacher/assignments/new" element={<TeacherAssignmentBuilder />} />
-                    <Route path="/teacher/api" element={<APISettings />} />
-                    <Route path="/parent" element={<ParentDashboard />} />
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
+                <AppErrorBoundary>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Landing />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/student" element={<StudentHome />} />
+                      <Route path="/student/onboarding" element={<StudentOnboarding />} />
+                      <Route path="/student/profile" element={<StudentProfile />} />
+                      <Route path="/student/rewards" element={<Rewards />} />
+                      <Route path="/student/leaderboard" element={<Leaderboard />} />
+                      <Route path="/student/challenges" element={<Challenges />} />
+                      <Route path="/student/assignment/:id" element={<AssignmentDetail />} />
+                      <Route path="/student/support" element={<Support />} />
+                      <Route path="/student/grading" element={<GradingResult />} />
+                      <Route path="/student/practice" element={<PracticeSet />} />
+                      <Route path="/student/practice-center" element={<PracticeCenter />} />
+                      <Route path="/student/practice/:id" element={<PracticeExercise />} />
+                      <Route path="/student/practice/:id/print" element={<PrintableWorksheet />} />
+                      <Route path="/student/rewards-earned" element={<RewardsEarned />} />
+                      <Route path="/student/raffle" element={<Raffle />} />
+                      <Route path="/student/notifications" element={<NotificationCenter />} />
+                      <Route path="/games" element={<GameCenter />} />
+                      <Route path="/games/:id" element={<PlayGame />} />
+                      <Route path="/regents-prep" element={<RegentsPrep />} />
+                      <Route path="/study-plan" element={<StudyPlan />} />
+                      <Route path="/teacher" element={<TeacherDashboard />} />
+                      <Route path="/teacher/students" element={<TeacherStudents />} />
+                      <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
+                      <Route path="/teacher/verify" element={<TeacherVerify />} />
+                      <Route path="/teacher/raffle" element={<TeacherRaffle />} />
+                      <Route path="/teacher/assignments/new" element={<TeacherAssignmentBuilder />} />
+                      <Route path="/teacher/api" element={<APISettings />} />
+                      <Route path="/parent" element={<ParentDashboard />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      <Route path="/terms-of-service" element={<TermsOfService />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </AppErrorBoundary>
               </AuthRedirectWrapper>
             </BrowserRouter>
           </TooltipProvider>
