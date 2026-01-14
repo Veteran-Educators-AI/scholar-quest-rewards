@@ -10,7 +10,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import PageLoader from "./components/PageLoader";
 
-const TeacherVerify = lazy(() => import("./pages/TeacherVerify"));
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const Challenges = lazy(() => import("./pages/Challenges"));
@@ -31,12 +30,6 @@ const PracticeExercise = lazy(() => import("./pages/PracticeExercise"));
 const PrintableWorksheet = lazy(() => import("./pages/PrintableWorksheet"));
 const RewardsEarned = lazy(() => import("./pages/RewardsEarned"));
 const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
-const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
-const TeacherIntegrations = lazy(() => import("./pages/TeacherIntegrations"));
-const TeacherRaffle = lazy(() => import("./pages/TeacherRaffle"));
-const TeacherStudents = lazy(() => import("./pages/TeacherStudents"));
-const TeacherAssignmentBuilder = lazy(() => import("./pages/TeacherAssignmentBuilder"));
-const APISettings = lazy(() => import("./pages/APISettings"));
 const Raffle = lazy(() => import("./pages/Raffle"));
 const GameCenter = lazy(() => import("./pages/GameCenter"));
 const PlayGame = lazy(() => import("./pages/PlayGame"));
@@ -81,13 +74,6 @@ const App = () => (
                     <Route path="/games/:id" element={<PlayGame />} />
                     <Route path="/regents-prep" element={<RegentsPrep />} />
                     <Route path="/study-plan" element={<StudyPlan />} />
-                    <Route path="/teacher" element={<TeacherDashboard />} />
-                    <Route path="/teacher/students" element={<TeacherStudents />} />
-                    <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
-                    <Route path="/teacher/verify" element={<TeacherVerify />} />
-                    <Route path="/teacher/raffle" element={<TeacherRaffle />} />
-                    <Route path="/teacher/assignments/new" element={<TeacherAssignmentBuilder />} />
-                    <Route path="/teacher/api" element={<APISettings />} />
                     <Route path="/parent" element={<ParentDashboard />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
