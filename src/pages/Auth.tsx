@@ -112,14 +112,23 @@ export default function Auth() {
             throw error;
           }
         } else if (data.user) {
-          // Fetch user role from profiles table
-          const { data: profile } = await supabase
-            .from("profiles")
+          // Fetch user role from user_roles table (primary source of truth)
+          const { data: userRoleData } = await supabase
+            .from("user_roles")
             .select("role")
-            .eq("id", data.user.id)
-            .single();
+            .eq("user_id", data.user.id)
+            .maybeSingle();
 
-          const userRole = profile?.role || "student";
+          // Fallback to profiles table if user_roles not found
+          let userRole = userRoleData?.role;
+          if (!userRole) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", data.user.id)
+              .single();
+            userRole = profile?.role || "student";
+          }
           
           toast({
             title: "Welcome back! 🦉",
@@ -130,14 +139,9 @@ export default function Auth() {
                 : "Ready for another learning adventure?",
           });
           
-          // Navigate based on role
-          if (userRole === "teacher") {
-            navigate("/teacher");
-          } else if (userRole === "parent") {
-            navigate("/parent");
-          } else {
-            navigate("/student");
-          }
+          // Navigate based on role - use replace to prevent back navigation issues
+          const targetPath = userRole === "teacher" ? "/teacher" : userRole === "parent" ? "/parent" : "/student";
+          navigate(targetPath, { replace: true });
         }
       }
     } catch (error: any) {

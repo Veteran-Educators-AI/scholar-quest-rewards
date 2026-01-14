@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { StudyTimerProvider } from "@/contexts/StudyTimerContext";
@@ -10,6 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import PageLoader from "./components/PageLoader";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
 
 const TeacherVerify = lazy(() => import("./pages/TeacherVerify"));
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
@@ -47,7 +48,11 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Register service worker for offline support and faster repeat visits
+  useServiceWorker();
+  
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <StudyTimerProvider>
@@ -103,6 +108,7 @@ const App = () => (
       </StudyTimerProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
