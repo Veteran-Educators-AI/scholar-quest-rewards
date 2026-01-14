@@ -66,7 +66,7 @@ serve(async (req) => {
 
     const { data: tokenData, error: tokenError } = await supabase
       .from('integration_tokens')
-      .select('created_by, is_active')
+      .select('id, created_by, is_active')
       .eq('token_hash', hashHex)
       .single();
 
@@ -77,7 +77,9 @@ serve(async (req) => {
       );
     }
 
-    const teacherId = tokenData.created_by;
+    // Use created_by if set, otherwise use the token's own ID as a system identifier
+    // This allows API-only integrations without requiring a teacher account in ScholarQuest
+    const teacherId = tokenData.created_by || tokenData.id;
     const body = await req.json();
     const action = body.action || 'generate';
     
