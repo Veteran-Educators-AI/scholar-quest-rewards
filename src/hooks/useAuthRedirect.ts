@@ -21,57 +21,76 @@ export const useAuthRedirect = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
+    let mounted = true;
+
+    const handleSessionCheck = async (session: any) => {
+      if (!mounted) return;
+      
+      try {
+        if (session?.user) {
           // Fetch user role from user_roles table (more secure)
-          const { data: userRole } = await supabase
+          const { data: userRole, error } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", session.user.id)
-            .single();
+            .maybeSingle();
+
+          if (error) {
+            console.error("Error fetching role:", error);
+          }
 
           const role = userRole?.role || "student";
           const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
 
           // Redirect if on a public route OR on the wrong dashboard
           if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
-            navigate(targetPath, { replace: true });
+            if (mounted) {
+              navigate(targetPath, { replace: true });
+            }
           }
-        } else if (event === "SIGNED_OUT") {
-          navigate("/", { replace: true });
+        } else if (!session && !publicRoutes.includes(location.pathname)) {
+          // If no session and on a private route, redirect to auth
+          if (mounted) {
+            navigate("/auth", { replace: true });
+          }
         }
-        setIsLoading(false);
+      } catch (error) {
+        console.error("Auth redirect error:", error);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_OUT") {
+          if (mounted) {
+            navigate("/", { replace: true });
+            setIsLoading(false);
+          }
+        } else {
+          await handleSessionCheck(session);
+        }
       }
     );
 
     // THEN check for existing session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Fetch user role from user_roles table (more secure)
-        const { data: userRole } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
-
-        const role = userRole?.role || "student";
-        const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
-
-        // Redirect if on a public route OR on the wrong dashboard
-        if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
-          navigate(targetPath, { replace: true });
-        }
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        await handleSessionCheck(session);
+      } catch (e) {
+        console.error("Session check failed", e);
+        if (mounted) setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSession();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate, location.pathname]);
