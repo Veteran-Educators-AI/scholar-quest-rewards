@@ -1,14 +1,41 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
-import { Star, Trophy, Flame, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 export default function Landing() {
-  // Auth redirect is handled globally by AuthRedirectWrapper - no duplicate check needed
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if user is logged in and redirect to student dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/student", { replace: true });
+      } else {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <ScholarBuddy size="lg" animate={true} />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}
@@ -35,7 +62,7 @@ export default function Landing() {
                   className="font-bold text-destructive" 
                   style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
                 >
-                  Ai<sup className="text-[8px]">™</sup>
+                  Ai
                 </span>
                 <span 
                   className="text-lg font-black text-destructive ml-1" 
@@ -61,10 +88,10 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 py-20 pt-24">
         {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl" />
-          <div className="absolute bottom-20 right-10 w-48 h-48 bg-secondary/5 rounded-full blur-2xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/3 rounded-full blur-2xl" />
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-48 h-48 bg-secondary/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
         </div>
 
         <div className="container mx-auto relative z-10">
@@ -91,7 +118,7 @@ export default function Landing() {
                     className="text-3xl md:text-4xl font-bold text-destructive" 
                     style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
                   >
-                    Ai<sup className="text-sm">™</sup>
+                    Ai
                   </span>
                 </div>
                 <h1 

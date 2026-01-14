@@ -20,7 +20,7 @@ export function PoweredByFooter({ className = "" }: PoweredByFooterProps) {
             alt="NYClogic Ai" 
             className="w-5 h-5 object-contain"
           />
-          <span className="text-xs font-semibold text-foreground">NYClogic <span className="text-destructive">Ai™</span></span>
+          <span className="text-xs font-semibold text-foreground">NYClogic Ai™</span>
         </a>
       </div>
     </footer>
