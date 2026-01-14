@@ -579,6 +579,65 @@ Response:
 }`}
                 </pre>
               </div>
+
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: Sync Classes from NYCologic Ai</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
+{`POST ${webhookUrl}
+Headers:
+  x-api-key: your-api-key
+  Content-Type: application/json
+
+Body:
+{
+  "type": "class_sync",
+  "data": {
+    "teacher_email": "teacher@school.edu",
+    "classes": [
+      { "name": "Math 6A", "subject": "Math", "grade_band": "6-8" },
+      { "name": "Math 6B", "subject": "Math", "grade_band": "6-8" }
+    ]
+  }
+}
+
+Response:
+{
+  "success": true,
+  "created": 2,
+  "skipped": 0,
+  "class_codes": ["ABC123", "XYZ789"]
+}`}
+                </pre>
+              </div>
+
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Example: Enroll Students via Webhook</p>
+                <pre className="text-xs text-foreground overflow-x-auto">
+{`POST ${webhookUrl}
+Headers:
+  x-api-key: your-api-key
+  Content-Type: application/json
+
+Body:
+{
+  "type": "student_enroll",
+  "data": {
+    "class_code": "ABC123",
+    "students": [
+      { "email": "student1@school.edu", "name": "John Doe" },
+      { "email": "student2@school.edu", "name": "Jane Smith" }
+    ]
+  }
+}
+
+Response:
+{
+  "success": true,
+  "enrolled": 1,
+  "pending": 1
+}`}
+                </pre>
+              </div>
             </div>
           </div>
         </motion.section>
