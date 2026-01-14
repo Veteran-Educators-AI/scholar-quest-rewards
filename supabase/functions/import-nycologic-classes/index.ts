@@ -14,6 +14,22 @@ function generateClassCode(): string {
   return code;
 }
 
+// Helper to fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,6 +39,13 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const nycologicApiUrl = Deno.env.get("NYCOLOGIC_API_URL");
+
+    console.log("Starting import-nycologic-classes function");
+    console.log("NYCOLOGIC_API_URL configured:", !!nycologicApiUrl);
+    
+    if (nycologicApiUrl) {
+      console.log("API URL (first 50 chars):", nycologicApiUrl.substring(0, 50));
+    }
 
     if (!nycologicApiUrl) {
       return new Response(
@@ -36,6 +59,7 @@ Deno.serve(async (req) => {
     // Get the user from the auth header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.log("No authorization header provided");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -46,11 +70,14 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
+      console.log("User auth failed:", userError?.message);
       return new Response(
         JSON.stringify({ error: "Invalid user token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("User authenticated:", user.email);
 
     // Check if user is a teacher
     const { data: roleData } = await supabase
@@ -60,6 +87,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!roleData || roleData.role !== "teacher") {
+      console.log("User is not a teacher:", roleData?.role);
       return new Response(
         JSON.stringify({ error: "Only teachers can import classes" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -68,31 +96,45 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching classes from NYCologic AI for teacher ${user.email}...`);
 
-    // Fetch classes from NYCologic AI
-    const response = await fetch(nycologicApiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-source-app": "scholar-app",
-      },
-      body: JSON.stringify({
-        source: "scholar-app",
-        action: "get_teacher_classes",
-        timestamp: new Date().toISOString(),
-        data: {
-          teacher_email: user.email,
-          teacher_id: user.id,
+    // Fetch classes from NYCologic AI with timeout
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(nycologicApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-source-app": "scholar-app",
         },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("NYCologic API error:", errorText);
+        body: JSON.stringify({
+          source: "scholar-app",
+          action: "get_teacher_classes",
+          timestamp: new Date().toISOString(),
+          data: {
+            teacher_email: user.email,
+            teacher_id: user.id,
+          },
+        }),
+      }, 15000); // 15 second timeout
+    } catch (fetchError) {
+      const errorMsg = fetchError instanceof Error ? fetchError.message : "Unknown fetch error";
+      console.error("Fetch to NYCologic API failed:", errorMsg);
+      
+      if (errorMsg.includes("aborted") || errorMsg.includes("timeout")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "NYCologic Ai API timed out - the server may be slow or unreachable", 
+            details: errorMsg,
+            imported: 0,
+            skipped: 0,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: "Failed to fetch classes from NYCologic Ai", 
-          status: response.status,
+          error: "Failed to connect to NYCologic Ai API", 
+          details: errorMsg,
           imported: 0,
           skipped: 0,
         }),
@@ -100,8 +142,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result = await response.json();
+    console.log("NYCologic API response status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("NYCologic API error response:", errorText);
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to fetch classes from NYCologic Ai", 
+          status: response.status,
+          details: errorText.substring(0, 500),
+          imported: 0,
+          skipped: 0,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const responseText = await response.text();
+    console.log("NYCologic API response (first 500 chars):", responseText.substring(0, 500));
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse NYCologic response as JSON");
+      return new Response(
+        JSON.stringify({ 
+          error: "NYCologic Ai API returned invalid JSON", 
+          details: responseText.substring(0, 200),
+          imported: 0,
+          skipped: 0,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const nycologicClasses = result.classes || [];
+    console.log("Found", nycologicClasses.length, "classes from NYCologic");
 
     if (!nycologicClasses.length) {
       return new Response(
@@ -134,6 +212,7 @@ Deno.serve(async (req) => {
     for (const nycClass of nycologicClasses) {
       // Skip if class name already exists
       if (existingNames.has(nycClass.name.toLowerCase())) {
+        console.log("Skipping existing class:", nycClass.name);
         skipped++;
         continue;
       }
@@ -169,85 +248,107 @@ Deno.serve(async (req) => {
       classNameToId.set(nycClass.name.toLowerCase(), newClass.id);
       imported++;
       importedClasses.push({ name: newClass.name, class_code: newClass.class_code });
+      console.log("Imported class:", newClass.name);
     }
 
     console.log(`Imported ${imported} classes, skipped ${skipped}`);
 
     // Now sync students for all classes (both imported and existing)
+    // Process students in parallel batches to speed up
     let studentsEnrolled = 0;
     let studentsPending = 0;
 
-    // Fetch students for each NYCologic class
-    for (const nycClass of nycologicClasses) {
+    // Fetch students for each NYCologic class - limit to 3 parallel requests
+    const studentPromises = nycologicClasses.slice(0, 10).map(async (nycClass: { name: string; id?: string }) => {
       const classId = classNameToId.get(nycClass.name.toLowerCase());
-      if (!classId) continue;
+      if (!classId) return { enrolled: 0, pending: 0 };
 
-      // Fetch enrolled students from NYCologic AI
-      const studentsResponse = await fetch(nycologicApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-source-app": "scholar-app",
-        },
-        body: JSON.stringify({
-          source: "scholar-app",
-          action: "get_class_students",
-          timestamp: new Date().toISOString(),
-          data: {
-            class_name: nycClass.name,
-            class_id: nycClass.id,
-            teacher_email: user.email,
+      try {
+        // Fetch enrolled students from NYCologic AI with timeout
+        const studentsResponse = await fetchWithTimeout(nycologicApiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-source-app": "scholar-app",
           },
-        }),
-      });
+          body: JSON.stringify({
+            source: "scholar-app",
+            action: "get_class_students",
+            timestamp: new Date().toISOString(),
+            data: {
+              class_name: nycClass.name,
+              class_id: nycClass.id,
+              teacher_email: user.email,
+            },
+          }),
+        }, 10000); // 10 second timeout per class
 
-      if (!studentsResponse.ok) {
-        console.error(`Failed to fetch students for class ${nycClass.name}`);
-        continue;
-      }
+        if (!studentsResponse.ok) {
+          console.error(`Failed to fetch students for class ${nycClass.name}: status ${studentsResponse.status}`);
+          return { enrolled: 0, pending: 0 };
+        }
 
-      const studentsResult = await studentsResponse.json();
-      const students = studentsResult.students || [];
+        const studentsResult = await studentsResponse.json();
+        const students = studentsResult.students || [];
+        console.log(`Found ${students.length} students for class ${nycClass.name}`);
 
-      for (const student of students) {
-        if (!student.email) continue;
+        let localEnrolled = 0;
+        let localPending = 0;
 
-        // Check if student user exists by user_id from NYCologic
-        let studentUserId = student.user_id;
+        for (const student of students) {
+          if (!student.email) continue;
 
-        if (studentUserId) {
-          // Check if profile exists for this user
-          const { data: existingProfile } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("id", studentUserId)
-            .maybeSingle();
+          // Check if student user exists by user_id from NYCologic
+          const studentUserId = student.user_id;
 
-          if (existingProfile) {
-            // Check if already enrolled
-            const { data: existingEnrollment } = await supabase
-              .from("enrollments")
+          if (studentUserId) {
+            // Check if profile exists for this user
+            const { data: existingProfile } = await supabase
+              .from("profiles")
               .select("id")
-              .eq("class_id", classId)
-              .eq("student_id", studentUserId)
+              .eq("id", studentUserId)
               .maybeSingle();
 
-            if (existingEnrollment) {
-              // Already enrolled, skip
-              continue;
-            }
+            if (existingProfile) {
+              // Check if already enrolled
+              const { data: existingEnrollment } = await supabase
+                .from("enrollments")
+                .select("id")
+                .eq("class_id", classId)
+                .eq("student_id", studentUserId)
+                .maybeSingle();
 
-            // Enroll the student
-            const { error: enrollError } = await supabase
-              .from("enrollments")
-              .insert({
-                class_id: classId,
-                student_id: studentUserId,
-              });
+              if (existingEnrollment) {
+                // Already enrolled, skip
+                continue;
+              }
 
-            if (enrollError) {
-              console.error(`Failed to enroll student ${student.email}:`, enrollError);
-              // Add to pending enrollments if direct enrollment fails
+              // Enroll the student
+              const { error: enrollError } = await supabase
+                .from("enrollments")
+                .insert({
+                  class_id: classId,
+                  student_id: studentUserId,
+                });
+
+              if (enrollError) {
+                console.error(`Failed to enroll student ${student.email}:`, enrollError.message);
+                // Add to pending enrollments if direct enrollment fails
+                await supabase
+                  .from("pending_enrollments")
+                  .upsert({
+                    class_id: classId,
+                    email: student.email,
+                    student_name: student.name || null,
+                    teacher_id: user.id,
+                    processed: false,
+                  }, { onConflict: "class_id,email" });
+                localPending++;
+              } else {
+                localEnrolled++;
+              }
+            } else {
+              // Profile doesn't exist, add to pending
               await supabase
                 .from("pending_enrollments")
                 .upsert({
@@ -257,12 +358,10 @@ Deno.serve(async (req) => {
                   teacher_id: user.id,
                   processed: false,
                 }, { onConflict: "class_id,email" });
-              studentsPending++;
-            } else {
-              studentsEnrolled++;
+              localPending++;
             }
           } else {
-            // Profile doesn't exist, add to pending
+            // No user_id, add to pending enrollments
             await supabase
               .from("pending_enrollments")
               .upsert({
@@ -272,22 +371,21 @@ Deno.serve(async (req) => {
                 teacher_id: user.id,
                 processed: false,
               }, { onConflict: "class_id,email" });
-            studentsPending++;
+            localPending++;
           }
-        } else {
-          // No user_id, add to pending enrollments
-          await supabase
-            .from("pending_enrollments")
-            .upsert({
-              class_id: classId,
-              email: student.email,
-              student_name: student.name || null,
-              teacher_id: user.id,
-              processed: false,
-            }, { onConflict: "class_id,email" });
-          studentsPending++;
         }
+
+        return { enrolled: localEnrolled, pending: localPending };
+      } catch (error) {
+        console.error(`Error processing students for class ${nycClass.name}:`, error);
+        return { enrolled: 0, pending: 0 };
       }
+    });
+
+    const studentResults = await Promise.all(studentPromises);
+    for (const result of studentResults) {
+      studentsEnrolled += result.enrolled;
+      studentsPending += result.pending;
     }
 
     console.log(`Enrolled ${studentsEnrolled} students, ${studentsPending} pending`);
