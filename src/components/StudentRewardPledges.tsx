@@ -4,6 +4,7 @@ import { Gift, Coins, Target, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { tryOr, withTimeout } from "@/lib/async";
 
 interface PointPledge {
   id: string;
@@ -48,99 +49,135 @@ export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
   }, []);
 
   const fetchPledgesAndProgress = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data: { user } } = await tryOr(
+        withTimeout(supabase.auth.getUser(), 7000, "Timed out getting user"),
+        { data: { user: null } }
+      );
+      if (!user) return;
 
-    // Fetch student profile for current coins
-    const { data: studentProfile } = await supabase
-      .from('student_profiles')
-      .select('coins')
-      .eq('user_id', user.id)
-      .single();
+      // Fetch coins + earned badges in parallel
+      const [{ data: studentProfile }, { data: earnedBadges }] = await Promise.all([
+        tryOr(
+          withTimeout(
+            supabase
+              .from("student_profiles")
+              .select("coins")
+              .eq("user_id", user.id)
+              .single(),
+            8000,
+            "Timed out fetching student coins"
+          ),
+          { data: null }
+        ),
+        tryOr(
+          withTimeout(
+            supabase
+              .from("student_badges")
+              .select("badge_id")
+              .eq("student_id", user.id),
+            8000,
+            "Timed out fetching earned badges"
+          ),
+          { data: [] }
+        ),
+      ]);
 
-    if (studentProfile) {
-      setCurrentCoins(studentProfile.coins);
-    }
+      if (studentProfile?.coins != null) setCurrentCoins(studentProfile.coins);
 
-    // Fetch earned badges
-    const { data: earnedBadges } = await supabase
-      .from('student_badges')
-      .select('badge_id')
-      .eq('student_id', user.id);
+      const earnedIds = earnedBadges?.map((b) => b.badge_id) || [];
+      setEarnedBadgeIds(earnedIds);
 
-    const earnedIds = earnedBadges?.map(b => b.badge_id) || [];
-    setEarnedBadgeIds(earnedIds);
+      // Fetch pledges in parallel
+      const [{ data: pointPledgesData }, { data: badgePledgesData }] = await Promise.all([
+        tryOr(
+          withTimeout(
+            supabase
+              .from("parent_point_pledges")
+              .select("id, coin_threshold, reward_description, reward_type, parent_id")
+              .eq("student_id", user.id)
+              .eq("is_active", true)
+              .eq("claimed", false)
+              .order("coin_threshold", { ascending: true }),
+            9000,
+            "Timed out fetching point pledges"
+          ),
+          { data: [] }
+        ),
+        tryOr(
+          withTimeout(
+            supabase
+              .from("parent_reward_pledges")
+              .select("id, badge_id, reward_description, parent_id")
+              .eq("student_id", user.id)
+              .eq("is_active", true)
+              .eq("claimed", false),
+            9000,
+            "Timed out fetching badge pledges"
+          ),
+          { data: [] }
+        ),
+      ]);
 
-    // Fetch point-based pledges
-    const { data: pointPledgesData } = await supabase
-      .from('parent_point_pledges')
-      .select('id, coin_threshold, reward_description, reward_type, parent_id')
-      .eq('student_id', user.id)
-      .eq('is_active', true)
-      .eq('claimed', false)
-      .order('coin_threshold', { ascending: true });
+      // Batch lookup parents (and badges for badge pledges) to avoid N+1 queries.
+      const parentIds = Array.from(
+        new Set([
+          ...(pointPledgesData || []).map((p) => p.parent_id).filter(Boolean),
+          ...(badgePledgesData || []).map((p) => p.parent_id).filter(Boolean),
+        ])
+      );
 
-    if (pointPledgesData && pointPledgesData.length > 0) {
-      const enrichedPointPledges = await Promise.all(
-        pointPledgesData.map(async (pledge) => {
-          const { data: parent } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', pledge.parent_id)
-            .single();
+      const badgeIds = Array.from(new Set((badgePledgesData || []).map((p) => p.badge_id).filter(Boolean)));
 
-          return {
+      const [{ data: parents }, { data: badges }] = await Promise.all([
+        parentIds.length
+          ? tryOr(
+              withTimeout(
+                supabase.from("profiles").select("id, full_name").in("id", parentIds),
+                9000,
+                "Timed out fetching parents"
+              ),
+              { data: [] }
+            )
+          : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+        badgeIds.length
+          ? tryOr(
+              withTimeout(supabase.from("badges").select("id, name").in("id", badgeIds), 9000, "Timed out fetching badges"),
+              { data: [] }
+            )
+          : Promise.resolve({ data: [] as Array<{ id: string; name: string | null }> }),
+      ]);
+
+      const parentNameById = new Map((parents || []).map((p) => [p.id, p.full_name || "Your parent"]));
+      const badgeNameById = new Map((badges || []).map((b) => [b.id, b.name || "Badge"]));
+
+      if (pointPledgesData && pointPledgesData.length > 0) {
+        setPointPledges(
+          pointPledgesData.map((pledge) => ({
             id: pledge.id,
             coin_threshold: pledge.coin_threshold,
             reward_description: pledge.reward_description,
             reward_type: pledge.reward_type,
-            parent_name: parent?.full_name || 'Your parent',
-          };
-        })
-      );
-      setPointPledges(enrichedPointPledges);
-    }
+            parent_name: parentNameById.get(pledge.parent_id) || "Your parent",
+          }))
+        );
+      }
 
-    // Fetch badge-based pledges
-    const { data: badgePledgesData } = await supabase
-      .from('parent_reward_pledges')
-      .select('id, badge_id, reward_description, parent_id')
-      .eq('student_id', user.id)
-      .eq('is_active', true)
-      .eq('claimed', false);
-
-    if (badgePledgesData && badgePledgesData.length > 0) {
-      const enrichedBadgePledges = await Promise.all(
-        badgePledgesData.map(async (pledge) => {
-          const { data: badge } = await supabase
-            .from('badges')
-            .select('name')
-            .eq('id', pledge.badge_id)
-            .single();
-
-          const { data: parent } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', pledge.parent_id)
-            .single();
-
-          return {
+      if (badgePledgesData && badgePledgesData.length > 0) {
+        setBadgePledges(
+          badgePledgesData.map((pledge) => ({
             id: pledge.id,
             badge_id: pledge.badge_id,
             reward_description: pledge.reward_description,
-            badge_name: badge?.name || 'Badge',
-            parent_name: parent?.full_name || 'Your parent',
+            badge_name: badgeNameById.get(pledge.badge_id) || "Badge",
+            parent_name: parentNameById.get(pledge.parent_id) || "Your parent",
             badge_earned: earnedIds.includes(pledge.badge_id),
-          };
-        })
-      );
-      setBadgePledges(enrichedBadgePledges);
+          }))
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const getProgressPercentage = (threshold: number) => {

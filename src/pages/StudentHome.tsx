@@ -1,15 +1,10 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { CoinCounter } from "@/components/CoinCounter";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { StudentRewardPledges } from "@/components/StudentRewardPledges";
-import { GuidedTour } from "@/components/GuidedTour";
-import { ClassSchedule } from "@/components/ClassSchedule";
-import { StandardsMasteryWidget } from "@/components/StandardsMasteryWidget";
-import { DailyQuoteCard } from "@/components/DailyQuoteCard";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { StudyTimer } from "@/components/StudyTimer";
@@ -24,6 +19,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useStudyTimer, formatStudyTime } from "@/contexts/StudyTimerContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { tryOr, withTimeout } from "@/lib/async";
+
+// Lazily load the heaviest below-the-fold widgets.
+const GuidedTourLazy = lazy(() => import("@/components/GuidedTour").then((m) => ({ default: m.GuidedTour })));
+const DailyQuoteCardLazy = lazy(() => import("@/components/DailyQuoteCard").then((m) => ({ default: m.DailyQuoteCard })));
+const StandardsMasteryWidgetLazy = lazy(() =>
+  import("@/components/StandardsMasteryWidget").then((m) => ({ default: m.StandardsMasteryWidget }))
+);
+const ClassScheduleLazy = lazy(() => import("@/components/ClassSchedule").then((m) => ({ default: m.ClassSchedule })));
+const StudentRewardPledgesLazy = lazy(() =>
+  import("@/components/StudentRewardPledges").then((m) => ({ default: m.StudentRewardPledges }))
+);
 
 interface StudentData {
   name: string;
@@ -65,23 +73,37 @@ export default function StudentHome() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await tryOr(
+          withTimeout(supabase.auth.getUser(), 7000, "Timed out getting user"),
+          { data: { user: null } }
+        );
         if (!user) {
           setLoading(false);
           return;
         }
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-
-        const { data: studentProfile } = await supabase
-          .from("student_profiles")
-          .select("xp, coins, current_streak, streak_shield_available, grade_level")
-          .eq("user_id", user.id)
-          .single();
+        const [{ data: profile }, { data: studentProfile }] = await Promise.all([
+          tryOr(
+            withTimeout(
+              supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+              9000,
+              "Timed out fetching profile"
+            ),
+            { data: null }
+          ),
+          tryOr(
+            withTimeout(
+              supabase
+                .from("student_profiles")
+                .select("xp, coins, current_streak, streak_shield_available, grade_level")
+                .eq("user_id", user.id)
+                .single(),
+              9000,
+              "Timed out fetching student profile"
+            ),
+            { data: null }
+          ),
+        ]);
 
         if (studentProfile && studentProfile.grade_level === null) {
           navigate("/student/onboarding");
@@ -101,27 +123,45 @@ export default function StudentHome() {
           hasShield: studentProfile?.streak_shield_available || false,
         });
 
-        const { data: enrollments } = await supabase
-          .from("enrollments")
-          .select("class_id")
-          .eq("student_id", user.id);
+        const { data: enrollments } = await tryOr(
+          withTimeout(
+            supabase.from("enrollments").select("class_id").eq("student_id", user.id),
+            9000,
+            "Timed out fetching enrollments"
+          ),
+          { data: [] }
+        );
 
         if (enrollments && enrollments.length > 0) {
           const classIds = enrollments.map(e => e.class_id);
-          const { data: assignments } = await supabase
-            .from("assignments")
-            .select("id, title, subject, due_at, xp_reward, coin_reward, status")
-            .in("class_id", classIds)
-            .in("status", ["pending", "active"])
-            .order("due_at", { ascending: true })
-            .limit(5);
+          const { data: assignments } = await tryOr(
+            withTimeout(
+              supabase
+                .from("assignments")
+                .select("id, title, subject, due_at, xp_reward, coin_reward, status")
+                .in("class_id", classIds)
+                .in("status", ["pending", "active"])
+                .order("due_at", { ascending: true })
+                .limit(5),
+              10000,
+              "Timed out fetching assignments"
+            ),
+            { data: [] }
+          );
 
-          if (assignments) {
-            const { data: attempts } = await supabase
-              .from("attempts")
-              .select("assignment_id, status")
-              .eq("student_id", user.id)
-              .in("assignment_id", assignments.map(a => a.id));
+          if (assignments && assignments.length > 0) {
+            const { data: attempts } = await tryOr(
+              withTimeout(
+                supabase
+                  .from("attempts")
+                  .select("assignment_id, status")
+                  .eq("student_id", user.id)
+                  .in("assignment_id", assignments.map((a) => a.id)),
+                10000,
+                "Timed out fetching attempts"
+              ),
+              { data: [] }
+            );
 
             const attemptMap = new Map(attempts?.map(a => [a.assignment_id, a.status]) || []);
 
@@ -137,15 +177,20 @@ export default function StudentHome() {
           }
         }
 
-        const { data: earnedBadges } = await supabase
-          .from("student_badges")
-          .select("badge_id, badges(id, name)")
-          .eq("student_id", user.id);
-
-        const { data: allBadges } = await supabase
-          .from("badges")
-          .select("id, name")
-          .limit(6);
+        const [{ data: earnedBadges }, { data: allBadges }] = await Promise.all([
+          tryOr(
+            withTimeout(
+              supabase.from("student_badges").select("badge_id").eq("student_id", user.id),
+              9000,
+              "Timed out fetching earned badges"
+            ),
+            { data: [] }
+          ),
+          tryOr(
+            withTimeout(supabase.from("badges").select("id, name").limit(6), 9000, "Timed out fetching badges"),
+            { data: [] }
+          ),
+        ]);
 
         if (allBadges) {
           const earnedIds = new Set(earnedBadges?.map(eb => eb.badge_id) || []);
@@ -197,14 +242,6 @@ export default function StudentHome() {
     return t.greeting.evening;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const displayStudent = student || {
     name: "Scholar",
     level: 1,
@@ -216,10 +253,21 @@ export default function StudentHome() {
   };
 
   const progressPercent = (displayStudent.xp / displayStudent.xpForNextLevel) * 100;
+  const { dueTodayCount, completedCount } = useMemo(() => {
+    const today = new Date().toDateString();
+    return {
+      dueTodayCount: missions.filter((m) => m.dueAt.toDateString() === today).length,
+      completedCount: missions.filter((m) => m.status === "verified").length,
+    };
+  }, [missions]);
 
   return (
     <>
-      <GuidedTour isOpen={showTour} onComplete={handleTourComplete} />
+      {showTour && (
+        <Suspense fallback={null}>
+          <GuidedTourLazy isOpen={showTour} onComplete={handleTourComplete} />
+        </Suspense>
+      )}
       
       <div className="min-h-screen bg-background pb-24">
         {/* Refined Header */}
@@ -238,10 +286,19 @@ export default function StudentHome() {
                   </div>
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {displayStudent.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Level {displayStudent.level}</p>
+                  {loading ? (
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {displayStudent.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Level {displayStudent.level}</p>
+                    </>
+                  )}
                 </div>
               </Link>
               
@@ -276,7 +333,13 @@ export default function StudentHome() {
                   {getGreeting()}
                 </p>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-6">
-                  Welcome back, {displayStudent.name.split(' ')[0]}
+                  {loading ? (
+                    <span className="inline-block align-middle">
+                      <Skeleton className="h-8 w-64 bg-secondary-foreground/10" />
+                    </span>
+                  ) : (
+                    <>Welcome back, {displayStudent.name.split(" ")[0]}</>
+                  )}
                 </h1>
 
                 {/* Stats Grid */}
@@ -297,15 +360,13 @@ export default function StudentHome() {
                   <StatCard 
                     icon={<Target className="w-4 h-4" />}
                     label="Due Today"
-                    value={missions.filter(m => 
-                      m.dueAt.toDateString() === new Date().toDateString()
-                    ).length}
+                    value={dueTodayCount}
                     accent="warning"
                   />
                   <StatCard 
                     icon={<TrendingUp className="w-4 h-4" />}
                     label="Completed"
-                    value={missions.filter(m => m.status === "verified").length}
+                    value={completedCount}
                     accent="success"
                   />
                 </div>
@@ -356,7 +417,22 @@ export default function StudentHome() {
               </Link>
             </div>
 
-            {missions.length > 0 ? (
+            {loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <div key={idx} className="bg-card border border-border rounded-xl p-4">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                      <Skeleton className="h-6 w-6 rounded-md" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : missions.length > 0 ? (
               <div className="space-y-2">
                 {missions.map((mission, idx) => (
                   <motion.div
@@ -488,8 +564,27 @@ export default function StudentHome() {
             </div>
           </motion.section>
 
-          {/* Daily Inspirational Quote */}
-          <DailyQuoteCard />
+          {/* Daily Inspirational Quote (lazy) */}
+          <Suspense
+            fallback={
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-28" />
+                      <Skeleton className="h-3 w-40" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6 mt-2" />
+              </div>
+            }
+          >
+            <DailyQuoteCardLazy />
+          </Suspense>
 
           {/* Standards Mastery Widget */}
           <motion.section
@@ -497,7 +592,22 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
           >
-            <StandardsMasteryWidget />
+            <Suspense
+              fallback={
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-2 w-full" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Skeleton className="h-16 w-full rounded-lg" />
+                      <Skeleton className="h-16 w-full rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <StandardsMasteryWidgetLazy />
+            </Suspense>
           </motion.section>
 
           {/* Schedule Section */}
@@ -506,7 +616,20 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
           >
-            <ClassSchedule />
+            <Suspense
+              fallback={
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <Skeleton className="h-4 w-40 mb-3" />
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                      <Skeleton key={idx} className="h-14 w-full rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              }
+            >
+              <ClassScheduleLazy />
+            </Suspense>
           </motion.section>
 
           {/* Reward Pledges */}
@@ -515,7 +638,21 @@ export default function StudentHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
           >
-            <StudentRewardPledges />
+            <Suspense
+              fallback={
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <StudentRewardPledgesLazy />
+            </Suspense>
           </motion.section>
 
           {/* Achievements */}
@@ -534,7 +671,20 @@ export default function StudentHome() {
               </Link>
             </div>
 
-            {badges.length > 0 ? (
+            {loading ? (
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-shrink-0 bg-card border border-border rounded-xl p-4 min-w-[130px]"
+                  >
+                    <Skeleton className="h-10 w-10 rounded-full mb-3" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16 mt-2" />
+                  </div>
+                ))}
+              </div>
+            ) : badges.length > 0 ? (
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                 {badges.map((badge, index) => (
                   <motion.div

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
@@ -6,36 +6,19 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is logged in and redirect to student dashboard
+  // If we ever land here with an old /student URL cached in history, force replace to "/".
+  // Auth redirects are handled globally by AuthRedirectWrapper.
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/student", { replace: true });
-      } else {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
+    if (window.location.pathname !== "/") {
+      navigate("/", { replace: true });
+    }
   }, [navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <ScholarBuddy size="lg" animate={true} />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}
