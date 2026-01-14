@@ -1435,6 +1435,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_teacher_of_class: {
+        Args: { p_class_id: string; p_teacher_id: string }
+        Returns: boolean
+      }
+      teacher_can_view_student: {
+        Args: { p_student_id: string; p_teacher_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       assignment_status: "pending" | "active" | "completed" | "archived"
