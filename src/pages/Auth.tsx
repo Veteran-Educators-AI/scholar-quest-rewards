@@ -107,32 +107,55 @@ export default function Auth() {
         }
       } else {
         console.log("[Auth] Starting login...");
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        
+        let loginData;
+        let loginError;
+        
+        try {
+          const result = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          loginData = result.data;
+          loginError = result.error;
+        } catch (err) {
+          console.error("[Auth] signInWithPassword threw:", err);
+          throw err;
+        }
 
-        if (error) {
-          console.log("[Auth] Login error:", error.message);
-          if (error.message.includes("Invalid login credentials")) {
+        console.log("[Auth] signInWithPassword completed", { loginData, loginError });
+
+        if (loginError) {
+          console.log("[Auth] Login error:", loginError.message);
+          if (loginError.message.includes("Invalid login credentials")) {
             toast({
               title: "Login failed",
               description: "Please check your email and password.",
               variant: "destructive",
             });
           } else {
-            throw error;
+            throw loginError;
           }
-        } else if (data.user) {
-          console.log("[Auth] Login successful, user ID:", data.user.id);
+        } else if (loginData?.user) {
+          console.log("[Auth] Login successful, user ID:", loginData.user.id);
           
           // Fetch user role from user_roles table (primary source of truth)
           console.log("[Auth] Fetching user role...");
-          const { data: userRoleData, error: roleError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", data.user.id)
-            .maybeSingle();
+          
+          let userRoleData = null;
+          let roleError = null;
+          
+          try {
+            const roleResult = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", loginData.user.id)
+              .maybeSingle();
+            userRoleData = roleResult.data;
+            roleError = roleResult.error;
+          } catch (err) {
+            console.error("[Auth] user_roles query threw:", err);
+          }
 
           console.log("[Auth] Role fetch result:", { userRoleData, roleError });
 
@@ -140,13 +163,18 @@ export default function Auth() {
           let userRole = userRoleData?.role;
           if (!userRole) {
             console.log("[Auth] No role in user_roles, checking profiles...");
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", data.user.id)
-              .single();
-            userRole = profile?.role || "student";
-            console.log("[Auth] Profile role:", userRole);
+            try {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", loginData.user.id)
+                .single();
+              userRole = profile?.role || "student";
+              console.log("[Auth] Profile role:", userRole);
+            } catch (err) {
+              console.error("[Auth] profiles query threw:", err);
+              userRole = "student";
+            }
           }
           
           console.log("[Auth] Final role:", userRole);
@@ -167,6 +195,8 @@ export default function Auth() {
           // Use window.location for a clean navigation that bypasses any React Router race conditions
           window.location.href = targetPath;
           return; // Stop execution - page will reload
+        } else {
+          console.log("[Auth] No user data returned");
         }
       }
     } catch (error: any) {
