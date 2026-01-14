@@ -18,7 +18,10 @@ const isOnWrongDashboard = (pathname: string, role: string): boolean => {
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // For public routes, don't block rendering - start with isLoading false
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+  const [isLoading, setIsLoading] = useState(!isPublicRoute);
 
   useEffect(() => {
     let mounted = true;
