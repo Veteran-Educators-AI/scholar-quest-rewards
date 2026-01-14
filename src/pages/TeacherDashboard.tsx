@@ -140,12 +140,25 @@ export default function TeacherDashboard() {
         return;
       }
 
-      if (data?.imported > 0) {
+      if (data?.imported > 0 || data?.students_enrolled > 0) {
+        const parts = [];
+        if (data.imported > 0) {
+          parts.push(`${data.imported} class${data.imported > 1 ? "es" : ""}`);
+        }
+        if (data.students_enrolled > 0) {
+          parts.push(`${data.students_enrolled} student${data.students_enrolled > 1 ? "s" : ""}`);
+        }
+        
+        let description = `Imported ${parts.join(" and ")} from NYCologic Ai.`;
+        if (data.students_pending > 0) {
+          description += ` ${data.students_pending} student${data.students_pending > 1 ? "s" : ""} pending signup.`;
+        }
+        
         toast({
-          title: "Classes Imported! 🎉",
-          description: `Imported ${data.imported} class${data.imported > 1 ? "es" : ""} from NYCologic Ai.`,
+          title: "Sync Complete! 🎉",
+          description,
         });
-        // Refresh the teacher data to show new classes
+        // Refresh the teacher data to show new classes and students
         fetchTeacherData();
       } else if (data?.configured === false) {
         // NYCologic integration not configured, skip silently

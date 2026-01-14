@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
           message: "No classes found in NYCologic Ai",
           imported: 0,
           skipped: 0,
+          students_enrolled: 0,
+          students_pending: 0,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -118,11 +120,12 @@ Deno.serve(async (req) => {
     // Get existing classes for this teacher
     const { data: existingClasses } = await supabase
       .from("classes")
-      .select("name, class_code")
+      .select("name, class_code, id")
       .eq("teacher_id", user.id);
 
     const existingNames = new Set(existingClasses?.map(c => c.name.toLowerCase()) || []);
     const existingCodes = new Set(existingClasses?.map(c => c.class_code) || []);
+    const classNameToId = new Map(existingClasses?.map(c => [c.name.toLowerCase(), c.id]) || []);
 
     let imported = 0;
     let skipped = 0;
@@ -163,11 +166,131 @@ Deno.serve(async (req) => {
 
       existingCodes.add(classCode);
       existingNames.add(nycClass.name.toLowerCase());
+      classNameToId.set(nycClass.name.toLowerCase(), newClass.id);
       imported++;
       importedClasses.push({ name: newClass.name, class_code: newClass.class_code });
     }
 
     console.log(`Imported ${imported} classes, skipped ${skipped}`);
+
+    // Now sync students for all classes (both imported and existing)
+    let studentsEnrolled = 0;
+    let studentsPending = 0;
+
+    // Fetch students for each NYCologic class
+    for (const nycClass of nycologicClasses) {
+      const classId = classNameToId.get(nycClass.name.toLowerCase());
+      if (!classId) continue;
+
+      // Fetch enrolled students from NYCologic AI
+      const studentsResponse = await fetch(nycologicApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-source-app": "scholar-app",
+        },
+        body: JSON.stringify({
+          source: "scholar-app",
+          action: "get_class_students",
+          timestamp: new Date().toISOString(),
+          data: {
+            class_name: nycClass.name,
+            class_id: nycClass.id,
+            teacher_email: user.email,
+          },
+        }),
+      });
+
+      if (!studentsResponse.ok) {
+        console.error(`Failed to fetch students for class ${nycClass.name}`);
+        continue;
+      }
+
+      const studentsResult = await studentsResponse.json();
+      const students = studentsResult.students || [];
+
+      for (const student of students) {
+        if (!student.email) continue;
+
+        // Check if student user exists by user_id from NYCologic
+        let studentUserId = student.user_id;
+
+        if (studentUserId) {
+          // Check if profile exists for this user
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("id", studentUserId)
+            .maybeSingle();
+
+          if (existingProfile) {
+            // Check if already enrolled
+            const { data: existingEnrollment } = await supabase
+              .from("enrollments")
+              .select("id")
+              .eq("class_id", classId)
+              .eq("student_id", studentUserId)
+              .maybeSingle();
+
+            if (existingEnrollment) {
+              // Already enrolled, skip
+              continue;
+            }
+
+            // Enroll the student
+            const { error: enrollError } = await supabase
+              .from("enrollments")
+              .insert({
+                class_id: classId,
+                student_id: studentUserId,
+              });
+
+            if (enrollError) {
+              console.error(`Failed to enroll student ${student.email}:`, enrollError);
+              // Add to pending enrollments if direct enrollment fails
+              await supabase
+                .from("pending_enrollments")
+                .upsert({
+                  class_id: classId,
+                  email: student.email,
+                  student_name: student.name || null,
+                  teacher_id: user.id,
+                  processed: false,
+                }, { onConflict: "class_id,email" });
+              studentsPending++;
+            } else {
+              studentsEnrolled++;
+            }
+          } else {
+            // Profile doesn't exist, add to pending
+            await supabase
+              .from("pending_enrollments")
+              .upsert({
+                class_id: classId,
+                email: student.email,
+                student_name: student.name || null,
+                teacher_id: user.id,
+                processed: false,
+              }, { onConflict: "class_id,email" });
+            studentsPending++;
+          }
+        } else {
+          // No user_id, add to pending enrollments
+          await supabase
+            .from("pending_enrollments")
+            .upsert({
+              class_id: classId,
+              email: student.email,
+              student_name: student.name || null,
+              teacher_id: user.id,
+              processed: false,
+            }, { onConflict: "class_id,email" });
+          studentsPending++;
+        }
+      }
+    }
+
+    console.log(`Enrolled ${studentsEnrolled} students, ${studentsPending} pending`);
 
     return new Response(
       JSON.stringify({ 
@@ -175,6 +298,8 @@ Deno.serve(async (req) => {
         imported,
         skipped,
         classes: importedClasses,
+        students_enrolled: studentsEnrolled,
+        students_pending: studentsPending,
         synced_at: new Date().toISOString(),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
