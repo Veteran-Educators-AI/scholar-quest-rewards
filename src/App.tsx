@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { StudyTimerProvider } from "@/contexts/StudyTimerContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthRedirectWrapper } from "@/components/AuthRedirectWrapper";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -58,15 +59,16 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <StudyTimerProvider>
-        <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AuthRedirectWrapper>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
+      <BrowserRouter>
+        <AuthProvider>
+          <StudyTimerProvider>
+            <LanguageProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <AuthRedirectWrapper>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/student" element={<StudentHome />} />
@@ -100,13 +102,14 @@ const App = () => (
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </AuthRedirectWrapper>
-            </BrowserRouter>
-          </TooltipProvider>
-        </LanguageProvider>
-      </StudyTimerProvider>
+                    </Routes>
+                  </Suspense>
+                </AuthRedirectWrapper>
+              </TooltipProvider>
+            </LanguageProvider>
+          </StudyTimerProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   </QueryClientProvider>
 );

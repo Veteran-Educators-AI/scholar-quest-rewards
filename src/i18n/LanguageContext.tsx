@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { LanguageCode, languages, getLanguage } from './languages';
-import { getTranslations, hasManualTranslation, TranslationKeys } from './translations';
+import { getTranslations, TranslationKeys } from './translations';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LanguageContextType {
   language: LanguageCode;
@@ -16,78 +17,78 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const STORAGE_KEY = 'scan-scholar-language';
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<LanguageCode>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && languages.some(l => l.code === stored)) {
-      return stored as LanguageCode;
-    }
-    // Try to detect browser language
-    const browserLang = navigator.language.split('-')[0];
-    if (languages.some(l => l.code === browserLang)) {
-      return browserLang as LanguageCode;
-    }
-    return 'en';
-  });
+// Get initial language from localStorage synchronously to avoid flash
+function getInitialLanguage(): LanguageCode {
+  if (typeof window === 'undefined') return 'en';
+  
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored && languages.some(l => l.code === stored)) {
+    return stored as LanguageCode;
+  }
+  // Try to detect browser language
+  const browserLang = navigator.language.split('-')[0];
+  if (languages.some(l => l.code === browserLang)) {
+    return browserLang as LanguageCode;
+  }
+  return 'en';
+}
 
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<LanguageCode>(getInitialLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [translationCache, setTranslationCache] = useState<Record<string, Record<string, string>>>({});
-  const [userId, setUserId] = useState<string | null>(null);
+  const translationCacheRef = useRef<Record<string, Record<string, string>>>({});
+  const { user, isLoading: authLoading } = useAuth();
+  const languageLoadedFromDb = useRef(false);
 
   // Load language preference from database when user is authenticated
   useEffect(() => {
+    // Skip if auth is still loading or we already loaded from db
+    if (authLoading || !user || languageLoadedFromDb.current) return;
+
     const loadUserLanguage = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
+      try {
         const { data: profile } = await supabase
           .from('profiles')
           .select('preferred_language')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .single();
         
         if (profile?.preferred_language && languages.some(l => l.code === profile.preferred_language)) {
           setLanguageState(profile.preferred_language as LanguageCode);
           localStorage.setItem(STORAGE_KEY, profile.preferred_language);
         }
+        languageLoadedFromDb.current = true;
+      } catch {
+        // Silently fail - use local storage value
       }
     };
 
     loadUserLanguage();
+  }, [user, authLoading]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUserId(session.user.id);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('preferred_language')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profile?.preferred_language && languages.some(l => l.code === profile.preferred_language)) {
-          setLanguageState(profile.preferred_language as LanguageCode);
-          localStorage.setItem(STORAGE_KEY, profile.preferred_language);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUserId(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Reset the flag when user changes
+  useEffect(() => {
+    if (!user) {
+      languageLoadedFromDb.current = false;
+    }
+  }, [user]);
 
   const setLanguage = useCallback(async (code: LanguageCode) => {
     setLanguageState(code);
     localStorage.setItem(STORAGE_KEY, code);
 
     // Save to database if user is authenticated
-    if (userId) {
-      await supabase
-        .from('profiles')
-        .update({ preferred_language: code })
-        .eq('id', userId);
+    if (user) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ preferred_language: code })
+          .eq('id', user.id);
+      } catch {
+        // Silently fail - local storage is the fallback
+      }
     }
-  }, [userId]);
+  }, [user]);
 
   const t = getTranslations(language);
   const isRTL = getLanguage(language)?.rtl || false;
@@ -103,9 +104,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (language === 'en' || !text.trim()) return text;
 
     // Check cache first
-    const cacheKey = `${language}:${text}`;
-    if (translationCache[language]?.[text]) {
-      return translationCache[language][text];
+    if (translationCacheRef.current[language]?.[text]) {
+      return translationCacheRef.current[language][text];
     }
 
     setIsTranslating(true);
@@ -119,13 +119,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const translatedText = data?.translatedText || text;
       
       // Cache the result
-      setTranslationCache(prev => ({
-        ...prev,
-        [language]: {
-          ...prev[language],
-          [text]: translatedText
-        }
-      }));
+      if (!translationCacheRef.current[language]) {
+        translationCacheRef.current[language] = {};
+      }
+      translationCacheRef.current[language][text] = translatedText;
 
       return translatedText;
     } catch (err) {
@@ -134,7 +131,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsTranslating(false);
     }
-  }, [language, translationCache]);
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{
