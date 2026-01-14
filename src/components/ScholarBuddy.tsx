@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import highschoolLogo from "@/assets/highschool-logo.png";
 
@@ -8,12 +9,12 @@ interface ScholarBuddyProps {
   className?: string;
 }
 
-export function ScholarBuddy({ 
+export const ScholarBuddy = forwardRef<HTMLDivElement, ScholarBuddyProps>(({ 
   size = "md", 
   message, 
   animate = true,
   className = ""
-}: ScholarBuddyProps) {
+}, ref) => {
   const sizeClasses = {
     sm: "w-[90px] h-[90px]",
     md: "w-[134px] h-[134px]",
@@ -94,4 +95,6 @@ export function ScholarBuddy({
       )}
     </div>
   );
-}
+});
+
+ScholarBuddy.displayName = "ScholarBuddy";
