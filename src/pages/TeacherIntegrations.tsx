@@ -11,10 +11,6 @@ import {
   Check,
   AlertTriangle,
   ExternalLink,
-  Clock,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,16 +24,6 @@ interface IntegrationToken {
   is_active: boolean;
 }
 
-interface WebhookEventLog {
-  id: string;
-  event_type: string;
-  status: string;
-  error_message: string | null;
-  created_at: string;
-  payload: Record<string, unknown> | null;
-  response: Record<string, unknown> | null;
-}
-
 export default function TeacherIntegrations() {
   const { toast } = useToast();
   const [tokens, setTokens] = useState<IntegrationToken[]>([]);
@@ -46,8 +32,6 @@ export default function TeacherIntegrations() {
   const [newTokenName, setNewTokenName] = useState("");
   const [showNewToken, setShowNewToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [eventLogs, setEventLogs] = useState<WebhookEventLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(true);
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const webhookUrl = `https://${projectId}.supabase.co/functions/v1/nycologic-webhook`;
@@ -55,7 +39,6 @@ export default function TeacherIntegrations() {
 
   useEffect(() => {
     fetchTokens();
-    fetchEventLogs();
   }, []);
 
   const fetchTokens = async () => {
@@ -72,34 +55,6 @@ export default function TeacherIntegrations() {
       setTokens(data);
     }
     setLoading(false);
-  };
-
-  const fetchEventLogs = async () => {
-    setLogsLoading(true);
-    try {
-      // Use raw fetch since types aren't synced yet
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/webhook_event_logs?order=created_at.desc&limit=20`,
-        {
-          headers: {
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const logs = await response.json();
-        setEventLogs(logs);
-      }
-    } catch (err) {
-      console.error("Failed to fetch event logs:", err);
-    } finally {
-      setLogsLoading(false);
-    }
   };
 
   const generateToken = () => {
@@ -310,81 +265,7 @@ export default function TeacherIntegrations() {
           </div>
         </motion.section>
 
-        {/* Webhook Event Logs */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-bold text-foreground text-lg">Recent Webhook Events</h2>
-                <p className="text-sm text-muted-foreground">
-                  View incoming sync requests and their status
-                </p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon-sm"
-                onClick={fetchEventLogs}
-                disabled={logsLoading}
-              >
-                <RefreshCw className={`w-4 h-4 ${logsLoading ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
-
-            {logsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading events...</div>
-            ) : eventLogs.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No webhook events yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Events will appear here when NYCologic Ai syncs data</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {eventLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="bg-muted rounded-xl p-3 flex items-start gap-3"
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      log.status === "success" ? "bg-success/10" : "bg-destructive/10"
-                    }`}>
-                      {log.status === "success" ? (
-                        <CheckCircle className="w-4 h-4 text-success" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-destructive" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground text-sm capitalize">
-                          {log.event_type.replace(/_/g, " ")}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          log.status === "success" 
-                            ? "bg-success/10 text-success" 
-                            : "bg-destructive/10 text-destructive"
-                        }`}>
-                          {log.status}
-                        </span>
-                      </div>
-                      {log.error_message && (
-                        <p className="text-xs text-destructive mt-1 truncate">{log.error_message}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(log.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.section>
-
+        {/* New Token Alert */}
         {showNewToken && (
           <motion.section
             initial={{ opacity: 0, scale: 0.95 }}

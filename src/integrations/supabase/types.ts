@@ -1409,42 +1409,6 @@ export type Database = {
         }
         Relationships: []
       }
-      webhook_event_logs: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          event_type: string
-          id: string
-          payload: Json | null
-          processed_at: string | null
-          response: Json | null
-          status: string
-          teacher_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          event_type: string
-          id?: string
-          payload?: Json | null
-          processed_at?: string | null
-          response?: Json | null
-          status?: string
-          teacher_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          event_type?: string
-          id?: string
-          payload?: Json | null
-          processed_at?: string | null
-          response?: Json | null
-          status?: string
-          teacher_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
