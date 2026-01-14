@@ -109,7 +109,13 @@ function generateClassCode(): string {
   return code;
 }
 
-async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: string): Promise<boolean> {
+interface ApiKeyInfo {
+  valid: boolean;
+  tokenId?: string;
+  createdBy?: string;
+}
+
+async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: string): Promise<ApiKeyInfo> {
   const supabase = createClient(supabaseUrl, supabaseKey);
   
   // Hash the API key and check against stored hashes
@@ -121,12 +127,12 @@ async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: st
 
   const { data: token, error } = await supabase
     .from("integration_tokens")
-    .select("id, is_active")
+    .select("id, is_active, created_by")
     .eq("token_hash", tokenHash)
     .single();
 
   if (error || !token || !token.is_active) {
-    return false;
+    return { valid: false };
   }
 
   // Update last_used_at
@@ -135,7 +141,42 @@ async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: st
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", token.id);
 
-  return true;
+  return { valid: true, tokenId: token.id, createdBy: token.created_by };
+}
+
+async function logWebhookEvent(
+  supabaseUrl: string,
+  supabaseKey: string,
+  eventType: string,
+  payload: unknown,
+  status: string,
+  response: unknown,
+  errorMessage: string | null,
+  teacherId: string | null
+) {
+  try {
+    // Use fetch directly since types aren't synced for new table
+    await fetch(`${supabaseUrl}/rest/v1/webhook_event_logs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify({
+        event_type: eventType,
+        payload,
+        status,
+        response,
+        error_message: errorMessage,
+        teacher_id: teacherId,
+        processed_at: new Date().toISOString(),
+      }),
+    });
+  } catch (err) {
+    console.error("Failed to log webhook event:", err);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -144,6 +185,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let teacherId: string | null = null;
+  let payload: WebhookPayload | null = null;
+  
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -152,21 +196,24 @@ Deno.serve(async (req) => {
     // Verify API key
     const apiKey = req.headers.get("x-api-key");
     if (!apiKey) {
+      await logWebhookEvent(supabaseUrl, supabaseServiceKey, "auth_error", null, "error", null, "Missing API key", null);
       return new Response(
         JSON.stringify({ error: "Missing API key" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const isValid = await verifyApiKey(apiKey, supabaseUrl, supabaseServiceKey);
-    if (!isValid) {
+    const apiKeyInfo = await verifyApiKey(apiKey, supabaseUrl, supabaseServiceKey);
+    if (!apiKeyInfo.valid) {
+      await logWebhookEvent(supabaseUrl, supabaseServiceKey, "auth_error", null, "error", null, "Invalid or inactive API key", null);
       return new Response(
         JSON.stringify({ error: "Invalid or inactive API key" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const payload: WebhookPayload = await req.json();
+    
+    teacherId = apiKeyInfo.createdBy || null;
+    payload = await req.json() as WebhookPayload;
 
     switch (payload.type) {
       case "assignment": {
@@ -228,12 +275,14 @@ Deno.serve(async (req) => {
           await supabase.from("questions").insert(questionsToInsert);
         }
 
+        const assignmentResponse = { 
+          success: true, 
+          assignment_id: assignment.id,
+          status: "received"
+        };
+        await logWebhookEvent(supabaseUrl, supabaseServiceKey, "assignment", payload, "success", assignmentResponse, null, teacherId);
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            assignment_id: assignment.id,
-            status: "received"
-          }),
+          JSON.stringify(assignmentResponse),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -536,13 +585,15 @@ Deno.serve(async (req) => {
           }
         }
 
+        const classSyncResponse = { 
+          success: true, 
+          created: results.created,
+          skipped: results.skipped,
+          class_codes: results.classes,
+        };
+        await logWebhookEvent(supabaseUrl, supabaseServiceKey, "class_sync", payload, "success", classSyncResponse, null, teacherId);
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            created: results.created,
-            skipped: results.skipped,
-            class_codes: results.classes,
-          }),
+          JSON.stringify(classSyncResponse),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -622,14 +673,20 @@ Deno.serve(async (req) => {
         );
       }
 
-      default:
+      default: {
+        const unknownPayload = payload as { type?: string };
+        await logWebhookEvent(supabaseUrl, supabaseServiceKey, unknownPayload?.type || "unknown", payload, "error", null, "Unknown payload type", teacherId);
         return new Response(
           JSON.stringify({ error: "Unknown payload type" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
     }
   } catch (error) {
     console.error("Webhook error:", error);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    await logWebhookEvent(supabaseUrl, supabaseServiceKey, payload?.type || "unknown", payload, "error", null, String(error), teacherId);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
