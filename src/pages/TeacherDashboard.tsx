@@ -123,9 +123,40 @@ export default function TeacherDashboard() {
   const [newClassGradeBand, setNewClassGradeBand] = useState("");
   const [creatingClass, setCreatingClass] = useState(false);
 
+  const [syncingClasses, setSyncingClasses] = useState(false);
+
   useEffect(() => {
     fetchTeacherData();
   }, []);
+
+  // Auto-sync classes from NYCologic Ai on login
+  const syncClassesFromNYCologic = async () => {
+    setSyncingClasses(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-nycologic-classes");
+      
+      if (error) {
+        console.error("Failed to sync classes from NYCologic Ai:", error);
+        return;
+      }
+
+      if (data?.imported > 0) {
+        toast({
+          title: "Classes Imported! 🎉",
+          description: `Imported ${data.imported} class${data.imported > 1 ? "es" : ""} from NYCologic Ai.`,
+        });
+        // Refresh the teacher data to show new classes
+        fetchTeacherData();
+      } else if (data?.configured === false) {
+        // NYCologic integration not configured, skip silently
+        console.log("NYCologic integration not configured");
+      }
+    } catch (err) {
+      console.error("Error syncing classes:", err);
+    } finally {
+      setSyncingClasses(false);
+    }
+  };
 
   const fetchTeacherData = async () => {
     try {
@@ -155,6 +186,11 @@ export default function TeacherDashboard() {
           navigate("/");
           return;
         }
+      }
+
+      // Auto-sync classes from NYCologic Ai (only on initial load)
+      if (loading) {
+        syncClassesFromNYCologic();
       }
 
       // Fetch classes
