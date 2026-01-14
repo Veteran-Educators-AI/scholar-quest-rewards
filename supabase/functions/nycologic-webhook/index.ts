@@ -53,12 +53,12 @@ interface StatusQueryPayload {
 interface RemediationPayload {
   type: "remediation";
   data: {
-    student_id: string; // The student's user_id in Scholar
-    external_ref?: string; // Reference ID from NYCLogic AI
+    student_id: string;
+    external_ref?: string;
     title: string;
     description?: string;
-    skill_tags: string[]; // Skills/weaknesses being targeted
-    printable_url?: string; // URL to downloadable PDF worksheet
+    skill_tags: string[];
+    printable_url?: string;
     xp_reward?: number;
     coin_reward?: number;
     questions: Array<{
@@ -73,7 +73,41 @@ interface RemediationPayload {
   };
 }
 
-type WebhookPayload = AssignmentPayload | StudentProfilePayload | StatusQueryPayload | RemediationPayload;
+interface ClassSyncPayload {
+  type: "class_sync";
+  data: {
+    teacher_email: string;
+    classes: Array<{
+      name: string;
+      subject?: string;
+      grade_band?: string;
+      grade_level?: number;
+      external_ref?: string;
+    }>;
+  };
+}
+
+interface StudentEnrollPayload {
+  type: "student_enroll";
+  data: {
+    class_code: string;
+    students: Array<{
+      email: string;
+      name?: string;
+    }>;
+  };
+}
+
+type WebhookPayload = AssignmentPayload | StudentProfilePayload | StatusQueryPayload | RemediationPayload | ClassSyncPayload | StudentEnrollPayload;
+
+function generateClassCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: string): Promise<boolean> {
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -417,6 +451,172 @@ Deno.serve(async (req) => {
             assignment_id: assignment.id,
             status: assignment.status,
             attempts: assignment.attempts
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "class_sync": {
+        const { data } = payload as ClassSyncPayload;
+        
+        // Find teacher by email
+        const { data: teacherAuth } = await supabase.auth.admin.listUsers();
+        const teacher = teacherAuth?.users?.find(u => u.email?.toLowerCase() === data.teacher_email.toLowerCase());
+        
+        if (!teacher) {
+          return new Response(
+            JSON.stringify({ error: "Teacher not found", email: data.teacher_email }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verify teacher role
+        const { data: teacherRole } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", teacher.id)
+          .eq("role", "teacher")
+          .single();
+
+        if (!teacherRole) {
+          return new Response(
+            JSON.stringify({ error: "User is not a teacher", email: data.teacher_email }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const results = { created: 0, skipped: 0, classes: [] as string[] };
+
+        for (const classData of data.classes) {
+          // Check if class already exists by name and teacher
+          const { data: existing } = await supabase
+            .from("classes")
+            .select("id, class_code")
+            .eq("teacher_id", teacher.id)
+            .eq("name", classData.name)
+            .single();
+
+          if (existing) {
+            results.skipped++;
+            results.classes.push(existing.class_code);
+            continue;
+          }
+
+          // Generate unique class code
+          let classCode = generateClassCode();
+          let attempts = 0;
+          while (attempts < 10) {
+            const { data: codeCheck } = await supabase
+              .from("classes")
+              .select("id")
+              .eq("class_code", classCode)
+              .single();
+            if (!codeCheck) break;
+            classCode = generateClassCode();
+            attempts++;
+          }
+
+          // Create the class
+          const { data: newClass, error: classError } = await supabase
+            .from("classes")
+            .insert({
+              name: classData.name,
+              teacher_id: teacher.id,
+              class_code: classCode,
+              subject: classData.subject,
+              grade_band: classData.grade_band,
+              grade_level: classData.grade_level,
+            })
+            .select("id, class_code")
+            .single();
+
+          if (!classError && newClass) {
+            results.created++;
+            results.classes.push(newClass.class_code);
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            created: results.created,
+            skipped: results.skipped,
+            class_codes: results.classes,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "student_enroll": {
+        const { data } = payload as StudentEnrollPayload;
+        
+        // Find class by code
+        const { data: classData, error: classError } = await supabase
+          .from("classes")
+          .select("id, teacher_id")
+          .eq("class_code", data.class_code)
+          .single();
+
+        if (classError || !classData) {
+          return new Response(
+            JSON.stringify({ error: "Class not found", class_code: data.class_code }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const results = { enrolled: 0, pending: 0 };
+
+        for (const student of data.students) {
+          // Check if user exists by email
+          const { data: authUsers } = await supabase.auth.admin.listUsers();
+          const existingUser = authUsers?.users?.find(u => u.email?.toLowerCase() === student.email.toLowerCase());
+
+          if (existingUser) {
+            // User exists - enroll directly
+            const { error: enrollError } = await supabase
+              .from("enrollments")
+              .insert({
+                student_id: existingUser.id,
+                class_id: classData.id,
+              })
+              .select()
+              .single();
+
+            if (!enrollError) {
+              results.enrolled++;
+              
+              // Create notification
+              await supabase.from("notifications").insert({
+                user_id: existingUser.id,
+                type: "auto_enrolled",
+                title: "🎉 Enrolled in New Class!",
+                message: `You've been enrolled via NYCologic Ai sync.`,
+                icon: "📚",
+                data: { class_id: classData.id },
+              });
+            }
+          } else {
+            // User doesn't exist - add to pending
+            const { error: pendingError } = await supabase
+              .from("pending_enrollments")
+              .insert({
+                email: student.email.toLowerCase(),
+                class_id: classData.id,
+                teacher_id: classData.teacher_id,
+                student_name: student.name,
+              });
+
+            if (!pendingError) {
+              results.pending++;
+            }
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            enrolled: results.enrolled,
+            pending: results.pending,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
