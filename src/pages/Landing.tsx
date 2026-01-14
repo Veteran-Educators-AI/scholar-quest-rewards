@@ -35,7 +35,7 @@ export default function Landing() {
                   className="font-bold text-destructive" 
                   style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
                 >
-                  Ai
+                  Ai<sup className="text-[8px]">™</sup>
                 </span>
                 <span 
                   className="text-lg font-black text-destructive ml-1" 
@@ -91,7 +91,7 @@ export default function Landing() {
                     className="text-3xl md:text-4xl font-bold text-destructive" 
                     style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
                   >
-                    Ai
+                    Ai<sup className="text-sm">™</sup>
                   </span>
                 </div>
                 <h1 
