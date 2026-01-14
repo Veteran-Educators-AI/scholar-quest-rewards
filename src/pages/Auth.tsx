@@ -139,9 +139,12 @@ export default function Auth() {
                 : "Ready for another learning adventure?",
           });
           
-          // Navigate based on role - use replace to prevent back navigation issues
+          // Navigate immediately based on fetched role
           const targetPath = userRole === "teacher" ? "/teacher" : userRole === "parent" ? "/parent" : "/student";
-          navigate(targetPath, { replace: true });
+          
+          // Use window.location for a clean navigation that bypasses any React Router race conditions
+          window.location.href = targetPath;
+          return; // Stop execution - page will reload
         }
       }
     } catch (error: any) {
