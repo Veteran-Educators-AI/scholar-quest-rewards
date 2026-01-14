@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart } from "lucide-react";
 
-type AuthMode = "login" | "signup" | "forgot";
+type AuthMode = "login" | "signup" | "forgot" | "reset";
 type UserRole = "student" | "parent";
 
 export default function Auth() {
@@ -19,7 +19,9 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [mode, setMode] = useState<AuthMode>("login");
+  // Check if coming from password reset link
+  const urlMode = searchParams.get("mode");
+  const [mode, setMode] = useState<AuthMode>(urlMode === "reset" ? "reset" : "login");
   const [role, setRole] = useState<UserRole>(
     searchParams.get("role") === "parent" ? "parent" : "student"
   );
@@ -27,7 +29,19 @@ export default function Auth() {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
+  // Listen for password recovery event
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("reset");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +62,55 @@ export default function Auth() {
     } catch (error: any) {
       toast({
         title: "Reset failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password updated! 🎉",
+        description: "You can now log in with your new password.",
+      });
+      
+      // Sign out so they can log in fresh with new password
+      await supabase.auth.signOut();
+      setMode("login");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
         description: error.message || "Please try again.",
         variant: "destructive",
       });
@@ -207,10 +270,14 @@ export default function Auth() {
     student: {
       login: "Welcome back, scholar! Ready for more adventures?",
       signup: "Hi there! Let's set up your account and start earning rewards!",
+      forgot: "No worries! Enter your email to reset your password.",
+      reset: "Almost there! Create your new password.",
     },
     parent: {
       login: "Welcome back! Let's see how your child is doing.",
       signup: "Hi there! Let's connect you with your child's progress.",
+      forgot: "No worries! Enter your email to reset your password.",
+      reset: "Almost there! Create your new password.",
     },
   };
 
@@ -281,7 +348,11 @@ export default function Auth() {
           </div>
 
           {/* Form */}
-          <form onSubmit={mode === "forgot" ? handleForgotPassword : handleSubmit} className="space-y-4">
+          <form onSubmit={
+            mode === "forgot" ? handleForgotPassword : 
+            mode === "reset" ? handlePasswordReset : 
+            handleSubmit
+          } className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
@@ -300,23 +371,25 @@ export default function Auth() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-12 rounded-xl"
-                  required
-                />
+            {mode !== "reset" && (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {mode !== "forgot" && (
+            {(mode === "login" || mode === "signup") && (
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -333,6 +406,43 @@ export default function Auth() {
                   />
                 </div>
               </div>
+            )}
+
+            {mode === "reset" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 h-12 rounded-xl"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10 h-12 rounded-xl"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             {mode === "login" && (
@@ -361,6 +471,8 @@ export default function Auth() {
                 "Log In"
               ) : mode === "forgot" ? (
                 "Send Reset Link"
+              ) : mode === "reset" ? (
+                "Update Password"
               ) : (
                 "Create Account"
               )}
@@ -390,18 +502,20 @@ export default function Auth() {
           </Button>
 
           {/* Toggle mode */}
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              {mode === "login" ? "Don't have an account?" : mode === "forgot" ? "Remember your password?" : "Already have an account?"}
-            </p>
-            <Button
-              variant="link"
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="text-destructive font-semibold"
-            >
-              {mode === "login" ? "Sign up" : "Log in"}
-            </Button>
-          </div>
+          {mode !== "reset" && (
+            <div className="mt-6 text-center">
+              <p className="text-muted-foreground text-sm">
+                {mode === "login" ? "Don't have an account?" : mode === "forgot" ? "Remember your password?" : "Already have an account?"}
+              </p>
+              <Button
+                variant="link"
+                onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                className="text-destructive font-semibold"
+              >
+                {mode === "login" ? "Sign up" : "Log in"}
+              </Button>
+            </div>
+          )}
 
           {/* Legal links and disclaimers */}
           <div className="mt-6 pt-4 border-t border-border">
