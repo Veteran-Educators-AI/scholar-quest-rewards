@@ -32,16 +32,30 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
 
-  // Listen for password recovery event
+  // Listen for password recovery event and check URL for recovery token
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Check if URL contains recovery token (comes in hash fragment)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery' && accessToken) {
+      // This is a password recovery link - set mode immediately
+      setMode("reset");
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setMode("reset");
+      }
+      // Don't auto-redirect if we're in reset mode
+      if (mode === "reset") {
+        return;
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [mode]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
