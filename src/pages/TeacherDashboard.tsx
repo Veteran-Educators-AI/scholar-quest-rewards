@@ -372,7 +372,14 @@ export default function TeacherDashboard() {
     setCreatingClass(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to create a class.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const classCode = generateClassCode();
 
@@ -388,7 +395,14 @@ export default function TeacherDashboard() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Create class error:", error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error("No data returned from insert. Check RLS policies.");
+      }
 
       toast({
         title: "Class Created! 🎉",
