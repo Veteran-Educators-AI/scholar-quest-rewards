@@ -9,12 +9,8 @@ import {
   Trash2,
   Plus,
   Check,
-  Eye,
-  EyeOff,
   AlertTriangle,
   ExternalLink,
-  RefreshCw,
-  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +31,6 @@ export default function TeacherIntegrations() {
   const [creating, setCreating] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
   const [showNewToken, setShowNewToken] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -162,64 +157,6 @@ export default function TeacherIntegrations() {
     });
   };
 
-  const syncClassesFromNYCologic = async () => {
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("import-nycologic-classes");
-      
-      if (error) {
-        toast({
-          title: "Sync Failed",
-          description: "Could not connect to NYCologic Ai. Please check your configuration.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.configured === false) {
-        toast({
-          title: "Not Configured",
-          description: "NYCologic Ai integration is not configured. Contact support for setup.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.imported > 0 || data?.students_enrolled > 0) {
-        const parts = [];
-        if (data.imported > 0) {
-          parts.push(`${data.imported} class${data.imported > 1 ? "es" : ""}`);
-        }
-        if (data.students_enrolled > 0) {
-          parts.push(`${data.students_enrolled} student${data.students_enrolled > 1 ? "s" : ""}`);
-        }
-        
-        let description = `Imported ${parts.join(" and ")} from NYCologic Ai.`;
-        if (data.students_pending > 0) {
-          description += ` ${data.students_pending} student${data.students_pending > 1 ? "s" : ""} pending signup.`;
-        }
-        
-        toast({
-          title: "Sync Complete! 🎉",
-          description,
-        });
-      } else {
-        toast({
-          title: "Already Synced",
-          description: "All classes and students are up to date.",
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Sync Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -297,7 +234,7 @@ export default function TeacherIntegrations() {
           </div>
         </motion.section>
 
-        {/* Sync Classes */}
+        {/* Import Classes */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,27 +243,23 @@ export default function TeacherIntegrations() {
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="font-bold text-foreground text-lg mb-2">Sync Classes & Students</h2>
+                <h2 className="font-bold text-foreground text-lg mb-2">Import Classes</h2>
                 <p className="text-sm text-muted-foreground">
-                  Import your classes and enrolled students from NYCologic Ai. Classes sync automatically on login, but you can manually sync anytime.
+                  Manage your classes in NYCologic Ai. Classes created there will be available in Scholar Quest.
                 </p>
               </div>
               <Button 
-                onClick={syncClassesFromNYCologic}
-                disabled={syncing}
+                asChild
                 className="flex-shrink-0"
               >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Syncing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Sync Now
-                  </>
-                )}
+                <a 
+                  href="https://thescangeniusapp.com/classes" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open NYCologic Ai
+                </a>
               </Button>
             </div>
           </div>
