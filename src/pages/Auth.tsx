@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart } from "lucide-react";
 
-type AuthMode = "login" | "signup";
+type AuthMode = "login" | "signup" | "forgot";
 type UserRole = "student" | "parent";
 
 export default function Auth() {
@@ -28,6 +28,33 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password reset email sent! 📧",
+        description: "Check your inbox for a link to reset your password.",
+      });
+      setMode("login");
+    } catch (error: any) {
+      toast({
+        title: "Reset failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,7 +281,7 @@ export default function Auth() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={mode === "forgot" ? handleForgotPassword : handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
@@ -289,22 +316,37 @@ export default function Auth() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-12 rounded-xl"
-                  minLength={6}
-                  required
-                />
+            {mode !== "forgot" && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-12 rounded-xl"
+                    minLength={6}
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {mode === "login" && (
+              <div className="text-right">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-muted-foreground text-sm p-0 h-auto"
+                  onClick={() => setMode("forgot")}
+                >
+                  Forgot password?
+                </Button>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -317,6 +359,8 @@ export default function Auth() {
                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : mode === "login" ? (
                 "Log In"
+              ) : mode === "forgot" ? (
+                "Send Reset Link"
               ) : (
                 "Create Account"
               )}
@@ -348,7 +392,7 @@ export default function Auth() {
           {/* Toggle mode */}
           <div className="mt-6 text-center">
             <p className="text-muted-foreground text-sm">
-              {mode === "login" ? "Don't have an account?" : "Already have an account?"}
+              {mode === "login" ? "Don't have an account?" : mode === "forgot" ? "Remember your password?" : "Already have an account?"}
             </p>
             <Button
               variant="link"
