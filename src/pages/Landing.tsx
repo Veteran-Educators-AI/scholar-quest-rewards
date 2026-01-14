@@ -1,39 +1,14 @@
-import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
-import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Star, Trophy, Flame, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
+import { Link } from "react-router-dom";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
 
 export default function Landing() {
-  const navigate = useNavigate();
-
-  // Best-effort redirect for logged-in users.
-  // Important: never block rendering on Supabase/network calls, or the homepage can appear "stuck loading".
-  useEffect(() => {
-    let cancelled = false;
-
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        if (cancelled) return;
-        if (session) {
-          navigate("/student", { replace: true });
-        }
-      })
-      .catch(() => {
-        // Ignore auth/network errors here; the landing page should still load.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
-
+  // Auth redirect is handled globally by AuthRedirectWrapper - no duplicate check needed
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}
