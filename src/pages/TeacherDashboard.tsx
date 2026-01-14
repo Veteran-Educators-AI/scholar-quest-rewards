@@ -127,9 +127,11 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     fetchTeacherData();
+    // Run sync independently - don't block dashboard loading
+    syncClassesFromNYCologic();
   }, []);
 
-  // Auto-sync classes from NYCologic Ai on login
+  // Auto-sync classes from NYCologic Ai (runs independently, non-blocking)
   const syncClassesFromNYCologic = async () => {
     setSyncingClasses(true);
     try {
@@ -199,11 +201,6 @@ export default function TeacherDashboard() {
           navigate("/");
           return;
         }
-      }
-
-      // Auto-sync classes from NYCologic Ai (only on initial load)
-      if (loading) {
-        syncClassesFromNYCologic();
       }
 
       // Fetch classes
