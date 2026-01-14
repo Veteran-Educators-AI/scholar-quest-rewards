@@ -263,7 +263,7 @@ export default function Auth() {
             <ScholarBuddy size="md" />
             <div className="text-center mt-3">
               <h1 className="text-xl font-bold text-foreground tracking-wide leading-none">
-                NYCologic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
+                NYClogic <span className="text-destructive">Ai<sup className="text-xs">™</sup></span>
               </h1>
               <span className="text-3xl font-black text-destructive leading-none tracking-tight" style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}>
                 SCHOLAR
