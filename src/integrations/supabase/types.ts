@@ -1211,6 +1211,56 @@ export type Database = {
           },
         ]
       }
+      student_invite_links: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          expires_at: string
+          external_ref: string | null
+          id: string
+          student_email: string | null
+          student_name: string | null
+          teacher_id: string
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          expires_at?: string
+          external_ref?: string | null
+          id?: string
+          student_email?: string | null
+          student_name?: string | null
+          teacher_id: string
+          token: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          expires_at?: string
+          external_ref?: string | null
+          id?: string
+          student_email?: string | null
+          student_name?: string | null
+          teacher_id?: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_invite_links_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_profiles: {
         Row: {
           accommodations: string[] | null
@@ -1474,6 +1524,10 @@ export type Database = {
       is_teacher_of_class: {
         Args: { p_class_id: string; p_teacher_id: string }
         Returns: boolean
+      }
+      process_invite_link: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: Json
       }
       teacher_can_view_student: {
         Args: { p_student_id: string; p_teacher_id: string }
