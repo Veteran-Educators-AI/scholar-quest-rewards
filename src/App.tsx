@@ -35,7 +35,6 @@ const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
 const TeacherIntegrations = lazy(() => import("./pages/TeacherIntegrations"));
 const TeacherRaffle = lazy(() => import("./pages/TeacherRaffle"));
 const TeacherStudents = lazy(() => import("./pages/TeacherStudents"));
-const TeacherInvites = lazy(() => import("./pages/TeacherInvites"));
 const TeacherAssignmentBuilder = lazy(() => import("./pages/TeacherAssignmentBuilder"));
 const APISettings = lazy(() => import("./pages/APISettings"));
 const Raffle = lazy(() => import("./pages/Raffle"));
@@ -87,7 +86,6 @@ const App = () => (
                     <Route path="/teacher/integrations" element={<TeacherIntegrations />} />
                     <Route path="/teacher/verify" element={<TeacherVerify />} />
                     <Route path="/teacher/raffle" element={<TeacherRaffle />} />
-                    <Route path="/teacher/invites" element={<TeacherInvites />} />
                     <Route path="/teacher/assignments/new" element={<TeacherAssignmentBuilder />} />
                     <Route path="/teacher/api" element={<APISettings />} />
                     <Route path="/parent" element={<ParentDashboard />} />
