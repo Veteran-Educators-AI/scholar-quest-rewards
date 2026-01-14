@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { tryOr, withTimeout } from "@/lib/async";
 
 const publicRoutes = ["/", "/auth", "/privacy-policy", "/terms-of-service"];
 
@@ -19,54 +20,87 @@ export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const pathnameRef = useRef(location.pathname);
+
+  // Keep latest pathname without resubscribing auth listener.
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          // Fetch user role from user_roles table (more secure)
-          const { data: userRole } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single();
+        try {
+          const currentPath = pathnameRef.current;
 
-          const role = userRole?.role || "student";
-          const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+          if (event === "SIGNED_IN" && session?.user) {
+            // Fetch user role from user_roles table (more secure)
+            const { data: userRole } = await tryOr(
+              withTimeout(
+                supabase
+                  .from("user_roles")
+                  .select("role")
+                  .eq("user_id", session.user.id)
+                  .single(),
+                7000,
+                "Timed out fetching user role"
+              ),
+              { data: null } as unknown as { data: { role?: string } | null }
+            );
 
-          // Redirect if on a public route OR on the wrong dashboard
-          if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
-            navigate(targetPath, { replace: true });
+            const role = userRole?.role || "student";
+            const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+
+            // Redirect if on a public route OR on the wrong dashboard
+            if (publicRoutes.includes(currentPath) || isOnWrongDashboard(currentPath, role)) {
+              navigate(targetPath, { replace: true });
+            }
+          } else if (event === "SIGNED_OUT") {
+            navigate("/", { replace: true });
           }
-        } else if (event === "SIGNED_OUT") {
-          navigate("/", { replace: true });
+        } finally {
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
     // THEN check for existing session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Fetch user role from user_roles table (more secure)
-        const { data: userRole } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
+      try {
+        const { data: { session } } = await tryOr(
+          withTimeout(supabase.auth.getSession(), 7000, "Timed out getting auth session"),
+          { data: { session: null } }
+        );
 
-        const role = userRole?.role || "student";
-        const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+        if (session?.user) {
+          const currentPath = pathnameRef.current;
 
-        // Redirect if on a public route OR on the wrong dashboard
-        if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
-          navigate(targetPath, { replace: true });
+          // Fetch user role from user_roles table (more secure)
+          const { data: userRole } = await tryOr(
+            withTimeout(
+              supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", session.user.id)
+                .single(),
+              7000,
+              "Timed out fetching user role"
+            ),
+            { data: null } as unknown as { data: { role?: string } | null }
+          );
+
+          const role = userRole?.role || "student";
+          const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
+
+          // Redirect if on a public route OR on the wrong dashboard
+          if (publicRoutes.includes(currentPath) || isOnWrongDashboard(currentPath, role)) {
+            navigate(targetPath, { replace: true });
+          }
         }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSession();
@@ -74,7 +108,7 @@ export const useAuthRedirect = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate]);
 
   return { isLoading };
 };
