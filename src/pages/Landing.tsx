@@ -484,7 +484,7 @@ export default function Landing() {
   );
 }
 
-function FeatureCard({ 
+const FeatureCard = ({ 
   icon, 
   title, 
   description, 
@@ -494,7 +494,7 @@ function FeatureCard({
   title: string; 
   description: string; 
   color: "gold" | "streak" | "primary" | "accent";
-}) {
+}) => {
   const colorClasses = {
     gold: "bg-gold/10 text-gold",
     streak: "bg-streak/10 text-streak",
@@ -503,20 +503,17 @@ function FeatureCard({
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      className="bg-card rounded-2xl p-4 shadow-md border border-border"
-    >
+    <div className="bg-card rounded-2xl p-4 shadow-md border border-border transition-transform hover:-translate-y-1 hover:scale-[1.02]">
       <div className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center mb-3`}>
         {icon}
       </div>
       <h3 className="font-bold text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
-    </motion.div>
+    </div>
   );
-}
+};
 
-function StepCard({
+const StepCard = ({
   number,
   title,
   description,
@@ -526,16 +523,9 @@ function StepCard({
   title: string;
   description: string;
   emoji: string;
-}) {
+}) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: number * 0.1 }}
-      whileHover={{ y: -4 }}
-      className="bg-card rounded-2xl p-6 shadow-md border border-border text-center"
-    >
+    <div className="bg-card rounded-2xl p-6 shadow-md border border-border text-center transition-transform hover:-translate-y-1">
       <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-glow-primary">
         {emoji}
       </div>
@@ -544,6 +534,6 @@ function StepCard({
       </div>
       <h3 className="text-xl font-bold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
-    </motion.div>
+    </div>
   );
-}
+};
