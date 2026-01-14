@@ -106,12 +106,14 @@ export default function Auth() {
           navigate(role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student");
         }
       } else {
+        console.log("[Auth] Starting login...");
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) {
+          console.log("[Auth] Login error:", error.message);
           if (error.message.includes("Invalid login credentials")) {
             toast({
               title: "Login failed",
@@ -122,23 +124,32 @@ export default function Auth() {
             throw error;
           }
         } else if (data.user) {
+          console.log("[Auth] Login successful, user ID:", data.user.id);
+          
           // Fetch user role from user_roles table (primary source of truth)
-          const { data: userRoleData } = await supabase
+          console.log("[Auth] Fetching user role...");
+          const { data: userRoleData, error: roleError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", data.user.id)
             .maybeSingle();
 
+          console.log("[Auth] Role fetch result:", { userRoleData, roleError });
+
           // Fallback to profiles table if user_roles not found
           let userRole = userRoleData?.role;
           if (!userRole) {
+            console.log("[Auth] No role in user_roles, checking profiles...");
             const { data: profile } = await supabase
               .from("profiles")
               .select("role")
               .eq("id", data.user.id)
               .single();
             userRole = profile?.role || "student";
+            console.log("[Auth] Profile role:", userRole);
           }
+          
+          console.log("[Auth] Final role:", userRole);
           
           toast({
             title: "Welcome back! 🦉",
@@ -151,6 +162,7 @@ export default function Auth() {
           
           // Navigate immediately based on fetched role
           const targetPath = userRole === "teacher" ? "/teacher" : userRole === "parent" ? "/parent" : "/student";
+          console.log("[Auth] Redirecting to:", targetPath);
           
           // Use window.location for a clean navigation that bypasses any React Router race conditions
           window.location.href = targetPath;
