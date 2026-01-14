@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 const publicRoutes = ["/", "/auth", "/privacy-policy", "/terms-of-service"];
 
+// Check if path is a public route (exact match or prefix match for invite)
+const isPublicRoute = (pathname: string): boolean => {
+  if (publicRoutes.includes(pathname)) return true;
+  if (pathname.startsWith("/invite/")) return true;
+  return false;
+};
+
 // Helper to check if user is on the wrong dashboard for their role
 const isOnWrongDashboard = (pathname: string, role: string): boolean => {
   if (role === "teacher" && pathname.startsWith("/student")) return true;
@@ -35,8 +42,9 @@ export const useAuthRedirect = () => {
           const role = userRole?.role || "student";
           const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
 
-          // Redirect if on a public route OR on the wrong dashboard
-          if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
+          // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
+          const onPublicNonInvite = publicRoutes.includes(location.pathname);
+          if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
             navigate(targetPath, { replace: true });
           }
         } else if (event === "SIGNED_OUT") {
@@ -61,8 +69,9 @@ export const useAuthRedirect = () => {
         const role = userRole?.role || "student";
         const targetPath = role === "teacher" ? "/teacher" : role === "parent" ? "/parent" : "/student";
 
-        // Redirect if on a public route OR on the wrong dashboard
-        if (publicRoutes.includes(location.pathname) || isOnWrongDashboard(location.pathname, role)) {
+        // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
+        const onPublicNonInvite = publicRoutes.includes(location.pathname);
+        if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
           navigate(targetPath, { replace: true });
         }
       }
