@@ -6,9 +6,12 @@ const corsHeaders = {
 };
 
 interface StudentSyncPayload {
-  user_id: string;
+  user_id?: string;
+  external_id?: string; // Alternative identifier from NYCologic
+  email?: string; // Alternative identifier
   full_name?: string;
-  email?: string;
+  first_name?: string;
+  last_name?: string;
   grade_level?: number;
   reading_level?: string;
   math_level?: string;
@@ -26,7 +29,6 @@ interface BulkSyncPayload {
 async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: string): Promise<boolean> {
   const supabase = createClient(supabaseUrl, supabaseKey);
   
-  // Hash the API key and check against stored hashes
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -51,7 +53,7 @@ async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: st
   const token = token1 || token2;
 
   if (!token) {
-    // Also check for unhashed token (legacy support)
+    // Legacy support: check if the plain API key matches a token_hash directly
     const { data: legacyToken } = await supabase
       .from("integration_tokens")
       .select("id, is_active")
@@ -85,6 +87,22 @@ async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: st
   return true;
 }
 
+// Generate a deterministic UUID from an external_id or email
+function generateDeterministicUUID(input: string): string {
+  // Simple hash-based UUID generation (v5-like)
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  
+  // Convert to hex and format as UUID
+  const hex = Math.abs(hash).toString(16).padStart(8, '0');
+  const uuid = `${hex.slice(0, 8)}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(0, 3)}-${hex.padEnd(12, '0').slice(0, 12)}`;
+  return uuid;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -115,58 +133,135 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    console.log("Received sync payload:", JSON.stringify(body).substring(0, 500));
     
     // Support both single student and bulk sync
     const students: StudentSyncPayload[] = body.students || [body];
-    const results: { user_id: string; status: string; error?: string }[] = [];
+    const results: { identifier: string; user_id: string; status: string; error?: string }[] = [];
 
     for (const student of students) {
       try {
+        // Determine user_id: use provided, or generate from external_id/email
+        let userId = student.user_id;
+        let identifier = userId || student.external_id || student.email || "unknown";
+        
+        if (!userId) {
+          if (student.external_id) {
+            // Check if we already have a mapping for this external_id
+            const { data: existingInvite } = await supabase
+              .from("student_invite_links")
+              .select("used_by")
+              .eq("external_ref", student.external_id)
+              .not("used_by", "is", null)
+              .single();
+            
+            if (existingInvite?.used_by) {
+              userId = existingInvite.used_by;
+            } else {
+              // Check student_profiles for external reference match
+              const { data: existingProfile } = await supabase
+                .from("practice_sets")
+                .select("student_id")
+                .eq("external_ref", student.external_id)
+                .limit(1)
+                .single();
+              
+              if (existingProfile?.student_id) {
+                userId = existingProfile.student_id;
+              }
+            }
+          }
+          
+          if (!userId && student.email) {
+            // Try to find user by email in auth.users (via profiles)
+            // We can't query auth.users directly, but we can check if profile exists
+            // For now, generate a deterministic ID from email
+            userId = generateDeterministicUUID(`nycologic:${student.email}`);
+          }
+          
+          if (!userId && student.external_id) {
+            // Generate deterministic UUID from external_id
+            userId = generateDeterministicUUID(`nycologic:${student.external_id}`);
+          }
+          
+          if (!userId) {
+            // Last resort: generate random UUID
+            userId = crypto.randomUUID();
+            console.log(`Generated new random UUID for student: ${identifier}`);
+          }
+        }
+
+        // Build full name from parts if not provided
+        let fullName = student.full_name;
+        if (!fullName && (student.first_name || student.last_name)) {
+          fullName = [student.first_name, student.last_name].filter(Boolean).join(" ");
+        }
+        fullName = fullName || "Student";
+
         // Check if profile exists
         const { data: existingProfile } = await supabase
           .from("profiles")
           .select("id")
-          .eq("id", student.user_id)
+          .eq("id", userId)
           .single();
 
         if (!existingProfile) {
           // Create profile first
-          await supabase.from("profiles").insert({
-            id: student.user_id,
-            full_name: student.full_name || "Student",
+          const { error: profileError } = await supabase.from("profiles").insert({
+            id: userId,
+            full_name: fullName,
             role: "student",
           });
+          
+          if (profileError) {
+            console.log(`Profile creation for ${identifier}:`, profileError.message);
+            // If it's a duplicate, that's fine
+            if (!profileError.message.includes("duplicate")) {
+              throw profileError;
+            }
+          }
+        } else {
+          // Update profile name if provided
+          if (fullName !== "Student") {
+            await supabase
+              .from("profiles")
+              .update({ full_name: fullName, updated_at: new Date().toISOString() })
+              .eq("id", userId);
+          }
         }
 
         // Check if student_profiles exists
         const { data: existingStudentProfile } = await supabase
           .from("student_profiles")
           .select("id")
-          .eq("user_id", student.user_id)
+          .eq("user_id", userId)
           .single();
 
         if (existingStudentProfile) {
           // Update existing
+          const updateData: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+          };
+          
+          if (student.grade_level !== undefined) updateData.grade_level = student.grade_level;
+          if (student.reading_level !== undefined) updateData.reading_level = student.reading_level;
+          if (student.math_level !== undefined) updateData.math_level = student.math_level;
+          if (student.skill_tags !== undefined) updateData.skill_tags = student.skill_tags;
+          if (student.strengths !== undefined) updateData.strengths = student.strengths;
+          if (student.weaknesses !== undefined) updateData.weaknesses = student.weaknesses;
+          if (student.accommodations !== undefined) updateData.accommodations = student.accommodations;
+
           const { error } = await supabase
             .from("student_profiles")
-            .update({
-              grade_level: student.grade_level,
-              reading_level: student.reading_level,
-              math_level: student.math_level,
-              skill_tags: student.skill_tags,
-              strengths: student.strengths,
-              weaknesses: student.weaknesses,
-              accommodations: student.accommodations,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", student.user_id);
+            .update(updateData)
+            .eq("user_id", userId);
 
           if (error) throw error;
-          results.push({ user_id: student.user_id, status: "updated" });
+          results.push({ identifier, user_id: userId, status: "updated" });
         } else {
-          // Create new
+          // Create new student profile
           const { error } = await supabase.from("student_profiles").insert({
-            user_id: student.user_id,
+            user_id: userId,
             grade_level: student.grade_level,
             reading_level: student.reading_level,
             math_level: student.math_level,
@@ -177,7 +272,7 @@ Deno.serve(async (req) => {
           });
 
           if (error) throw error;
-          results.push({ user_id: student.user_id, status: "created" });
+          results.push({ identifier, user_id: userId, status: "created" });
         }
 
         // Handle class enrollment if class_code provided
@@ -192,22 +287,56 @@ Deno.serve(async (req) => {
             const { data: existingEnrollment } = await supabase
               .from("enrollments")
               .select("id")
-              .eq("student_id", student.user_id)
+              .eq("student_id", userId)
               .eq("class_id", classData.id)
               .single();
 
             if (!existingEnrollment) {
               await supabase.from("enrollments").insert({
-                student_id: student.user_id,
+                student_id: userId,
                 class_id: classData.id,
               });
             }
           }
         }
+
+        // Store external_id mapping if provided (for future lookups)
+        if (student.external_id) {
+          // Check if invite link exists for this external_ref
+          const { data: existingLink } = await supabase
+            .from("student_invite_links")
+            .select("id")
+            .eq("external_ref", student.external_id)
+            .single();
+
+          if (!existingLink) {
+            // Get a teacher_id (we'll use a system teacher or first available)
+            const { data: anyClass } = await supabase
+              .from("classes")
+              .select("teacher_id")
+              .limit(1)
+              .single();
+
+            if (anyClass?.teacher_id) {
+              await supabase.from("student_invite_links").insert({
+                teacher_id: anyClass.teacher_id,
+                token: `nycologic-${student.external_id}`,
+                external_ref: student.external_id,
+                student_name: fullName,
+                student_email: student.email,
+                used_by: userId,
+                used_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
       } catch (err) {
-        console.error(`Error syncing student ${student.user_id}:`, err);
+        const identifier = student.user_id || student.external_id || student.email || "unknown";
+        console.error(`Error syncing student ${identifier}:`, err);
         results.push({ 
-          user_id: student.user_id, 
+          identifier,
+          user_id: "",
           status: "error", 
           error: err instanceof Error ? err.message : "Unknown error" 
         });
@@ -217,10 +346,11 @@ Deno.serve(async (req) => {
     // Log the webhook event
     await supabase.from("webhook_event_logs").insert({
       event_type: "student_sync",
-      payload: body,
-      status: results.every(r => r.status !== "error") ? "success" : "partial",
+      payload: { student_count: students.length, sample: students[0] },
+      status: results.every(r => r.status !== "error") ? "success" : 
+              results.some(r => r.status !== "error") ? "partial" : "failed",
       processed_at: new Date().toISOString(),
-      response: { results },
+      response: { results: results.slice(0, 20) }, // Limit stored results
     });
 
     const successCount = results.filter(r => r.status !== "error").length;
@@ -228,7 +358,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: successCount > 0, 
         synced: successCount,
         total: students.length,
         results 
