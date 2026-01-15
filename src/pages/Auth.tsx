@@ -9,10 +9,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart, Shield } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
-type UserRole = "student" | "parent";
+type UserRole = "student" | "parent" | "admin";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -28,8 +28,9 @@ export default function Auth() {
   // Check if coming from password reset link
   const urlMode = searchParams.get("mode");
   const [mode, setMode] = useState<AuthMode>(urlMode === "reset" ? "reset" : "login");
+  const urlRole = searchParams.get("role");
   const [role, setRole] = useState<UserRole>(
-    searchParams.get("role") === "parent" ? "parent" : "student"
+    urlRole === "parent" ? "parent" : urlRole === "admin" ? "admin" : "student"
   );
   const [loading, setLoading] = useState(false);
   
@@ -324,12 +325,22 @@ export default function Auth() {
 
           const userRole = profile?.role || "student";
           
-          // Only allow student and parent roles
-          if (userRole === "teacher") {
+          // Handle admin/teacher login separately
+          if (role === "admin" && (userRole === "teacher" || userRole === "admin")) {
+            toast({
+              title: "Admin Access Granted! 🔐",
+              description: "Welcome to the admin dashboard.",
+            });
+            navigate("/admin/settings");
+            return;
+          }
+          
+          // Block teacher role for non-admin login
+          if (userRole === "teacher" && role !== "admin") {
             await supabase.auth.signOut();
             toast({
               title: "Access Denied",
-              description: "Teachers should use NYCologic AI. This app is for students and parents only.",
+              description: "Teachers should use NYCologic AI or login as Admin.",
               variant: "destructive",
             });
             return;
@@ -381,7 +392,7 @@ export default function Auth() {
     }
   };
 
-  const messages = {
+  const messages: Record<UserRole, Record<AuthMode, string>> = {
     student: {
       login: "Welcome back, scholar! Ready for more adventures?",
       signup: "Hi there! Let's set up your account and start earning rewards!",
@@ -391,6 +402,12 @@ export default function Auth() {
     parent: {
       login: "Welcome back! Let's see how your child is doing.",
       signup: "Hi there! Let's connect you with your child's progress.",
+      forgot: "No worries! Enter your email to reset your password.",
+      reset: "Almost there! Create your new password.",
+    },
+    admin: {
+      login: "Admin access. Enter your credentials.",
+      signup: "Contact your administrator for admin access.",
       forgot: "No worries! Enter your email to reset your password.",
       reset: "Almost there! Create your new password.",
     },
@@ -441,26 +458,33 @@ export default function Auth() {
           </div>
 
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            <Button
-              variant={role === "student" ? "destructive" : "outline"}
-              className="flex-1"
-              onClick={() => setRole("student")}
-              size="sm"
-            >
-              <GraduationCap className="w-4 h-4 mr-1" />
-              Scholar
-            </Button>
-            <Button
-              variant={role === "parent" ? "destructive" : "outline"}
-              className="flex-1"
-              onClick={() => setRole("parent")}
-              size="sm"
-            >
-              <Heart className="w-4 h-4 mr-1" />
-              Parent
-            </Button>
-          </div>
+          {role !== "admin" ? (
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              <Button
+                variant={role === "student" ? "destructive" : "outline"}
+                className="flex-1"
+                onClick={() => setRole("student")}
+                size="sm"
+              >
+                <GraduationCap className="w-4 h-4 mr-1" />
+                Scholar
+              </Button>
+              <Button
+                variant={role === "parent" ? "destructive" : "outline"}
+                className="flex-1"
+                onClick={() => setRole("parent")}
+                size="sm"
+              >
+                <Heart className="w-4 h-4 mr-1" />
+                Parent
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-muted rounded-lg">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-medium text-foreground">Admin Login</span>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={
