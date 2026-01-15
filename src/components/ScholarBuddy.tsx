@@ -1,5 +1,4 @@
 import { forwardRef } from "react";
-import { motion } from "framer-motion";
 import highschoolLogo from "@/assets/highschool-logo.png";
 
 interface ScholarBuddyProps {
@@ -12,7 +11,6 @@ interface ScholarBuddyProps {
 export const ScholarBuddy = forwardRef<HTMLDivElement, ScholarBuddyProps>(({ 
   size = "md", 
   message, 
-  animate = true,
   className = ""
 }, ref) => {
   const sizeClasses = {
@@ -23,75 +21,19 @@ export const ScholarBuddy = forwardRef<HTMLDivElement, ScholarBuddyProps>(({
   };
 
   return (
-    <div className={`flex flex-col items-center gap-3 ${className}`}>
-      <motion.div
-        className={`${sizeClasses[size]} relative`}
-        animate={animate ? {
-          y: [0, -12, 0],
-        } : {}}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        
-        {/* Logo image */}
+    <div ref={ref} className={`flex flex-col items-center gap-3 ${className}`}>
+      <div className={`${sizeClasses[size]} relative`}>
         <img 
           src={highschoolLogo} 
           alt="NYClogic Logo" 
-          className="w-full h-full object-contain drop-shadow-2xl relative z-10"
+          className="w-full h-full object-contain drop-shadow-2xl"
         />
-        
-        {/* Floating particles */}
-        <motion.div
-          className="absolute -top-2 -right-2 w-2 h-2 bg-primary/60 rounded-full"
-          animate={{
-            y: [-5, -15, -5],
-            opacity: [0.6, 0.2, 0.6],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute -bottom-1 -left-3 w-1.5 h-1.5 bg-gold/70 rounded-full"
-          animate={{
-            y: [0, -10, 0],
-            opacity: [0.7, 0.3, 0.7],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5,
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 -right-4 w-1 h-1 bg-secondary/50 rounded-full"
-          animate={{
-            y: [-3, -12, -3],
-            opacity: [0.5, 0.2, 0.5],
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1,
-          }}
-        />
-      </motion.div>
+      </div>
       
       {message && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-xl px-5 py-3 shadow-lg border border-border max-w-sm text-center backdrop-blur-sm"
-        >
+        <div className="bg-card rounded-xl px-5 py-3 shadow-lg border border-border max-w-sm text-center backdrop-blur-sm">
           <p className="text-sm font-medium text-foreground">{message}</p>
-        </motion.div>
+        </div>
       )}
     </div>
   );
