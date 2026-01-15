@@ -1632,6 +1632,7 @@ export type Database = {
         Args: { p_class_id: string; p_teacher_id: string }
         Returns: boolean
       }
+      link_my_external_student: { Args: never; Returns: boolean }
       process_invite_link: {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
