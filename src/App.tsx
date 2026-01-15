@@ -37,6 +37,7 @@ const RegentsPrep = lazy(() => import("./pages/RegentsPrep"));
 const StudyPlan = lazy(() => import("./pages/StudyPlan"));
 const StudentInvite = lazy(() => import("./pages/StudentInvite"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+const ExternalStudents = lazy(() => import("./pages/ExternalStudents"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => (
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/invite/:token" element={<StudentInvite />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
+                    <Route path="/admin/external-students" element={<ExternalStudents />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
