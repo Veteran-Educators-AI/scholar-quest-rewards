@@ -37,6 +37,8 @@ export default function AdminDashboard() {
 
       return { total, linked, needsSupport, avgGrade };
     },
+    staleTime: 0, // Always refetch on mount
+    refetchOnWindowFocus: true,
   });
 
   // Fetch classes count

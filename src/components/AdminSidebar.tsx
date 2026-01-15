@@ -121,18 +121,14 @@ export function AdminSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={handleSignOut}
-              tooltip="Sign Out"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <Button
+          variant="ghost"
+          onClick={handleSignOut}
+          className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <LogOut className="w-4 h-4" />
+          {!collapsed && <span>Sign Out</span>}
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
