@@ -34,12 +34,13 @@ export const useAuthRedirect = () => {
 
   // Initial session check - runs once
   useEffect(() => {
-    if (hasChecked.current) {
-      setIsLoading(false);
-      return;
-    }
-
     const checkSession = async () => {
+      // Skip if already checked
+      if (hasChecked.current) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
