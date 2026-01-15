@@ -15,9 +15,20 @@ const isPublicRoute = (pathname: string): boolean => {
 const isOnWrongDashboard = (pathname: string, role: string): boolean => {
   // Teachers are not allowed - they should use NYCologic AI
   if (role === "teacher") return true;
+  // Admins can go anywhere
+  if (role === "admin") return false;
   if (role === "student" && pathname.startsWith("/parent")) return true;
   if (role === "parent" && pathname.startsWith("/student")) return true;
   return false;
+};
+
+// Get the target path for a role
+const getTargetPath = (role: string): string => {
+  switch (role) {
+    case "admin": return "/admin/external-students";
+    case "parent": return "/parent";
+    default: return "/student";
+  }
 };
 
 export const useAuthRedirect = () => {
@@ -45,7 +56,7 @@ export const useAuthRedirect = () => {
             return;
           }
           
-          const targetPath = role === "parent" ? "/parent" : "/student";
+          const targetPath = getTargetPath(role);
 
           // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
           const onPublicNonInvite = publicRoutes.includes(location.pathname);
@@ -79,7 +90,7 @@ export const useAuthRedirect = () => {
           return;
         }
         
-        const targetPath = role === "parent" ? "/parent" : "/student";
+        const targetPath = getTargetPath(role);
 
         // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
         const onPublicNonInvite = publicRoutes.includes(location.pathname);
