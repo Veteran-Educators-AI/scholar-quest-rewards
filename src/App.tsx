@@ -37,6 +37,7 @@ const RegentsPrep = lazy(() => import("./pages/RegentsPrep"));
 const StudyPlan = lazy(() => import("./pages/StudyPlan"));
 const StudentInvite = lazy(() => import("./pages/StudentInvite"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ExternalStudents = lazy(() => import("./pages/ExternalStudents"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -80,6 +81,7 @@ const App = () => (
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/invite/:token" element={<StudentInvite />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/external-students" element={<ExternalStudents />} />
                     <Route path="*" element={<NotFound />} />

@@ -331,7 +331,7 @@ export default function Auth() {
               title: "Admin Access Granted! 🔐",
               description: "Welcome to the admin dashboard.",
             });
-            navigate("/admin/external-students");
+            navigate("/admin");
             return;
           }
           

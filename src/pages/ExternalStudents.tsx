@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Table, 
   TableBody, 
   TableCell, 
@@ -21,13 +22,10 @@ import {
   AlertTriangle,
   BookOpen,
   TrendingUp,
-  ArrowLeft,
   Link2,
   Link2Off
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useNavigate } from "react-router-dom";
 
 interface ExternalStudent {
   id: string;
@@ -52,7 +50,6 @@ interface ExternalStudent {
 }
 
 export default function ExternalStudents() {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
 
@@ -104,22 +101,20 @@ export default function ExternalStudents() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <AdminLayout
+      title="External Students"
+      breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "External Students" }]}
+    >
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Users className="h-8 w-8 text-primary" />
-              External Students
-            </h1>
-            <p className="text-muted-foreground">
-              Students synced from NYCologic AI
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary" />
+            External Students
+          </h1>
+          <p className="text-muted-foreground">
+            Students synced from NYCologic AI
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -347,6 +342,6 @@ export default function ExternalStudents() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

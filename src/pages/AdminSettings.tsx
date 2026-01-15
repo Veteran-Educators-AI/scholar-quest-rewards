@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Key, Plus, Trash2, Copy, Eye, EyeOff, RefreshCw, Settings, Shield, Users, ExternalLink } from "lucide-react";
+import { Key, Plus, Trash2, Copy, Eye, EyeOff, RefreshCw, Settings, Shield } from "lucide-react";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,6 @@ interface ApiToken {
 }
 
 export default function AdminSettings() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [tokens, setTokens] = useState<ApiToken[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,53 +230,21 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Settings className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-xl">Admin Settings</h1>
-              <p className="text-sm text-muted-foreground">Manage API keys & integrations</p>
-            </div>
+    <AdminLayout
+      title="Settings"
+      breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Settings" }]}
+    >
+      <div className="max-w-4xl space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <Settings className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-bold text-foreground text-2xl">Admin Settings</h1>
+            <p className="text-sm text-muted-foreground">Manage API keys & integrations</p>
           </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-        {/* Quick Links */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ExternalLink className="w-5 h-5" />
-              Quick Links
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link
-                to="/admin/external-students"
-                className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-              >
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">External Students</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View 154 synced students from NYCologic
-                  </p>
-                </div>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* API Keys Section */}
         <Card>
@@ -379,7 +346,7 @@ export default function AdminSettings() {
             </div>
           </CardContent>
         </Card>
-      </main>
+      </div>
 
       {/* Create Key Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -555,6 +522,6 @@ export default function AdminSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }
