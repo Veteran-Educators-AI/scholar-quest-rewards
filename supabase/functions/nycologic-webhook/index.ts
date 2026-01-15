@@ -85,23 +85,61 @@ async function verifyApiKey(apiKey: string, supabaseUrl: string, supabaseKey: st
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const tokenHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
+  console.log("Checking API key, hash:", tokenHash.substring(0, 20) + "...");
+
+  // Check integration_tokens table first
   const { data: token, error } = await supabase
     .from("integration_tokens")
     .select("id, is_active")
     .eq("token_hash", tokenHash)
+    .eq("is_active", true)
     .single();
 
-  if (error || !token || !token.is_active) {
-    return false;
+  if (token) {
+    await supabase
+      .from("integration_tokens")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", token.id);
+    console.log("Valid token found in integration_tokens");
+    return true;
   }
 
-  // Update last_used_at
-  await supabase
-    .from("integration_tokens")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", token.id);
+  // Also check api_tokens table
+  const { data: apiToken } = await supabase
+    .from("api_tokens")
+    .select("id, is_active")
+    .eq("token_hash", tokenHash)
+    .eq("is_active", true)
+    .single();
 
-  return true;
+  if (apiToken) {
+    await supabase
+      .from("api_tokens")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", apiToken.id);
+    console.log("Valid token found in api_tokens");
+    return true;
+  }
+
+  // Legacy support: check if the plain API key matches a token_hash directly
+  const { data: legacyToken } = await supabase
+    .from("integration_tokens")
+    .select("id, is_active")
+    .eq("token_hash", apiKey)
+    .eq("is_active", true)
+    .single();
+
+  if (legacyToken) {
+    await supabase
+      .from("integration_tokens")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", legacyToken.id);
+    console.log("Valid legacy token found");
+    return true;
+  }
+
+  console.log("No valid token found for hash:", tokenHash.substring(0, 20) + "...");
+  return false;
 }
 
 Deno.serve(async (req) => {
