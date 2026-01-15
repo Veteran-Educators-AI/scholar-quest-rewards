@@ -34,33 +34,52 @@ export default function Auth() {
 
   // Listen for password recovery event and check URL for recovery token
   useEffect(() => {
-    // Check if URL contains recovery token (comes in hash fragment)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-    const type = hashParams.get('type');
+    const initAuth = async () => {
+      // Check if URL contains recovery token (comes in hash fragment)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+      
+      if (type === 'recovery' && accessToken && refreshToken) {
+        // This is a password recovery link - set session and show reset form
+        try {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error) {
+            setMode("reset");
+            // Clear the hash to clean up URL
+            window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+          }
+        } catch (err) {
+          console.error("Failed to set session from recovery token:", err);
+        }
+        return;
+      }
+      
+      // If mode=reset is in URL, check if user has a valid session for password reset
+      if (urlMode === "reset") {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // User has active session from recovery link, show reset form
+          setMode("reset");
+        }
+      }
+    };
     
-    if (type === 'recovery' && accessToken && refreshToken) {
-      // This is a password recovery link - set session and show reset form
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      }).then(() => {
-        setMode("reset");
-        // Clear the hash to clean up URL
-        window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
-      });
-      return;
-    }
+    initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event);
       if (event === "PASSWORD_RECOVERY") {
         setMode("reset");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [urlMode]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
