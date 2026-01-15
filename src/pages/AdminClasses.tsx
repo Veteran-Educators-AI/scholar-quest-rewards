@@ -45,10 +45,16 @@ interface ExternalStudent {
 
 interface ClassGroup {
   className: string;
+  classCode: string | null;
   teacherName: string | null;
   students: ExternalStudent[];
   avgGrade: number;
   linkedCount: number;
+}
+
+interface ClassInfo {
+  name: string;
+  class_code: string;
 }
 
 export default function AdminClasses() {
@@ -69,6 +75,22 @@ export default function AdminClasses() {
     },
   });
 
+  // Fetch classes with their codes
+  const { data: classes = [] } = useQuery({
+    queryKey: ["admin-classes-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("classes")
+        .select("name, class_code");
+
+      if (error) throw error;
+      return data as ClassInfo[];
+    },
+  });
+
+  // Create a map of class names to codes
+  const classCodeMap = new Map(classes.map((c) => [c.name, c.class_code]));
+
   // Group students by class
   const classGroups: ClassGroup[] = students.reduce((acc: ClassGroup[], student) => {
     const className = student.class_name || "Unassigned";
@@ -85,6 +107,7 @@ export default function AdminClasses() {
     } else {
       acc.push({
         className,
+        classCode: classCodeMap.get(className) || null,
         teacherName: student.teacher_name,
         students: [student],
         avgGrade: student.overall_average || 0,
@@ -220,9 +243,16 @@ export default function AdminClasses() {
                           </div>
                           <div className="text-left">
                             <h3 className="font-semibold">{classGroup.className}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {classGroup.teacherName || "No teacher assigned"}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-muted-foreground">
+                                {classGroup.teacherName || "No teacher assigned"}
+                              </p>
+                              {classGroup.classCode && (
+                                <Badge variant="outline" className="font-mono text-xs bg-primary/5">
+                                  Code: {classGroup.classCode}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
