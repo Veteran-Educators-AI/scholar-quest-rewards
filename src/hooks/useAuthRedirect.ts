@@ -25,7 +25,7 @@ const isOnWrongDashboard = (pathname: string, role: string): boolean => {
 // Get the target path for a role
 const getTargetPath = (role: string): string => {
   switch (role) {
-    case "admin": return "/admin/external-students";
+    case "admin": return "/admin";
     case "parent": return "/parent";
     default: return "/student";
   }
