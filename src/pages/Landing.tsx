@@ -75,6 +75,12 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Link to="/auth?role=admin">
+              <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                Admin
+              </Button>
+            </Link>
             <Link to="/auth">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
