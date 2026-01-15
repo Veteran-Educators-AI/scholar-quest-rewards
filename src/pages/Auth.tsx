@@ -325,8 +325,18 @@ export default function Auth() {
 
           const userRole = profile?.role || "student";
           
+          // Handle admin login
+          if (userRole === "admin") {
+            toast({
+              title: "Admin Access Granted! 🔐",
+              description: "Welcome to the admin dashboard.",
+            });
+            navigate("/admin/external-students");
+            return;
+          }
+          
           // Handle admin/teacher login separately
-          if (role === "admin" && (userRole === "teacher" || userRole === "admin")) {
+          if (role === "admin" && userRole === "teacher") {
             toast({
               title: "Admin Access Granted! 🔐",
               description: "Welcome to the admin dashboard.",
