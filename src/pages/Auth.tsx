@@ -182,11 +182,13 @@ export default function Auth() {
           let userName = "";
           try {
             const { data: profile } = await withTimeout(
-              supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("id", user.id)
-                .single(),
+              Promise.resolve(
+                supabase
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("id", user.id)
+                  .single()
+              ),
               5000,
               "Loading your profile"
             );
