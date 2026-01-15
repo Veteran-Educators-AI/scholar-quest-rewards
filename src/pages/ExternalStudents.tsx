@@ -21,9 +21,12 @@ import {
   AlertTriangle,
   BookOpen,
   TrendingUp,
-  ArrowLeft
+  ArrowLeft,
+  Link2,
+  Link2Off
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 
 interface ExternalStudent {
@@ -44,6 +47,8 @@ interface ExternalStudent {
   source: string;
   sync_timestamp: string | null;
   created_at: string;
+  linked_user_id: string | null;
+  linked_at: string | null;
 }
 
 export default function ExternalStudents() {
@@ -84,6 +89,7 @@ export default function ExternalStudents() {
   const totalStudents = students?.length || 0;
   const studentsWithGrades = students?.filter((s) => s.overall_average !== null).length || 0;
   const studentsWithWeakTopics = students?.filter((s) => s.weak_topics?.length > 0).length || 0;
+  const linkedStudents = students?.filter((s) => s.linked_user_id !== null).length || 0;
   const averageScore = students
     ? students.reduce((sum, s) => sum + (s.overall_average || 0), 0) / (studentsWithGrades || 1)
     : 0;
@@ -117,7 +123,7 @@ export default function ExternalStudents() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -173,6 +179,20 @@ export default function ExternalStudents() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Link2 className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{linkedStudents}</p>
+                  <p className="text-sm text-muted-foreground">Linked Accounts</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Search and Filter */}
@@ -216,6 +236,7 @@ export default function ExternalStudents() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[40px]">Status</TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Grade</TableHead>
@@ -226,6 +247,28 @@ export default function ExternalStudents() {
                   <TableBody>
                     {filteredStudents?.map((student) => (
                       <TableRow key={student.id}>
+                        <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                {student.linked_user_id ? (
+                                  <div className="p-1.5 rounded-full bg-green-500/20">
+                                    <Link2 className="h-4 w-4 text-green-600" />
+                                  </div>
+                                ) : (
+                                  <div className="p-1.5 rounded-full bg-muted">
+                                    <Link2Off className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {student.linked_user_id 
+                                  ? `Linked on ${new Date(student.linked_at!).toLocaleDateString()}`
+                                  : "Not yet linked to an account"}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{student.full_name}</p>

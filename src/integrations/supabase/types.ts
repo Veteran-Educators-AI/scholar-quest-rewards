@@ -1581,7 +1581,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      students_with_external_data: {
+        Row: {
+          coins: number | null
+          current_streak: number | null
+          external_class_name: string | null
+          external_id: string | null
+          external_teacher_name: string | null
+          full_name: string | null
+          grade_level: number | null
+          grades: Json | null
+          linked_at: string | null
+          misconceptions: Json | null
+          overall_average: number | null
+          remediation_recommendations: Json | null
+          skill_tags: string[] | null
+          source: string | null
+          user_id: string | null
+          weak_topics: Json | null
+          weaknesses: string[] | null
+          xp: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_streak_warnings: { Args: never; Returns: undefined }
