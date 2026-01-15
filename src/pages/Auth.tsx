@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Chrome, Heart, CheckCircle, Loader2 } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
 type UserRole = "student" | "parent";
@@ -26,6 +26,8 @@ export default function Auth() {
     searchParams.get("role") === "parent" ? "parent" : "student"
   );
   const [loading, setLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,13 +44,34 @@ export default function Auth() {
     
     if (type === 'recovery' && accessToken && refreshToken) {
       // This is a password recovery link - set session and show reset form
+      setIsInitializing(true);
       supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
-      }).then(() => {
-        setMode("reset");
+      }).then(({ error }) => {
+        if (error) {
+          console.error("Session setup error:", error);
+          toast({
+            title: "Reset link expired",
+            description: "Please request a new password reset link.",
+            variant: "destructive",
+          });
+          setMode("forgot");
+        } else {
+          setMode("reset");
+        }
         // Clear the hash to clean up URL
         window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+      }).catch((error) => {
+        console.error("Session setup failed:", error);
+        toast({
+          title: "Something went wrong",
+          description: "Please request a new password reset link.",
+          variant: "destructive",
+        });
+        setMode("forgot");
+      }).finally(() => {
+        setIsInitializing(false);
       });
       return;
     }
@@ -60,7 +83,7 @@ export default function Auth() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,55 +139,86 @@ export default function Auth() {
       // Get current user session to get email
       const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) {
+        throw new Error("No active session. Please request a new password reset link.");
+      }
+      
       const { error } = await supabase.auth.updateUser({ password });
       
       if (error) throw error;
       
-      // Get user profile name for the email
-      let userName = "";
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        userName = profile?.full_name || "";
-      }
-      
-      // Send confirmation email via edge function
-      if (user?.email) {
-        try {
-          await supabase.functions.invoke("send-password-reset-confirmation", {
-            body: {
-              email: user.email,
-              name: userName,
-            },
-          });
-        } catch (emailError) {
-          // Log but don't fail the password reset if email fails
-          console.error("Failed to send confirmation email:", emailError);
-        }
-      }
+      // Password successfully updated - show success immediately
+      setResetSuccess(true);
+      setLoading(false);
+      setPassword("");
+      setConfirmPassword("");
       
       toast({
         title: "Password updated! 🎉",
-        description: "You can now log in with your new password. A confirmation email has been sent.",
+        description: "Your password has been changed successfully.",
       });
       
-      // Sign out so they can log in fresh with new password
-      await supabase.auth.signOut();
-      setMode("login");
-      setPassword("");
-      setConfirmPassword("");
+      // Send confirmation email in background (non-blocking)
+      // Using Promise.race with timeout to prevent hanging
+      const sendConfirmationEmail = async () => {
+        try {
+          let userName = "";
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single();
+          userName = profile?.full_name || "";
+          
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Email timeout")), 5000)
+          );
+          
+          await Promise.race([
+            supabase.functions.invoke("send-password-reset-confirmation", {
+              body: {
+                email: user.email,
+                name: userName,
+              },
+            }),
+            timeoutPromise
+          ]);
+        } catch (emailError) {
+          // Log but don't fail - password is already reset
+          console.error("Failed to send confirmation email:", emailError);
+        }
+      };
+      
+      // Fire and forget - don't await
+      sendConfirmationEmail();
+      
+      // Sign out after a short delay so user sees the success message
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+      }, 500);
+      
     } catch (error: any) {
       console.error("Password reset error:", error);
+      setLoading(false);
+      
+      // Check for specific error types
+      const errorMessage = error.message || "Please try again.";
+      const isSessionError = errorMessage.toLowerCase().includes("session") || 
+                            errorMessage.toLowerCase().includes("token") ||
+                            errorMessage.toLowerCase().includes("expired");
+      
       toast({
-        title: "Update failed",
-        description: error.message || "Please try again.",
+        title: isSessionError ? "Reset link expired" : "Update failed",
+        description: isSessionError 
+          ? "Please request a new password reset link." 
+          : errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      
+      if (isSessionError) {
+        setMode("forgot");
+      }
     }
   };
 
@@ -374,196 +428,228 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            <Button
-              variant={role === "student" ? "destructive" : "outline"}
-              className="flex-1"
-              onClick={() => setRole("student")}
-              size="sm"
-            >
-              <GraduationCap className="w-4 h-4 mr-1" />
-              Scholar
-            </Button>
-            <Button
-              variant={role === "parent" ? "destructive" : "outline"}
-              className="flex-1"
-              onClick={() => setRole("parent")}
-              size="sm"
-            >
-              <Heart className="w-4 h-4 mr-1" />
-              Parent
-            </Button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={
-            mode === "forgot" ? handleForgotPassword : 
-            mode === "reset" ? handlePasswordReset : 
-            handleSubmit
-          } className="space-y-4">
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-10 h-12 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {mode !== "reset" && (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {(mode === "login" || mode === "signup") && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-12 rounded-xl"
-                    minLength={6}
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {mode === "reset" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 h-12 rounded-xl"
-                      minLength={6}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 h-12 rounded-xl"
-                      minLength={6}
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {mode === "login" && (
-              <div className="text-right">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-muted-foreground text-sm p-0 h-auto"
-                  onClick={() => setMode("forgot")}
-                >
-                  Forgot password?
-                </Button>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="destructive"
-              className="w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              ) : mode === "login" ? (
-                "Log In"
-              ) : mode === "forgot" ? (
-                "Send Reset Link"
-              ) : mode === "reset" ? (
-                "Update Password"
-              ) : (
-                "Create Account"
-              )}
-            </Button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
+          {/* Show initializing state */}
+          {isInitializing ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 text-destructive animate-spin mb-4" />
+              <p className="text-muted-foreground text-center">Setting up your session...</p>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          {/* Google Login */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-12 rounded-xl"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-          >
-            <Chrome className="w-5 h-5 mr-2" />
-            Continue with Google
-          </Button>
-
-          {/* Toggle mode */}
-          {mode !== "reset" && (
-            <div className="mt-6 text-center">
-              <p className="text-muted-foreground text-sm">
-                {mode === "login" ? "Don't have an account?" : mode === "forgot" ? "Remember your password?" : "Already have an account?"}
+          ) : resetSuccess ? (
+            /* Show success state after password reset */
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-500" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground mb-2">Password Updated!</h2>
+              <p className="text-muted-foreground text-center mb-6">
+                Your password has been successfully changed. You can now log in with your new password.
               </p>
               <Button
-                variant="link"
-                onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-destructive font-semibold"
+                variant="destructive"
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  setResetSuccess(false);
+                  setMode("login");
+                }}
               >
-                {mode === "login" ? "Sign up" : "Log in"}
+                Continue to Login
               </Button>
             </div>
+          ) : (
+            <>
+              {/* Role selector */}
+              <div className="grid grid-cols-2 gap-2 mb-6">
+                <Button
+                  variant={role === "student" ? "destructive" : "outline"}
+                  className="flex-1"
+                  onClick={() => setRole("student")}
+                  size="sm"
+                >
+                  <GraduationCap className="w-4 h-4 mr-1" />
+                  Scholar
+                </Button>
+                <Button
+                  variant={role === "parent" ? "destructive" : "outline"}
+                  className="flex-1"
+                  onClick={() => setRole("parent")}
+                  size="sm"
+                >
+                  <Heart className="w-4 h-4 mr-1" />
+                  Parent
+                </Button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={
+                mode === "forgot" ? handleForgotPassword : 
+                mode === "reset" ? handlePasswordReset : 
+                handleSubmit
+              } className="space-y-4">
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="Your name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-10 h-12 rounded-xl"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {mode !== "reset" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-12 rounded-xl"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(mode === "login" || mode === "signup") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 h-12 rounded-xl"
+                        minLength={6}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {mode === "reset" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 h-12 rounded-xl"
+                          minLength={6}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="pl-10 h-12 rounded-xl"
+                          minLength={6}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {mode === "login" && (
+                  <div className="text-right">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-muted-foreground text-sm p-0 h-auto"
+                      onClick={() => setMode("forgot")}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  className="w-full"
+                  size="lg"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : mode === "login" ? (
+                    "Log In"
+                  ) : mode === "forgot" ? (
+                    "Send Reset Link"
+                  ) : mode === "reset" ? (
+                    "Update Password"
+                  ) : (
+                    "Create Account"
+                  )}
+                </Button>
+              </form>
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              {/* Google Login */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 rounded-xl"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+              >
+                <Chrome className="w-5 h-5 mr-2" />
+                Continue with Google
+              </Button>
+
+              {/* Toggle mode */}
+              {mode !== "reset" && (
+                <div className="mt-6 text-center">
+                  <p className="text-muted-foreground text-sm">
+                    {mode === "login" ? "Don't have an account?" : mode === "forgot" ? "Remember your password?" : "Already have an account?"}
+                  </p>
+                  <Button
+                    variant="link"
+                    onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                    className="text-destructive font-semibold"
+                  >
+                    {mode === "login" ? "Sign up" : "Log in"}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
 
           {/* Legal links and disclaimers */}
