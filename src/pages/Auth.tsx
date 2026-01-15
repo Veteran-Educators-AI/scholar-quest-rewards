@@ -113,13 +113,42 @@ export default function Auth() {
     setLoading(true);
     
     try {
+      // Get current user session to get email
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase.auth.updateUser({ password });
       
       if (error) throw error;
       
+      // Get user profile name for the email
+      let userName = "";
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        userName = profile?.full_name || "";
+      }
+      
+      // Send confirmation email via edge function
+      if (user?.email) {
+        try {
+          await supabase.functions.invoke("send-password-reset-confirmation", {
+            body: {
+              email: user.email,
+              name: userName,
+            },
+          });
+        } catch (emailError) {
+          // Log but don't fail the password reset if email fails
+          console.error("Failed to send confirmation email:", emailError);
+        }
+      }
+      
       toast({
         title: "Password updated! 🎉",
-        description: "You can now log in with your new password.",
+        description: "You can now log in with your new password. A confirmation email has been sent.",
       });
       
       // Sign out so they can log in fresh with new password
@@ -128,6 +157,7 @@ export default function Auth() {
       setPassword("");
       setConfirmPassword("");
     } catch (error: any) {
+      console.error("Password reset error:", error);
       toast({
         title: "Update failed",
         description: error.message || "Please try again.",
