@@ -18,6 +18,12 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === "string") return error;
+    return "Please try again.";
+  };
   
   // Check if coming from password reset link
   const urlMode = searchParams.get("mode");
@@ -97,10 +103,10 @@ export default function Auth() {
         description: "Check your inbox for a link to reset your password.",
       });
       setMode("login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Reset failed",
-        description: error.message || "Please try again.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -165,7 +171,7 @@ export default function Auth() {
 
       toast({
         title: "Password updated! 🎉",
-        description: "You can now log in with your new password. A confirmation email has been sent.",
+        description: "You can now log in with your new password.",
       });
 
       // Fire-and-forget confirmation email (never block the UX)
@@ -206,15 +212,19 @@ export default function Auth() {
       })();
       
       // Sign out so they can log in fresh with new password
-      await withTimeout(supabase.auth.signOut(), 10000, "Signing out");
       setMode("login");
       setPassword("");
       setConfirmPassword("");
-    } catch (error: any) {
+
+      // Best-effort: if sign out hangs/fails, don't block the UX
+      void withTimeout(supabase.auth.signOut(), 10000, "Signing out").catch((signOutError) => {
+        console.error("Sign out after password reset failed:", signOutError);
+      });
+    } catch (error: unknown) {
       console.error("Password reset error:", error);
       toast({
         title: "Update failed",
-        description: error.message || "Please try again.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -338,10 +348,10 @@ export default function Auth() {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Something went wrong",
-        description: error.message || "Please try again.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -359,10 +369,10 @@ export default function Auth() {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Google login failed",
-        description: error.message || "Please try again.",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
       setLoading(false);
