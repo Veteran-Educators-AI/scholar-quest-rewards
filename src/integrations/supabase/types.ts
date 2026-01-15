@@ -426,6 +426,90 @@ export type Database = {
           },
         ]
       }
+      external_students: {
+        Row: {
+          class_id: string | null
+          class_name: string | null
+          coin_potential: number | null
+          created_at: string
+          email: string | null
+          external_id: string
+          first_name: string | null
+          full_name: string
+          grade_level: number | null
+          grades: Json | null
+          id: string
+          last_name: string | null
+          linked_at: string | null
+          linked_user_id: string | null
+          misconceptions: Json | null
+          overall_average: number | null
+          remediation_recommendations: Json | null
+          skill_tags: string[] | null
+          source: string | null
+          sync_timestamp: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          updated_at: string
+          weak_topics: Json | null
+          xp_potential: number | null
+        }
+        Insert: {
+          class_id?: string | null
+          class_name?: string | null
+          coin_potential?: number | null
+          created_at?: string
+          email?: string | null
+          external_id: string
+          first_name?: string | null
+          full_name: string
+          grade_level?: number | null
+          grades?: Json | null
+          id?: string
+          last_name?: string | null
+          linked_at?: string | null
+          linked_user_id?: string | null
+          misconceptions?: Json | null
+          overall_average?: number | null
+          remediation_recommendations?: Json | null
+          skill_tags?: string[] | null
+          source?: string | null
+          sync_timestamp?: string | null
+          teacher_id?: string | null
+          teacher_name?: string | null
+          updated_at?: string
+          weak_topics?: Json | null
+          xp_potential?: number | null
+        }
+        Update: {
+          class_id?: string | null
+          class_name?: string | null
+          coin_potential?: number | null
+          created_at?: string
+          email?: string | null
+          external_id?: string
+          first_name?: string | null
+          full_name?: string
+          grade_level?: number | null
+          grades?: Json | null
+          id?: string
+          last_name?: string | null
+          linked_at?: string | null
+          linked_user_id?: string | null
+          misconceptions?: Json | null
+          overall_average?: number | null
+          remediation_recommendations?: Json | null
+          skill_tags?: string[] | null
+          source?: string | null
+          sync_timestamp?: string | null
+          teacher_id?: string | null
+          teacher_name?: string | null
+          updated_at?: string
+          weak_topics?: Json | null
+          xp_potential?: number | null
+        }
+        Relationships: []
+      }
       game_sessions: {
         Row: {
           coins_earned: number | null
