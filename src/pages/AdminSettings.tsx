@@ -93,8 +93,17 @@ export default function AdminSettings() {
 
     setCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Use getSession for more reliable auth check
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        toast({
+          title: "Please log in",
+          description: "You need to be logged in to generate API keys. Please refresh and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const user = session.user;
 
       // Generate a secure random token
       const rawToken = `sq_live_${Array.from(crypto.getRandomValues(new Uint8Array(24)))
