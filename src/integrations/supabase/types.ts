@@ -1616,6 +1616,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_class_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
