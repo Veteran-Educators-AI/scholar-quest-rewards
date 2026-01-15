@@ -39,6 +39,7 @@ const StudentInvite = lazy(() => import("./pages/StudentInvite"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ExternalStudents = lazy(() => import("./pages/ExternalStudents"));
+const AdminClasses = lazy(() => import("./pages/AdminClasses"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/external-students" element={<ExternalStudents />} />
+                    <Route path="/admin/classes" element={<AdminClasses />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
