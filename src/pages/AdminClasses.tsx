@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { 
   Users, 
   Search, 
   GraduationCap,
   TrendingUp,
   AlertCircle,
-  ChevronRight
+  Copy,
+  Check
 } from "lucide-react";
 import {
   Table,
@@ -60,6 +63,15 @@ interface ClassInfo {
 export default function AdminClasses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("by-class");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const handleCopyCode = (code: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    toast.success(`Class code ${code} copied to clipboard!`);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ["admin-all-students"],
@@ -248,9 +260,23 @@ export default function AdminClasses() {
                                 {classGroup.teacherName || "No teacher assigned"}
                               </p>
                               {classGroup.classCode && (
-                                <Badge variant="outline" className="font-mono text-xs bg-primary/5">
-                                  Code: {classGroup.classCode}
-                                </Badge>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="outline" className="font-mono text-xs bg-primary/5">
+                                    Code: {classGroup.classCode}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={(e) => handleCopyCode(classGroup.classCode!, e)}
+                                  >
+                                    {copiedCode === classGroup.classCode ? (
+                                      <Check className="h-3 w-3 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           </div>
