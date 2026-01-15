@@ -35,12 +35,8 @@ export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   useEffect(() => {
-    // Only run session check once on mount
-    if (hasCheckedSession) return;
-
     let isMounted = true;
 
     const checkSession = async () => {
@@ -62,16 +58,13 @@ export const useAuthRedirect = () => {
           
           if (role === "teacher") {
             await supabase.auth.signOut();
-            setIsLoading(false);
-            setHasCheckedSession(true);
-            return;
-          }
-          
-          const targetPath = getTargetPath(role);
-          const onPublicNonInvite = publicRoutes.includes(location.pathname);
-          
-          if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
-            navigate(targetPath, { replace: true });
+          } else {
+            const targetPath = getTargetPath(role);
+            const onPublicNonInvite = publicRoutes.includes(location.pathname);
+            
+            if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
+              navigate(targetPath, { replace: true });
+            }
           }
         }
       } catch (error) {
@@ -79,19 +72,20 @@ export const useAuthRedirect = () => {
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setHasCheckedSession(true);
         }
       }
     };
 
-    checkSession();
+    // Small delay to ensure Supabase client is ready
+    const timer = setTimeout(checkSession, 50);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
-  }, [hasCheckedSession, navigate, location.pathname]);
+  }, []); // Only run once on mount
 
-  // Separate effect for auth state changes (after initial load)
+  // Separate effect for auth state changes (sign in/out events)
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -110,11 +104,7 @@ export const useAuthRedirect = () => {
           }
           
           const targetPath = getTargetPath(role);
-          const onPublicNonInvite = publicRoutes.includes(location.pathname);
-          
-          if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
-            navigate(targetPath, { replace: true });
-          }
+          navigate(targetPath, { replace: true });
         } else if (event === "SIGNED_OUT") {
           navigate("/", { replace: true });
         }
@@ -124,7 +114,7 @@ export const useAuthRedirect = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate]);
 
   return { isLoading };
 };
