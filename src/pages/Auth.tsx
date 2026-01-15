@@ -132,46 +132,81 @@ export default function Auth() {
     setLoading(true);
     
     try {
+      const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+        let timeoutId: number | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            reject(new Error(`${label} timed out. Please try again.`));
+          }, ms);
+        });
+
+        try {
+          return await Promise.race([promise, timeoutPromise]);
+        } finally {
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        }
+      };
+
       // Get current user session to get email
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await withTimeout(
+        supabase.auth.getUser(),
+        15000,
+        "Getting your account"
+      );
+      if (userError) throw userError;
       
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await withTimeout(
+        supabase.auth.updateUser({ password }),
+        15000,
+        "Updating your password"
+      );
       
       if (error) throw error;
-      
-      // Get user profile name for the email
-      let userName = "";
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        userName = profile?.full_name || "";
-      }
-      
-      // Send confirmation email via edge function
-      if (user?.email) {
-        try {
-          await supabase.functions.invoke("send-password-reset-confirmation", {
-            body: {
-              email: user.email,
-              name: userName,
-            },
-          });
-        } catch (emailError) {
-          // Log but don't fail the password reset if email fails
-          console.error("Failed to send confirmation email:", emailError);
-        }
-      }
-      
+
       toast({
         title: "Password updated! 🎉",
         description: "You can now log in with your new password. A confirmation email has been sent.",
       });
+
+      // Fire-and-forget confirmation email (never block the UX)
+      void (async () => {
+        if (!user?.email) return;
+
+        try {
+          let userName = "";
+          try {
+            const { data: profile } = await withTimeout(
+              supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", user.id)
+                .single(),
+              5000,
+              "Loading your profile"
+            );
+            userName = profile?.full_name || "";
+          } catch (profileError) {
+            console.error("Failed to load profile name for confirmation email:", profileError);
+          }
+
+          await withTimeout(
+            supabase.functions.invoke("send-password-reset-confirmation", {
+              body: {
+                email: user.email,
+                name: userName,
+              },
+            }),
+            7000,
+            "Sending confirmation email"
+          );
+        } catch (emailError) {
+          // Log but don't fail the password reset if email fails
+          console.error("Failed to send confirmation email:", emailError);
+        }
+      })();
       
       // Sign out so they can log in fresh with new password
-      await supabase.auth.signOut();
+      await withTimeout(supabase.auth.signOut(), 10000, "Signing out");
       setMode("login");
       setPassword("");
       setConfirmPassword("");
