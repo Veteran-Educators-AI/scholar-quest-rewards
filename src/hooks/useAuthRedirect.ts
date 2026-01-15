@@ -35,13 +35,67 @@ export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Only run session check once on mount
+    if (hasCheckedSession) return;
+
+    let isMounted = true;
+
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        if (session?.user) {
+          const { data: userRole } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .single();
+
+          if (!isMounted) return;
+
+          const role = userRole?.role || "student";
+          
+          if (role === "teacher") {
+            await supabase.auth.signOut();
+            setIsLoading(false);
+            setHasCheckedSession(true);
+            return;
+          }
+          
+          const targetPath = getTargetPath(role);
+          const onPublicNonInvite = publicRoutes.includes(location.pathname);
+          
+          if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
+            navigate(targetPath, { replace: true });
+          }
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setHasCheckedSession(true);
+        }
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasCheckedSession, navigate, location.pathname]);
+
+  // Separate effect for auth state changes (after initial load)
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          // Fetch user role from user_roles table (more secure)
           const { data: userRole } = await supabase
             .from("user_roles")
             .select("role")
@@ -50,58 +104,22 @@ export const useAuthRedirect = () => {
 
           const role = userRole?.role || "student";
           
-          // Teachers are not allowed in this app - sign them out
           if (role === "teacher") {
             await supabase.auth.signOut();
             return;
           }
           
           const targetPath = getTargetPath(role);
-
-          // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
           const onPublicNonInvite = publicRoutes.includes(location.pathname);
+          
           if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
             navigate(targetPath, { replace: true });
           }
         } else if (event === "SIGNED_OUT") {
           navigate("/", { replace: true });
         }
-        setIsLoading(false);
       }
     );
-
-    // THEN check for existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Fetch user role from user_roles table (more secure)
-        const { data: userRole } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
-
-        const role = userRole?.role || "student";
-        
-        // Teachers are not allowed in this app - sign them out
-        if (role === "teacher") {
-          await supabase.auth.signOut();
-          return;
-        }
-        
-        const targetPath = getTargetPath(role);
-
-        // Redirect if on a public route (but NOT invite pages) OR on the wrong dashboard
-        const onPublicNonInvite = publicRoutes.includes(location.pathname);
-        if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
-          navigate(targetPath, { replace: true });
-        }
-      }
-      setIsLoading(false);
-    };
-
-    checkSession();
 
     return () => {
       subscription.unsubscribe();
