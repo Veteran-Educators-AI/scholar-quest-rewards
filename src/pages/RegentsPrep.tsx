@@ -27,6 +27,8 @@ import {
   Brain,
   FileText,
   Sparkles,
+  Bot,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +42,7 @@ import {
   type RegentsQuestion 
 } from "@/data/regentsSampleQuestions";
 import { NYS_STANDARDS, getStandardsBySubjectAndGrade } from "@/data/nysStandards";
+import { AlgebraTutor } from "@/components/AlgebraTutor";
 
 interface ExamProgress {
   examType: string;
@@ -77,6 +80,7 @@ export default function RegentsPrep() {
   const [timedMode, setTimedMode] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutor, setShowTutor] = useState(false);
 
   useEffect(() => {
     fetchProgress();
@@ -326,15 +330,30 @@ export default function RegentsPrep() {
                 </div>
               </div>
               
-              {timedMode && (
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-full font-mono",
-                  timeLeft <= 10 ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-muted"
-                )}>
-                  <Timer className="w-4 h-4" />
-                  <span className="font-bold">{timeLeft}s</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {/* AI Tutor Button - only for Algebra */}
+                {(selectedExam === "algebra1" || selectedExam === "algebra2") && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowTutor(true)}
+                    className="gap-2"
+                  >
+                    <Bot className="w-4 h-4" />
+                    <span className="hidden sm:inline">AI Tutor</span>
+                  </Button>
+                )}
+                
+                {timedMode && (
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-full font-mono",
+                    timeLeft <= 10 ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-muted"
+                  )}>
+                    <Timer className="w-4 h-4" />
+                    <span className="font-bold">{timeLeft}s</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -552,11 +571,22 @@ export default function RegentsPrep() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                   >
-                    <Card className="hover:shadow-md transition-shadow">
+                    <Card className={cn(
+                      "hover:shadow-md transition-shadow",
+                      exam.hasAITutor && "ring-1 ring-primary/20"
+                    )}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <CardTitle className="text-lg">{exam.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-lg">{exam.name}</CardTitle>
+                              {exam.hasAITutor && (
+                                <Badge variant="default" className="text-xs gap-1">
+                                  <Bot className="w-3 h-3" />
+                                  AI Tutor
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {exam.subject} • Grades {exam.gradeBand}
                             </p>
@@ -737,6 +767,17 @@ export default function RegentsPrep() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* AI Tutor for Algebra */}
+      {(selectedExam === "algebra1" || selectedExam === "algebra2") && (
+        <AlgebraTutor
+          course={selectedExam === "algebra1" ? "Algebra 1" : "Algebra 2"}
+          currentTopic={currentQuestions[currentIndex]?.topic}
+          currentProblem={currentQuestions[currentIndex]?.prompt}
+          isOpen={showTutor}
+          onClose={() => setShowTutor(false)}
+        />
+      )}
     </div>
   );
 }

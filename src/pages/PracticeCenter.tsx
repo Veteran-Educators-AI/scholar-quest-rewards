@@ -5,14 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, BookOpen, Printer, Play, Clock, Target, 
   TrendingUp, AlertTriangle, CheckCircle2, Loader2,
-  ChevronRight, Zap, Award, Brain
+  ChevronRight, Zap, Award, Brain, Bot, GraduationCap,
+  Calculator, Sparkles
 } from "lucide-react";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
+import { ALGEBRA_1_STANDARDS, ALGEBRA_2_STANDARDS } from "@/data/algebraStandards";
 
 interface PracticeSet {
   id: string;
@@ -182,6 +185,149 @@ export default function PracticeCenter() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Algebra Practice Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Algebra 1 Card */}
+            <Card className="bg-gradient-to-br from-blue-500/10 via-background to-blue-500/5 border-blue-500/20 hover:shadow-lg transition-all">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                      <Calculator className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Algebra I</CardTitle>
+                      <p className="text-sm text-muted-foreground">Grade 9-10 • NYS Regents</p>
+                    </div>
+                  </div>
+                  <Badge variant="default" className="gap-1">
+                    <Bot className="w-3 h-3" />
+                    AI Tutor
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-card/50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-foreground">{ALGEBRA_1_STANDARDS.length}</p>
+                    <p className="text-xs text-muted-foreground">Standards</p>
+                  </div>
+                  <div className="bg-card/50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-foreground">50+</p>
+                    <p className="text-xs text-muted-foreground">Questions</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs">Expressions</Badge>
+                  <Badge variant="outline" className="text-xs">Equations</Badge>
+                  <Badge variant="outline" className="text-xs">Functions</Badge>
+                  <Badge variant="outline" className="text-xs">Quadratics</Badge>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1"
+                    onClick={() => navigate("/regents-prep")}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Practice
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => navigate("/regents-prep")}
+                  >
+                    <Bot className="w-4 h-4" />
+                    AI Help
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Algebra 2 Card */}
+            <Card className="bg-gradient-to-br from-purple-500/10 via-background to-purple-500/5 border-purple-500/20 hover:shadow-lg transition-all">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                      <GraduationCap className="w-6 h-6 text-purple-500" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Algebra II</CardTitle>
+                      <p className="text-sm text-muted-foreground">Grade 11-12 • NYS Regents</p>
+                    </div>
+                  </div>
+                  <Badge variant="default" className="gap-1">
+                    <Bot className="w-3 h-3" />
+                    AI Tutor
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-card/50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-foreground">{ALGEBRA_2_STANDARDS.length}</p>
+                    <p className="text-xs text-muted-foreground">Standards</p>
+                  </div>
+                  <div className="bg-card/50 rounded-lg p-2">
+                    <p className="text-lg font-bold text-foreground">40+</p>
+                    <p className="text-xs text-muted-foreground">Questions</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs">Polynomials</Badge>
+                  <Badge variant="outline" className="text-xs">Exponentials</Badge>
+                  <Badge variant="outline" className="text-xs">Logarithms</Badge>
+                  <Badge variant="outline" className="text-xs">Trigonometry</Badge>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1"
+                    onClick={() => navigate("/regents-prep")}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Practice
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => navigate("/regents-prep")}
+                  >
+                    <Bot className="w-4 h-4" />
+                    AI Help
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Link to Regents Prep */}
+          <Link to="/regents-prep">
+            <motion.div 
+              className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl border border-primary/20 flex items-center justify-between hover:border-primary/40 transition-all"
+              whileHover={{ scale: 1.01 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Full Regents Prep Center</p>
+                  <p className="text-sm text-muted-foreground">Practice for all NY Regents exams with AI tutoring</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </motion.div>
+          </Link>
+        </motion.section>
+
         {/* Skill Gaps Overview */}
         {(skillGaps.length > 0 || weaknesses.length > 0) && (
           <motion.section
