@@ -1,6 +1,8 @@
 // Sample Regents Exam Questions organized by subject and standard
 // These are modeled after real NY Regents exam questions
 
+import { ALGEBRA_1_QUESTIONS, ALGEBRA_2_QUESTIONS, type AlgebraQuestion } from "./algebraQuestions";
+
 export interface RegentsQuestion {
   id: string;
   standardCode: string;
@@ -12,22 +14,52 @@ export interface RegentsQuestion {
   explanation: string;
   difficulty: number; // 1-3
   pointValue: number;
+  hint?: string;
+  topic?: string;
+  course?: string;
+}
+
+// Convert AlgebraQuestion to RegentsQuestion format
+function convertAlgebraQuestion(q: AlgebraQuestion, examType: string): RegentsQuestion {
+  return {
+    id: q.id,
+    standardCode: q.standardCode,
+    subject: "Mathematics",
+    examType,
+    prompt: q.prompt,
+    options: q.options,
+    correctAnswer: q.correctAnswer,
+    explanation: q.explanation,
+    difficulty: q.difficulty,
+    pointValue: q.pointValue,
+    hint: q.hint,
+    topic: q.topic,
+    course: q.course,
+  };
 }
 
 export const REGENTS_EXAMS = [
-  { id: "algebra1", name: "Algebra I", subject: "Mathematics", gradeBand: "9-10" },
-  { id: "geometry", name: "Geometry", subject: "Mathematics", gradeBand: "9-10" },
-  { id: "algebra2", name: "Algebra II", subject: "Mathematics", gradeBand: "11-12" },
-  { id: "living_env", name: "Living Environment", subject: "Science", gradeBand: "9-10" },
-  { id: "chemistry", name: "Chemistry", subject: "Science", gradeBand: "11-12" },
-  { id: "physics", name: "Physics", subject: "Science", gradeBand: "11-12" },
-  { id: "us_history", name: "US History & Government", subject: "Social Studies", gradeBand: "11-12" },
-  { id: "global_history", name: "Global History & Geography", subject: "Social Studies", gradeBand: "9-10" },
-  { id: "ela", name: "English Language Arts", subject: "English Language Arts", gradeBand: "11-12" },
+  { id: "algebra1", name: "Algebra I", subject: "Mathematics", gradeBand: "9-10", hasAITutor: true },
+  { id: "geometry", name: "Geometry", subject: "Mathematics", gradeBand: "9-10", hasAITutor: false },
+  { id: "algebra2", name: "Algebra II", subject: "Mathematics", gradeBand: "11-12", hasAITutor: true },
+  { id: "living_env", name: "Living Environment", subject: "Science", gradeBand: "9-10", hasAITutor: false },
+  { id: "chemistry", name: "Chemistry", subject: "Science", gradeBand: "11-12", hasAITutor: false },
+  { id: "physics", name: "Physics", subject: "Science", gradeBand: "11-12", hasAITutor: false },
+  { id: "us_history", name: "US History & Government", subject: "Social Studies", gradeBand: "11-12", hasAITutor: false },
+  { id: "global_history", name: "Global History & Geography", subject: "Social Studies", gradeBand: "9-10", hasAITutor: false },
+  { id: "ela", name: "English Language Arts", subject: "English Language Arts", gradeBand: "11-12", hasAITutor: false },
 ];
 
+// Convert Algebra questions to Regents format
+const ALGEBRA_1_REGENTS: RegentsQuestion[] = ALGEBRA_1_QUESTIONS.map(q => convertAlgebraQuestion(q, "algebra1"));
+const ALGEBRA_2_REGENTS: RegentsQuestion[] = ALGEBRA_2_QUESTIONS.map(q => convertAlgebraQuestion(q, "algebra2"));
+
 export const REGENTS_QUESTIONS: RegentsQuestion[] = [
-  // ALGEBRA I
+  // Include all converted Algebra 1 and Algebra 2 questions
+  ...ALGEBRA_1_REGENTS,
+  ...ALGEBRA_2_REGENTS,
+  
+  // ADDITIONAL ALGEBRA I (legacy)
   {
     id: "alg1-001",
     standardCode: "AI-A.SSE.1",
