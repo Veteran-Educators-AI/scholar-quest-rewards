@@ -221,10 +221,10 @@ Deno.serve(async (req) => {
         console.log(`Pushing ${studentsWithWeaknesses.length} students with weakness data to GeoBlox...`);
         
         try {
-          const geobloxResponse = await fetch("https://api.geoblox.app/v1/students/weaknesses", {
+          const geobloxResponse = await fetch("https://wedghtmkaxkxrrbbeenq.supabase.co/functions/v1/scholar-sync", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${geobloxApiKey}`,
+              "x-api-key": geobloxApiKey,
               "Content-Type": "application/json",
               "x-source-app": "scholar-quest",
             },
