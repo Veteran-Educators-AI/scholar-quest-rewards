@@ -48,15 +48,17 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action") || "fetch";
 
+    const GEOBLOX_API_URL = "https://wedghtmkaxkxrrbbeenq.supabase.co/functions/v1/scholar-sync";
+
     // Action: fetch - Get students from GeoBlox and sync to external_students
     if (action === "fetch") {
       console.log("Fetching students from GeoBlox...");
 
       // Call GeoBlox API to get students
-      const geobloxResponse = await fetch("https://api.geoblox.app/v1/students", {
+      const geobloxResponse = await fetch(GEOBLOX_API_URL, {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${geobloxApiKey}`,
+          "x-api-key": geobloxApiKey,
           "Content-Type": "application/json",
           "x-source-app": "scholar-quest",
         },
@@ -133,10 +135,10 @@ Deno.serve(async (req) => {
 
       console.log(`Pushing ${students.length} student weakness profiles to GeoBlox...`);
 
-      const geobloxResponse = await fetch("https://api.geoblox.app/v1/students/weaknesses", {
+      const geobloxResponse = await fetch(GEOBLOX_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${geobloxApiKey}`,
+          "x-api-key": geobloxApiKey,
           "Content-Type": "application/json",
           "x-source-app": "scholar-quest",
         },
@@ -212,10 +214,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      const geobloxResponse = await fetch("https://api.geoblox.app/v1/students/weaknesses", {
+      const geobloxResponse = await fetch(GEOBLOX_API_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${geobloxApiKey}`,
+          "x-api-key": geobloxApiKey,
           "Content-Type": "application/json",
           "x-source-app": "scholar-quest",
         },
