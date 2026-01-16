@@ -5,26 +5,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface GeoBloxStudent {
-  student_id: string;
-  email: string;
-  full_name: string;
-  first_name?: string;
-  last_name?: string;
-  grade_level?: number;
-  class_id?: string;
-  class_name?: string;
+const GEOBLOX_API_URL = "https://wedghtmkaxkxrrbbeenq.supabase.co/functions/v1/scholar-sync";
+
+interface StudentMasteryData {
+  standard_id: string;
+  mastery_level: string;
+  attempts_count: number;
+  correct_count: number;
 }
 
-interface StudentWeaknessPayload {
-  student_id: string;
-  email?: string;
-  full_name?: string;
-  weak_topics?: Record<string, unknown>;
-  misconceptions?: Record<string, unknown>;
-  skill_tags?: string[];
-  overall_average?: number;
-  remediation_recommendations?: Record<string, unknown>;
+interface SyncStudentPayload {
+  scholar_student_id: string;
+  nickname: string;
+  grade: string;
+  mastery_data?: StudentMasteryData[];
+  standards_progress?: Record<string, unknown>;
+}
+
+interface AssignContentPayload {
+  class_id: string;
+  assigned_by: string;
+  content_type: string;
+  content_ids: string[];
+  title: string;
+  description: string;
+  due_date: string;
+  difficulty_level: number;
 }
 
 Deno.serve(async (req) => {
@@ -46,231 +52,281 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "fetch";
+    const action = url.searchParams.get("action") || "sync_student";
 
-    const GEOBLOX_API_URL = "https://wedghtmkaxkxrrbbeenq.supabase.co/functions/v1/scholar-sync";
+    // Action: sync_student - Push a student's data to GeoBlox
+    if (action === "sync_student") {
+      const body = await req.json();
+      const studentId = body.student_id || body.scholar_student_id;
 
-    // Action: fetch - Get students from GeoBlox and sync to external_students
-    if (action === "fetch") {
-      console.log("Fetching students from GeoBlox...");
-
-      // Call GeoBlox API to get students
-      const geobloxResponse = await fetch(GEOBLOX_API_URL, {
-        method: "GET",
-        headers: {
-          "x-api-key": geobloxApiKey,
-          "Content-Type": "application/json",
-          "x-source-app": "scholar-quest",
-        },
-      });
-
-      if (!geobloxResponse.ok) {
-        const errorText = await geobloxResponse.text();
-        console.error("GeoBlox API error:", errorText);
+      if (!studentId) {
         return new Response(
-          JSON.stringify({ 
-            error: "Failed to fetch from GeoBlox", 
-            status: geobloxResponse.status,
-            details: errorText 
-          }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "student_id is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const students: GeoBloxStudent[] = await geobloxResponse.json();
-      console.log(`Received ${students.length} students from GeoBlox`);
+      console.log(`Syncing student ${studentId} to GeoBlox...`);
 
-      let synced = 0;
-      let errors = 0;
+      // Fetch student data from our database
+      const { data: student, error: studentError } = await supabase
+        .from("external_students")
+        .select("*")
+        .eq("external_id", studentId)
+        .maybeSingle();
 
-      for (const student of students) {
-        const { error } = await supabase
-          .from("external_students")
-          .upsert({
-            external_id: student.student_id,
-            email: student.email,
-            full_name: student.full_name,
-            first_name: student.first_name,
-            last_name: student.last_name,
-            grade_level: student.grade_level,
-            class_id: student.class_id,
-            class_name: student.class_name,
-            source: "geoblox",
-            sync_timestamp: new Date().toISOString(),
-          }, {
-            onConflict: "external_id,source",
-          });
-
-        if (error) {
-          console.error(`Error syncing student ${student.student_id}:`, error);
-          errors++;
-        } else {
-          synced++;
+      // Also try to get mastery data if student is linked
+      let masteryData: StudentMasteryData[] = [];
+      if (student?.linked_user_id) {
+        const { data: mastery } = await supabase
+          .from("student_standard_mastery")
+          .select("standard_id, mastery_level, attempts_count, correct_count")
+          .eq("student_id", student.linked_user_id);
+        
+        if (mastery) {
+          masteryData = mastery;
         }
       }
 
-      // Log the sync event
-      await supabase.from("webhook_event_logs").insert({
-        event_type: "geoblox_fetch",
-        status: errors > 0 ? "partial" : "success",
-        payload: { total: students.length, synced, errors },
-      });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          fetched: students.length,
-          synced,
-          errors,
-          synced_at: new Date().toISOString()
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Action: push - Send student weakness data to GeoBlox
-    if (action === "push") {
-      const body = await req.json();
-      const students: StudentWeaknessPayload[] = Array.isArray(body) ? body : [body];
-
-      console.log(`Pushing ${students.length} student weakness profiles to GeoBlox...`);
+      const payload: SyncStudentPayload = {
+        scholar_student_id: studentId,
+        nickname: student?.full_name || body.nickname || "Student",
+        grade: student?.grade_level ? `${student.grade_level}th` : body.grade || "6th",
+        mastery_data: masteryData,
+        standards_progress: {
+          weak_topics: student?.weak_topics || [],
+          misconceptions: student?.misconceptions || [],
+          skill_tags: student?.skill_tags || [],
+          overall_average: student?.overall_average,
+        },
+      };
 
       const geobloxResponse = await fetch(GEOBLOX_API_URL, {
         method: "POST",
         headers: {
           "x-api-key": geobloxApiKey,
           "Content-Type": "application/json",
-          "x-source-app": "scholar-quest",
         },
         body: JSON.stringify({
-          source: "nycologic",
-          students: students.map(s => ({
-            student_id: s.student_id,
-            email: s.email,
-            full_name: s.full_name,
-            weak_topics: s.weak_topics,
-            misconceptions: s.misconceptions,
-            skill_tags: s.skill_tags,
-            overall_average: s.overall_average,
-            remediation_recommendations: s.remediation_recommendations,
-          })),
+          action: "sync_student",
+          data: payload,
         }),
       });
 
+      const responseText = await geobloxResponse.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = { raw: responseText };
+      }
+
       if (!geobloxResponse.ok) {
-        const errorText = await geobloxResponse.text();
-        console.error("GeoBlox push error:", errorText);
+        console.error("GeoBlox sync_student error:", result);
         return new Response(
-          JSON.stringify({ 
-            error: "Failed to push to GeoBlox", 
-            status: geobloxResponse.status,
-            details: errorText 
-          }),
+          JSON.stringify({ error: "Failed to sync student to GeoBlox", status: geobloxResponse.status, details: result }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const result = await geobloxResponse.json();
+      console.log("Sync student successful:", result);
 
-      // Log the push event
       await supabase.from("webhook_event_logs").insert({
-        event_type: "geoblox_push",
+        event_type: "geoblox_sync_student",
         status: "success",
-        payload: { students_count: students.length },
+        payload: { student_id: studentId },
         response: result,
       });
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          pushed: students.length,
-          geoblox_response: result,
-          pushed_at: new Date().toISOString()
-        }),
+        JSON.stringify({ success: true, student_id: studentId, geoblox_response: result }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Action: push-all - Push all external_students with weakness data to GeoBlox
-    if (action === "push-all") {
-      console.log("Pushing all student weakness data to GeoBlox...");
+    // Action: sync_all - Sync all external students to GeoBlox
+    if (action === "sync_all") {
+      console.log("Syncing all students to GeoBlox...");
 
-      const { data: students, error: fetchError } = await supabase
+      const { data: students, error } = await supabase
         .from("external_students")
-        .select("external_id, email, full_name, weak_topics, misconceptions, skill_tags, overall_average, remediation_recommendations")
-        .not("weak_topics", "is", null);
+        .select("external_id, full_name, grade_level, weak_topics, misconceptions, skill_tags, overall_average, linked_user_id");
 
-      if (fetchError) {
+      if (error || !students) {
         return new Response(
-          JSON.stringify({ error: "Failed to fetch students", details: fetchError.message }),
+          JSON.stringify({ error: "Failed to fetch students", details: error?.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      if (!students || students.length === 0) {
+      const results = [];
+      for (const student of students) {
+        // Get mastery data if linked
+        let masteryData: StudentMasteryData[] = [];
+        if (student.linked_user_id) {
+          const { data: mastery } = await supabase
+            .from("student_standard_mastery")
+            .select("standard_id, mastery_level, attempts_count, correct_count")
+            .eq("student_id", student.linked_user_id);
+          if (mastery) masteryData = mastery;
+        }
+
+        const payload: SyncStudentPayload = {
+          scholar_student_id: student.external_id,
+          nickname: student.full_name || "Student",
+          grade: student.grade_level ? `${student.grade_level}th` : "6th",
+          mastery_data: masteryData,
+          standards_progress: {
+            weak_topics: student.weak_topics || [],
+            misconceptions: student.misconceptions || [],
+            skill_tags: student.skill_tags || [],
+            overall_average: student.overall_average,
+          },
+        };
+
+        try {
+          const response = await fetch(GEOBLOX_API_URL, {
+            method: "POST",
+            headers: {
+              "x-api-key": geobloxApiKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ action: "sync_student", data: payload }),
+          });
+
+          results.push({
+            student_id: student.external_id,
+            status: response.ok ? "synced" : "failed",
+            http_status: response.status,
+          });
+        } catch (err) {
+          results.push({
+            student_id: student.external_id,
+            status: "error",
+            error: err instanceof Error ? err.message : "Unknown",
+          });
+        }
+      }
+
+      const successCount = results.filter(r => r.status === "synced").length;
+
+      await supabase.from("webhook_event_logs").insert({
+        event_type: "geoblox_sync_all",
+        status: successCount === students.length ? "success" : "partial",
+        payload: { total: students.length, synced: successCount },
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, total: students.length, synced: successCount, results }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Action: get_progress - Get a student's GeoBlox progress
+    if (action === "get_progress") {
+      const body = await req.json();
+      const studentId = body.student_id || body.scholar_student_id;
+
+      if (!studentId) {
         return new Response(
-          JSON.stringify({ message: "No students with weakness data to push" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "student_id is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      console.log(`Getting GeoBlox progress for student ${studentId}...`);
 
       const geobloxResponse = await fetch(GEOBLOX_API_URL, {
         method: "POST",
         headers: {
           "x-api-key": geobloxApiKey,
           "Content-Type": "application/json",
-          "x-source-app": "scholar-quest",
         },
         body: JSON.stringify({
-          source: "nycologic",
-          students: students.map(s => ({
-            student_id: s.external_id,
-            email: s.email,
-            full_name: s.full_name,
-            weak_topics: s.weak_topics,
-            misconceptions: s.misconceptions,
-            skill_tags: s.skill_tags,
-            overall_average: s.overall_average,
-            remediation_recommendations: s.remediation_recommendations,
-          })),
+          action: "get_student_progress",
+          data: { scholar_student_id: studentId },
         }),
       });
 
+      const responseText = await geobloxResponse.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = { raw: responseText };
+      }
+
       if (!geobloxResponse.ok) {
-        const errorText = await geobloxResponse.text();
-        console.error("GeoBlox push error:", errorText);
         return new Response(
-          JSON.stringify({ 
-            error: "Failed to push to GeoBlox", 
-            status: geobloxResponse.status,
-            details: errorText 
-          }),
+          JSON.stringify({ error: "Failed to get progress from GeoBlox", status: geobloxResponse.status, details: result }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const result = await geobloxResponse.json();
+      return new Response(
+        JSON.stringify({ success: true, student_id: studentId, progress: result }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Action: assign_content - Teacher assigns content via GeoBlox
+    if (action === "assign_content") {
+      const body: AssignContentPayload = await req.json();
+
+      const required = ["class_id", "assigned_by", "content_type", "content_ids", "title", "description", "due_date", "difficulty_level"];
+      const missing = required.filter(f => !body[f as keyof AssignContentPayload]);
+      
+      if (missing.length > 0) {
+        return new Response(
+          JSON.stringify({ error: `Missing required fields: ${missing.join(", ")}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Assigning content to class ${body.class_id}...`);
+
+      const geobloxResponse = await fetch(GEOBLOX_API_URL, {
+        method: "POST",
+        headers: {
+          "x-api-key": geobloxApiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "assign_content",
+          data: body,
+        }),
+      });
+
+      const responseText = await geobloxResponse.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = { raw: responseText };
+      }
+
+      if (!geobloxResponse.ok) {
+        return new Response(
+          JSON.stringify({ error: "Failed to assign content via GeoBlox", status: geobloxResponse.status, details: result }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       await supabase.from("webhook_event_logs").insert({
-        event_type: "geoblox_push_all",
+        event_type: "geoblox_assign_content",
         status: "success",
-        payload: { students_count: students.length },
+        payload: body,
         response: result,
       });
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          pushed: students.length,
-          geoblox_response: result,
-          pushed_at: new Date().toISOString()
-        }),
+        JSON.stringify({ success: true, geoblox_response: result }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: "Invalid action. Use: fetch, push, or push-all" }),
+      JSON.stringify({ error: "Invalid action. Use: sync_student, sync_all, get_progress, or assign_content" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
