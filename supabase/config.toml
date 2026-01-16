@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.sync-student]
 verify_jwt = false
+
+[functions.geoblox-sync]
+verify_jwt = false

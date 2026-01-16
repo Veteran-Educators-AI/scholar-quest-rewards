@@ -210,6 +210,74 @@ Deno.serve(async (req) => {
 
     console.log(`Synced ${successCount}/${students.length} students to external_students table`);
 
+    // Push weakness data to GeoBlox for students that have it
+    const geobloxApiKey = Deno.env.get("GEOBLOX_API_KEY");
+    if (geobloxApiKey) {
+      const studentsWithWeaknesses = students.filter(s => 
+        s.weak_topics?.length || s.misconceptions?.length || s.skill_tags?.length
+      );
+
+      if (studentsWithWeaknesses.length > 0) {
+        console.log(`Pushing ${studentsWithWeaknesses.length} students with weakness data to GeoBlox...`);
+        
+        try {
+          const geobloxResponse = await fetch("https://api.geoblox.app/v1/students/weaknesses", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${geobloxApiKey}`,
+              "Content-Type": "application/json",
+              "x-source-app": "scholar-quest",
+            },
+            body: JSON.stringify({
+              source: "nycologic",
+              students: studentsWithWeaknesses.map(s => ({
+                student_id: s.external_id || s.student_id || s.id,
+                email: s.email,
+                full_name: s.full_name || s.student_name,
+                weak_topics: s.weak_topics,
+                misconceptions: s.misconceptions,
+                skill_tags: s.skill_tags,
+                overall_average: s.overall_average,
+                remediation_recommendations: s.remediation_recommendations,
+              })),
+            }),
+          });
+
+          if (geobloxResponse.ok) {
+            const geobloxResult = await geobloxResponse.json();
+            console.log("Successfully pushed to GeoBlox:", geobloxResult);
+            
+            await supabase.from("webhook_event_logs").insert({
+              event_type: "geoblox_auto_push",
+              status: "success",
+              payload: { students_count: studentsWithWeaknesses.length },
+              response: geobloxResult,
+            });
+          } else {
+            const errorText = await geobloxResponse.text();
+            console.error("GeoBlox push failed:", geobloxResponse.status, errorText);
+            
+            await supabase.from("webhook_event_logs").insert({
+              event_type: "geoblox_auto_push",
+              status: "failed",
+              error_message: `Status ${geobloxResponse.status}: ${errorText}`,
+              payload: { students_count: studentsWithWeaknesses.length },
+            });
+          }
+        } catch (geobloxError) {
+          console.error("GeoBlox push error:", geobloxError);
+          await supabase.from("webhook_event_logs").insert({
+            event_type: "geoblox_auto_push",
+            status: "failed",
+            error_message: geobloxError instanceof Error ? geobloxError.message : "Unknown error",
+            payload: { students_count: studentsWithWeaknesses.length },
+          });
+        }
+      }
+    } else {
+      console.log("GEOBLOX_API_KEY not configured, skipping GeoBlox push");
+    }
+
     return new Response(
       JSON.stringify({
         success: successCount > 0,
