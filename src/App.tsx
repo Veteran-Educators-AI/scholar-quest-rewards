@@ -40,6 +40,7 @@ const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ExternalStudents = lazy(() => import("./pages/ExternalStudents"));
 const AdminClasses = lazy(() => import("./pages/AdminClasses"));
+const AdminGeoBloxIntegration = lazy(() => import("./pages/AdminGeoBloxIntegration"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -86,6 +87,7 @@ const App = () => (
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/external-students" element={<ExternalStudents />} />
                     <Route path="/admin/classes" element={<AdminClasses />} />
+                    <Route path="/admin/geoblox" element={<AdminGeoBloxIntegration />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

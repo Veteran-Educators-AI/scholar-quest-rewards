@@ -9,6 +9,7 @@ import {
   Gift,
   Bell,
   LogOut,
+  Webhook,
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const managementItems = [
   { title: "Classes", url: "/admin/classes", icon: GraduationCap },
   { title: "Badges", url: "/admin/badges", icon: Trophy },
   { title: "Rewards", url: "/admin/rewards", icon: Gift },
+  { title: "GeoBlox Integration", url: "/admin/geoblox", icon: Webhook },
 ];
 
 export function AdminSidebar() {
