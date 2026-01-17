@@ -45,6 +45,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
+import { ParentDashboardSkeleton } from "@/components/skeletons/ParentDashboardSkeleton";
 
 interface Badge {
   id: string;
@@ -439,9 +440,7 @@ export default function ParentDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <ParentDashboardSkeleton />
         ) : students.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
