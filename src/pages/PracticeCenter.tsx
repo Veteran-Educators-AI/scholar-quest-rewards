@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { PrefetchLink } from "@/components/PrefetchLink";
+import { prefetchRoutes } from "@/hooks/usePrefetch";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +52,12 @@ export default function PracticeCenter() {
 
   useEffect(() => {
     fetchPracticeData();
+    
+    // Prefetch common routes after initial load
+    const timer = setTimeout(() => {
+      prefetchRoutes(['/regents-prep', '/games', '/student']);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchPracticeData = async () => {
@@ -309,7 +317,7 @@ export default function PracticeCenter() {
           </div>
 
           {/* Quick Link to Regents Prep */}
-          <Link to="/regents-prep">
+          <PrefetchLink to="/regents-prep">
             <motion.div 
               className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl border border-primary/20 flex items-center justify-between hover:border-primary/40 transition-all"
               whileHover={{ scale: 1.01 }}
@@ -325,7 +333,7 @@ export default function PracticeCenter() {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </motion.div>
-          </Link>
+          </PrefetchLink>
         </motion.section>
 
         {/* Skill Gaps Overview */}
