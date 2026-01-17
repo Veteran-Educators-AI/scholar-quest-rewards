@@ -2,6 +2,11 @@
 // These are modeled after real NY Regents exam questions
 
 import { ALGEBRA_1_QUESTIONS, ALGEBRA_2_QUESTIONS, type AlgebraQuestion } from "./algebraQuestions";
+import { 
+  ALL_EXTENDED_QUESTIONS, 
+  EXTENDED_REGENTS_EXAMS,
+  type ExtendedRegentsQuestion 
+} from "./regentsExtendedQuestions";
 
 export interface RegentsQuestion {
   id: string;
@@ -40,25 +45,44 @@ function convertAlgebraQuestion(q: AlgebraQuestion, examType: string): RegentsQu
 
 export const REGENTS_EXAMS = [
   { id: "algebra1", name: "Algebra I", subject: "Mathematics", gradeBand: "9-10", hasAITutor: true },
-  { id: "geometry", name: "Geometry", subject: "Mathematics", gradeBand: "9-10", hasAITutor: false },
+  { id: "geometry", name: "Geometry", subject: "Mathematics", gradeBand: "9-10", hasAITutor: false, unlocksGeoBlox: true, masteryThreshold: 70 },
   { id: "algebra2", name: "Algebra II", subject: "Mathematics", gradeBand: "11-12", hasAITutor: true },
   { id: "living_env", name: "Living Environment", subject: "Science", gradeBand: "9-10", hasAITutor: false },
   { id: "chemistry", name: "Chemistry", subject: "Science", gradeBand: "11-12", hasAITutor: false },
   { id: "physics", name: "Physics", subject: "Science", gradeBand: "11-12", hasAITutor: false },
   { id: "us_history", name: "US History & Government", subject: "Social Studies", gradeBand: "11-12", hasAITutor: false },
   { id: "global_history", name: "Global History & Geography", subject: "Social Studies", gradeBand: "9-10", hasAITutor: false },
+  { id: "economics", name: "Economics", subject: "Social Studies", gradeBand: "11-12", hasAITutor: false },
   { id: "ela", name: "English Language Arts", subject: "English Language Arts", gradeBand: "11-12", hasAITutor: false },
+  { id: "lote", name: "LOTE (Spanish)", subject: "World Languages", gradeBand: "9-12", hasAITutor: false },
 ];
 
 // Convert Algebra questions to Regents format
 const ALGEBRA_1_REGENTS: RegentsQuestion[] = ALGEBRA_1_QUESTIONS.map(q => convertAlgebraQuestion(q, "algebra1"));
 const ALGEBRA_2_REGENTS: RegentsQuestion[] = ALGEBRA_2_QUESTIONS.map(q => convertAlgebraQuestion(q, "algebra2"));
 
+// Convert extended questions to RegentsQuestion format
+const convertedExtendedQuestions: RegentsQuestion[] = ALL_EXTENDED_QUESTIONS.map(q => ({
+  id: q.id,
+  standardCode: q.standardCode,
+  subject: q.subject,
+  examType: q.examType,
+  prompt: q.prompt,
+  options: q.options,
+  correctAnswer: q.correctAnswer,
+  explanation: q.explanation,
+  difficulty: q.difficulty,
+  pointValue: q.pointValue,
+  hint: q.hint,
+  topic: q.topic,
+}));
+
 export const REGENTS_QUESTIONS: RegentsQuestion[] = [
   // Include all converted Algebra 1 and Algebra 2 questions
   ...ALGEBRA_1_REGENTS,
   ...ALGEBRA_2_REGENTS,
-  
+  // Include all extended questions (Living Env, Chemistry, Geometry, Physics, History, Economics, ELA, LOTE)
+  ...convertedExtendedQuestions,
   // ADDITIONAL ALGEBRA I (legacy)
   {
     id: "alg1-001",
