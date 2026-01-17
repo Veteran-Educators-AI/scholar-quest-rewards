@@ -26,6 +26,8 @@ export default function Landing() {
               <img 
                 src={nycologicLogo} 
                 alt="NYClogic Scholar Ai" 
+                decoding="async"
+                fetchPriority="high"
                 className="w-8 h-8 object-contain"
               />
               <div className="flex items-baseline gap-0.5">

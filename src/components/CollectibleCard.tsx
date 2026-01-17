@@ -89,7 +89,13 @@ export function CollectibleCard({
           {/* Image area */}
           <div className="flex-1 flex items-center justify-center rounded-xl bg-card/50 mb-3 overflow-hidden">
             {imageUrl ? (
-              <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+              <img
+                src={imageUrl}
+                alt={name}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center">
                 <span className="text-3xl">📚</span>

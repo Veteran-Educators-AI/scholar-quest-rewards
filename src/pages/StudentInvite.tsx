@@ -192,7 +192,13 @@ export default function StudentInvite() {
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <img src={highschoolLogo} alt="ScholarQuest" className="h-16 mx-auto mb-4" />
+            <img
+              src={highschoolLogo}
+              alt="ScholarQuest"
+              loading="eager"
+              decoding="async"
+              className="h-16 mx-auto mb-4"
+            />
             <CardTitle className="text-destructive">Invalid Invite</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
@@ -233,7 +239,13 @@ export default function StudentInvite() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <img src={highschoolLogo} alt="ScholarQuest" className="h-16 mx-auto mb-4" />
+            <img
+              src={highschoolLogo}
+              alt="ScholarQuest"
+              loading="eager"
+              decoding="async"
+              className="h-16 mx-auto mb-4"
+            />
             <div className="flex items-center justify-center gap-2 mb-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
               <span className="text-sm font-medium text-muted-foreground">You're Invited!</span>

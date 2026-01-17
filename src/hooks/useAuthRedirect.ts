@@ -69,8 +69,9 @@ const clearRoleCache = () => {
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isPublicPath = isPublicRoute(location.pathname);
-  const [isLoading, setIsLoading] = useState(() => !isPublicPath);
+  // Only block rendering on protected routes. Public routes should render immediately
+  // while auth/session checks run in the background.
+  const [isLoading, setIsLoading] = useState(() => !isPublicRoute(location.pathname));
   const hasChecked = useRef(false);
 
   const handleAuthenticatedUser = useCallback(async (userId: string, shouldRedirect: boolean) => {
@@ -100,6 +101,8 @@ export const useAuthRedirect = () => {
   useEffect(() => {
     const checkSession = async () => {
       if (hasChecked.current) {
+        // If the user navigated to a protected route after the first check,
+        // we still don't want to block rendering unnecessarily.
         setIsLoading(false);
         return;
       }
@@ -120,6 +123,13 @@ export const useAuthRedirect = () => {
 
     checkSession();
   }, [handleAuthenticatedUser]);
+
+  // If the user is on a public route, don't block the UI while checking auth.
+  // If they navigate to a protected route before the initial check completes, show the loader.
+  useEffect(() => {
+    if (hasChecked.current) return;
+    setIsLoading(!isPublicRoute(location.pathname));
+  }, [location.pathname]);
 
   // Auth state change listener
   useEffect(() => {
