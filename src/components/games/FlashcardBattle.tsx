@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Zap, RotateCcw, Trophy, Flame, Clock, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Confetti } from "@/components/Confetti";
+import { useQuizSounds } from "@/hooks/useQuizSounds";
 
 interface FlashCard {
   id: string;
@@ -49,6 +50,8 @@ export default function FlashcardBattle({
   const [isComplete, setIsComplete] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<"correct" | "wrong" | null>(null);
+  
+  const { playCorrectSound, playIncorrectSound, playStreakSound, playCompletionSound } = useQuizSounds();
 
   const currentCard = cards[currentIndex];
   const progress = ((currentIndex) / cards.length) * 100;
@@ -67,8 +70,15 @@ export default function FlashcardBattle({
       if (newStreak > maxStreak) {
         setMaxStreak(newStreak);
       }
+      // Play sound feedback
+      if (newStreak >= 3 && newStreak % 3 === 0) {
+        playStreakSound(newStreak);
+      } else {
+        playCorrectSound();
+      }
     } else {
       setStreak(0);
+      playIncorrectSound();
     }
 
     setTimeout(() => {
@@ -93,6 +103,7 @@ export default function FlashcardBattle({
       setShowConfetti(true);
     }
 
+    playCompletionSound();
     setIsComplete(true);
     onComplete({
       score,

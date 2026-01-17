@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Clock, Zap, Trophy, Flame, CheckCircle, XCircle, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Confetti } from "@/components/Confetti";
+import { useQuizSounds } from "@/hooks/useQuizSounds";
 
 interface Question {
   id: string;
@@ -52,6 +53,8 @@ export default function TimedChallenge({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  const { playCorrectSound, playIncorrectSound, playStreakSound, playCompletionSound, playTimeoutSound } = useQuizSounds();
 
   const currentQuestion = questions[currentIndex];
   const progress = ((currentIndex) / questions.length) * 100;
@@ -76,6 +79,7 @@ export default function TimedChallenge({
 
   const handleTimeout = () => {
     setStreak(0);
+    playTimeoutSound();
     setShowResult(true);
     setTimeout(() => moveToNext(), 1500);
   };
@@ -93,8 +97,15 @@ export default function TimedChallenge({
       if (newStreak > maxStreak) {
         setMaxStreak(newStreak);
       }
+      // Play sound feedback
+      if (newStreak >= 3 && newStreak % 3 === 0) {
+        playStreakSound(newStreak);
+      } else {
+        playCorrectSound();
+      }
     } else {
       setStreak(0);
+      playIncorrectSound();
     }
 
     setShowResult(true);
@@ -121,6 +132,7 @@ export default function TimedChallenge({
       setShowConfetti(true);
     }
 
+    playCompletionSound();
     setGameState("complete");
     onComplete({
       score,
