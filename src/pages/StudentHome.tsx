@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { 
   Trophy, LogOut, BookOpen, Target, TrendingUp, 
-  Home, Award, Zap, BarChart3, Loader2, Flame, 
+  Home, Award, Zap, BarChart3, Flame, Loader2,
   GraduationCap, Brain, Sparkles, ChevronRight,
   AlertTriangle, Gamepad2, RefreshCw, Clock
 } from "lucide-react";
@@ -21,6 +21,7 @@ import highschoolLogo from "@/assets/highschool-logo-new.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { StudentHomeSkeleton } from "@/components/skeletons/StudentHomeSkeleton";
 
 interface ExternalStudentData {
   full_name: string;
@@ -255,11 +256,7 @@ export default function StudentHome() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <StudentHomeSkeleton />;
   }
 
   const coins = studentProfile?.coins || 0;
