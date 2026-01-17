@@ -13,6 +13,7 @@ interface Question {
   answer_key: string | string[] | { left: string; right: string }[];
   fill_blank_sentence?: string;
   skill_tag?: string;
+  examType?: string;
 }
 
 interface SubmittedAnswer {
@@ -26,6 +27,7 @@ interface GradeRequest {
   attempt_id?: string;
   answers: SubmittedAnswer[];
   questions: Question[];
+  exam_type?: string;
 }
 
 interface GradeResult {
@@ -43,6 +45,7 @@ interface GradeResult {
     correct_answer: string;
     student_answer: string;
   }[];
+  geoblox_unlocked?: boolean;
 }
 
 // Grade drag_order questions - check if arrays match
@@ -174,6 +177,67 @@ Is this correct?`
   }
 }
 
+// Update geometry mastery and check for GeoBlox unlock
+async function updateGeometryMastery(
+  supabaseClient: any,
+  studentId: string,
+  questionsAttempted: number,
+  questionsCorrect: number
+): Promise<boolean> {
+  try {
+    // Get existing mastery record
+    const { data: existing } = await supabaseClient
+      .from("geometry_mastery")
+      .select("*")
+      .eq("student_id", studentId)
+      .single();
+
+    const existingData = existing as { 
+      questions_attempted?: number; 
+      questions_correct?: number;
+      geoblox_unlocked?: boolean;
+      unlocked_at?: string | null;
+    } | null;
+
+    const totalAttempted = (existingData?.questions_attempted || 0) + questionsAttempted;
+    const totalCorrect = (existingData?.questions_correct || 0) + questionsCorrect;
+    const percentage = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
+    const shouldUnlock = percentage >= 70;
+
+    if (existingData) {
+      // Update existing record
+      await supabaseClient
+        .from("geometry_mastery")
+        .update({
+          questions_attempted: totalAttempted,
+          questions_correct: totalCorrect,
+          mastery_percentage: percentage,
+          geoblox_unlocked: shouldUnlock,
+          unlocked_at: shouldUnlock && !existingData.geoblox_unlocked ? new Date().toISOString() : existingData.unlocked_at,
+        })
+        .eq("student_id", studentId);
+    } else {
+      // Insert new record
+      await supabaseClient
+        .from("geometry_mastery")
+        .insert({
+          student_id: studentId,
+          questions_attempted: totalAttempted,
+          questions_correct: totalCorrect,
+          mastery_percentage: percentage,
+          geoblox_unlocked: shouldUnlock,
+          unlocked_at: shouldUnlock ? new Date().toISOString() : null,
+        });
+    }
+
+    console.log(`Geometry mastery for ${studentId}: ${percentage.toFixed(1)}% (${shouldUnlock ? "UNLOCKED" : "locked"})`);
+    return shouldUnlock;
+  } catch (error) {
+    console.error("Error updating geometry mastery:", error);
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -189,7 +253,7 @@ Deno.serve(async (req) => {
 
     console.log(`Grading assignment ${gradeRequest.assignment_id} for student ${gradeRequest.student_id}`);
 
-    const { student_id, assignment_id, attempt_id, answers, questions } = gradeRequest;
+    const { student_id, assignment_id, attempt_id, answers, questions, exam_type } = gradeRequest;
     
     // Grade each question
     const questionResults: GradeResult["question_results"] = [];
@@ -299,6 +363,14 @@ Deno.serve(async (req) => {
       feedback = "Keep trying! Practice makes perfect!";
     }
 
+    // Track if this is a geometry exam for GeoBlox unlock
+    let geobloxUnlocked = false;
+    const isGeometryExam = exam_type === "geometry" || questions.some(q => q.examType === "geometry");
+    
+    if (isGeometryExam) {
+      geobloxUnlocked = await updateGeometryMastery(supabase, student_id, totalQuestions, correctCount);
+    }
+
     const gradeResult: GradeResult = {
       score: correctCount,
       total_questions: totalQuestions,
@@ -309,6 +381,7 @@ Deno.serve(async (req) => {
       xp_earned: xpEarned,
       coins_earned: coinsEarned,
       question_results: questionResults,
+      geoblox_unlocked: geobloxUnlocked,
     };
 
     // Update attempt in database if attempt_id provided
@@ -324,36 +397,28 @@ Deno.serve(async (req) => {
         .eq("id", attempt_id);
     }
 
-    // Award XP and coins if passed
-    if (meetsThreshold) {
-      // Update student profile
-      const { data: profile } = await supabase
-        .from("student_profiles")
-        .select("xp, coins, current_streak")
-        .eq("user_id", student_id)
-        .single();
+    // Award XP and coins SECURELY using the database function (prevents manipulation)
+    if (meetsThreshold && xpEarned > 0) {
+      console.log(`Awarding rewards via secure function: ${xpEarned} XP, ${coinsEarned} coins`);
+      
+      const { data: rewardResult, error: rewardError } = await supabase.rpc("award_rewards_secure", {
+        p_student_id: student_id,
+        p_claim_type: "assignment",
+        p_reference_id: assignment_id,
+        p_xp_amount: xpEarned,
+        p_coin_amount: coinsEarned,
+        p_reason: `Assignment completed: ${percentage}%`,
+      });
 
-      if (profile) {
-        await supabase
-          .from("student_profiles")
-          .update({
-            xp: profile.xp + xpEarned,
-            coins: profile.coins + coinsEarned,
-            current_streak: profile.current_streak + 1,
-          })
-          .eq("user_id", student_id);
+      if (rewardError) {
+        console.error("Secure reward error:", rewardError);
+        // Check if it's a duplicate claim (which is expected for retries)
+        if (!rewardError.message?.includes("already claimed")) {
+          console.warn("Failed to award rewards securely:", rewardError.message);
+        }
+      } else {
+        console.log("Rewards awarded securely:", rewardResult);
       }
-
-      // Add to reward ledger
-      await supabase
-        .from("reward_ledger")
-        .insert({
-          student_id,
-          assignment_id,
-          xp_delta: xpEarned,
-          coin_delta: coinsEarned,
-          reason: `Assignment completed: ${percentage}%`,
-        });
     }
 
     // Sync to NYCologic if configured
@@ -380,6 +445,7 @@ Deno.serve(async (req) => {
               coins_earned: coinsEarned,
               incorrect_topics: incorrectTopics,
               question_results: questionResults,
+              geoblox_unlocked: geobloxUnlocked,
             },
           }),
         });
