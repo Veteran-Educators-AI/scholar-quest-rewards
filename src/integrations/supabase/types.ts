@@ -1136,6 +1136,39 @@ export type Database = {
           },
         ]
       }
+      reward_claims: {
+        Row: {
+          claim_key: string
+          claim_type: string
+          coins_awarded: number
+          created_at: string
+          id: string
+          reference_id: string
+          student_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          claim_key: string
+          claim_type: string
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          reference_id: string
+          student_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          claim_key?: string
+          claim_type?: string
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          reference_id?: string
+          student_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       reward_ledger: {
         Row: {
           assignment_id: string | null
@@ -1606,6 +1639,17 @@ export type Database = {
       }
     }
     Functions: {
+      award_rewards_secure: {
+        Args: {
+          p_claim_type: string
+          p_coin_amount: number
+          p_reason: string
+          p_reference_id: string
+          p_student_id: string
+          p_xp_amount: number
+        }
+        Returns: Json
+      }
       check_streak_warnings: { Args: never; Returns: undefined }
       deduct_student_points: {
         Args: {
