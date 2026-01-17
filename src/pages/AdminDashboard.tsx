@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import {
@@ -18,6 +17,7 @@ import {
   BarChart3,
   Activity,
 } from "lucide-react";
+import { AdminDashboardSkeleton } from "@/components/skeletons/AdminDashboardSkeleton";
 
 export default function AdminDashboard() {
   // Fetch external students stats
@@ -162,11 +162,16 @@ export default function AdminDashboard() {
     },
   ];
 
+  const isLoading = loadingExternal;
+
   return (
     <AdminLayout
       title="Dashboard"
       breadcrumbs={[{ label: "Admin" }, { label: "Dashboard" }]}
     >
+      {isLoading ? (
+        <AdminDashboardSkeleton />
+      ) : (
       <div className="space-y-8">
         {/* Header */}
         <div>
@@ -334,6 +339,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+      )}
     </AdminLayout>
   );
 }
