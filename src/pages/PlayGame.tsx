@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import FlashcardBattle from "@/components/games/FlashcardBattle";
 import TimedChallenge from "@/components/games/TimedChallenge";
 import MatchingPuzzle from "@/components/games/MatchingPuzzle";
+import { useSecureRewards } from "@/hooks/useSecureRewards";
 
 interface GameData {
   id: string;
@@ -32,6 +33,7 @@ export default function PlayGame() {
   const [loading, setLoading] = useState(true);
   const [game, setGame] = useState<GameData | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const { awardRewards, checkIfClaimed } = useSecureRewards();
 
   useEffect(() => {
     fetchGame();
@@ -91,6 +93,7 @@ export default function PlayGame() {
 
     try {
       const passed = result.correctCount / result.totalQuestions >= 0.7;
+      const scorePercentage = Math.round((result.correctCount / result.totalQuestions) * 100);
 
       // Record game session
       await supabase.from("game_sessions").insert({
@@ -127,33 +130,36 @@ export default function PlayGame() {
         .update(updates)
         .eq("id", game.id);
 
-      // Award XP and coins if passed
+      // Award XP and coins through secure edge function if passed
       if (passed) {
-        const { data: profile } = await supabase
-          .from("student_profiles")
-          .select("xp, coins")
-          .eq("user_id", userId)
-          .single();
-
-        if (profile) {
-          await supabase
-            .from("student_profiles")
-            .update({
-              xp: profile.xp + game.xp_reward,
-              coins: profile.coins + game.coin_reward,
-            })
-            .eq("user_id", userId);
-
-          // Add to reward ledger
-          await supabase.from("reward_ledger").insert({
-            student_id: userId,
-            xp_delta: game.xp_reward,
-            coin_delta: game.coin_reward,
-            reason: `Completed ${game.title} game`,
+        // Check if already claimed to avoid duplicate attempts
+        const alreadyClaimed = await checkIfClaimed("game", game.id);
+        
+        if (!alreadyClaimed) {
+          const rewardResult = await awardRewards({
+            claimType: "game",
+            referenceId: game.id,
+            xpAmount: game.xp_reward,
+            coinAmount: game.coin_reward,
+            reason: `Completed ${game.title} game with ${scorePercentage}%`,
+            validationData: {
+              score: scorePercentage,
+              correct_answers: result.correctCount,
+              questions_answered: result.totalQuestions,
+              time_spent_seconds: result.timeSpentSeconds,
+            },
           });
-        }
 
-        toast.success(`+${game.xp_reward} XP and +${game.coin_reward} coins earned!`);
+          if (rewardResult.success) {
+            toast.success(`+${game.xp_reward} XP and +${game.coin_reward} coins earned!`);
+          } else if (rewardResult.already_claimed) {
+            toast.info("Game completed! Rewards already claimed.");
+          } else {
+            console.error("Failed to award rewards:", rewardResult.error);
+          }
+        } else {
+          toast.info("Game completed! You've already earned rewards for this game.");
+        }
       }
     } catch (error) {
       console.error("Error saving game result:", error);

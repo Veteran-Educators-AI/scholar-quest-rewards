@@ -182,75 +182,25 @@ export default function StudyPlan() {
       JSON.stringify([...newCompleted])
     );
 
-    // Award XP and coins when completing a goal (not when uncompleting)
+    // Study goal completion is tracked locally - no XP/coin rewards for self-reported goals
+    // This prevents manipulation. Rewards are only given for verified activities like
+    // completing practice sets, games, and graded assignments.
     if (!wasCompleted) {
-      const xpReward = 25;
-      const coinReward = 10;
+      toast({
+        title: "Goal marked complete! ✓",
+        description: "Keep up the great work on your study plan!",
+      });
 
-      try {
-        // Add to reward ledger
-        await supabase.from("reward_ledger").insert({
-          student_id: user.id,
-          xp_delta: xpReward,
-          coin_delta: coinReward,
-          reason: `Completed study goal: ${studyPlan?.weeklyGoals[index]?.goal?.slice(0, 50) || 'Weekly goal'}`,
-        });
-
-        // Update student profile directly
-        const { data: profile } = await supabase
-          .from("student_profiles")
-          .select("xp, coins")
-          .eq("user_id", user.id)
-          .single();
-
-        if (profile) {
-          await supabase
-            .from("student_profiles")
-            .update({
-              xp: profile.xp + xpReward,
-              coins: profile.coins + coinReward,
-            })
-            .eq("user_id", user.id);
-        }
+      // Check if all goals completed for encouragement
+      if (newCompleted.size === studyPlan?.weeklyGoals.length) {
+        setShowConfetti(true);
+        celebrate();
+        setTimeout(() => setShowConfetti(false), 4000);
 
         toast({
-          title: "Goal completed! 🎉",
-          description: `+${xpReward} XP and +${coinReward} coins earned!`,
+          title: "All goals completed! 🏆",
+          description: "Amazing dedication! Complete practice sets to earn rewards.",
         });
-
-        // Check if all goals completed for bonus
-        if (newCompleted.size === studyPlan?.weeklyGoals.length) {
-          const bonusXp = 100;
-          const bonusCoins = 50;
-
-          await supabase.from("reward_ledger").insert({
-            student_id: user.id,
-            xp_delta: bonusXp,
-            coin_delta: bonusCoins,
-            reason: "Completed all weekly study goals - Bonus!",
-          });
-
-          if (profile) {
-            await supabase
-              .from("student_profiles")
-              .update({
-                xp: profile.xp + xpReward + bonusXp,
-                coins: profile.coins + coinReward + bonusCoins,
-              })
-              .eq("user_id", user.id);
-          }
-
-          setShowConfetti(true);
-          celebrate();
-          setTimeout(() => setShowConfetti(false), 4000);
-
-          toast({
-            title: "All goals completed! 🏆",
-            description: `Bonus: +${bonusXp} XP and +${bonusCoins} coins!`,
-          });
-        }
-      } catch (error) {
-        console.error("Error awarding rewards:", error);
       }
     }
   };

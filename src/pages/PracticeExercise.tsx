@@ -11,6 +11,7 @@ import { DragOrderQuestion } from "@/components/quiz/DragOrderQuestion";
 import { MatchingQuestion } from "@/components/quiz/MatchingQuestion";
 import { FillBlankQuestion } from "@/components/quiz/FillBlankQuestion";
 import { Confetti } from "@/components/Confetti";
+import { useSecureRewards } from "@/hooks/useSecureRewards";
 import {
   ArrowLeft, ArrowRight, Lightbulb, Check, X, Loader2,
   Trophy, Zap, Award, RotateCcw, Home
@@ -39,6 +40,7 @@ export default function PracticeExercise() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { awardRewards, checkIfClaimed } = useSecureRewards();
   
   const [loading, setLoading] = useState(true);
   const [practiceSet, setPracticeSet] = useState<PracticeSetData | null>(null);
@@ -50,6 +52,7 @@ export default function PracticeExercise() {
   const [isComplete, setIsComplete] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [rewardsEarned, setRewardsEarned] = useState<{ xp: number; coins: number } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -211,32 +214,55 @@ export default function PracticeExercise() {
         })
         .eq("id", id);
 
-      // Award XP and coins if passed
+      // Award XP and coins through secure edge function if passed
       if (score >= 60) {
-        // First get current values
-        const { data: currentProfile } = await supabase
-          .from("student_profiles")
-          .select("xp, coins")
-          .eq("user_id", user.id)
-          .single();
+        // Check if already claimed
+        const alreadyClaimed = await checkIfClaimed("practice_set", practiceSet.id);
+        
+        if (!alreadyClaimed) {
+          const rewardResult = await awardRewards({
+            claimType: "practice_set",
+            referenceId: practiceSet.id,
+            xpAmount: practiceSet.xp_reward,
+            coinAmount: practiceSet.coin_reward,
+            reason: `Completed practice: ${practiceSet.title} with ${score}%`,
+            validationData: {
+              score,
+              correct_answers: correctCount,
+              questions_answered: questions.length,
+            },
+          });
 
-        if (currentProfile) {
-          await supabase
-            .from("student_profiles")
-            .update({
-              xp: currentProfile.xp + practiceSet.xp_reward,
-              coins: currentProfile.coins + practiceSet.coin_reward,
-            })
-            .eq("user_id", user.id);
+          if (rewardResult.success) {
+            setRewardsEarned({ xp: practiceSet.xp_reward, coins: practiceSet.coin_reward });
+            toast({
+              title: score >= 70 ? "Great job! 🎉" : "Practice Complete",
+              description: `You earned +${practiceSet.xp_reward} XP and +${practiceSet.coin_reward} coins!`,
+            });
+          } else if (rewardResult.already_claimed) {
+            toast({
+              title: "Practice Complete",
+              description: "Rewards already claimed for this practice set.",
+            });
+          } else {
+            console.error("Failed to award rewards:", rewardResult.error);
+            toast({
+              title: "Practice Complete",
+              description: "Keep practicing to improve your skills!",
+            });
+          }
+        } else {
+          toast({
+            title: "Practice Complete",
+            description: "You've already earned rewards for this practice set.",
+          });
         }
+      } else {
+        toast({
+          title: "Practice Complete",
+          description: "Score 60% or higher to earn rewards. Keep practicing!",
+        });
       }
-
-      toast({
-        title: score >= 70 ? "Great job! 🎉" : "Practice Complete",
-        description: score >= 60 
-          ? `You earned +${practiceSet.xp_reward} XP and +${practiceSet.coin_reward} coins!`
-          : "Keep practicing to improve your skills!",
-      });
     } catch (error) {
       console.error("Error completing practice:", error);
     }
@@ -302,15 +328,15 @@ export default function PracticeExercise() {
               </p>
             </div>
 
-            {passed && practiceSet && (
+            {rewardsEarned && (
               <div className="mt-6 flex justify-center gap-4">
                 <Badge variant="outline" className="text-lg py-2 px-4 bg-primary/10 text-primary">
                   <Zap className="w-4 h-4 mr-2" />
-                  +{practiceSet.xp_reward} XP
+                  +{rewardsEarned.xp} XP
                 </Badge>
                 <Badge variant="outline" className="text-lg py-2 px-4 bg-gold/10 text-gold">
                   <Award className="w-4 h-4 mr-2" />
-                  +{practiceSet.coin_reward} coins
+                  +{rewardsEarned.coins} coins
                 </Badge>
               </div>
             )}
@@ -337,6 +363,7 @@ export default function PracticeExercise() {
                   setCorrectCount(0);
                   setIsComplete(false);
                   setShowConfetti(false);
+                  setRewardsEarned(null);
                 }}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -498,10 +525,10 @@ export default function PracticeExercise() {
           </div>
 
           {/* Hint Button */}
-          {!showResult && !showHint && currentQuestion.hint && (
+          {currentQuestion.hint && !showHint && !showResult && (
             <Button
               variant="ghost"
-              className="w-full mt-4 text-warning"
+              className="mt-4 w-full"
               onClick={() => setShowHint(true)}
             >
               <Lightbulb className="w-4 h-4 mr-2" />
@@ -510,15 +537,15 @@ export default function PracticeExercise() {
           )}
 
           {/* Hint Display */}
-          {showHint && !showResult && currentQuestion.hint && (
+          {showHint && currentQuestion.hint && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 bg-warning/10 border border-warning/30 rounded-xl p-4"
+              className="mt-4 p-4 bg-primary/10 rounded-xl border border-primary/20"
             >
               <div className="flex items-start gap-3">
-                <Lightbulb className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <p className="text-foreground">{currentQuestion.hint}</p>
+                <Lightbulb className="w-5 h-5 text-primary mt-0.5" />
+                <p className="text-sm text-foreground">{currentQuestion.hint}</p>
               </div>
             </motion.div>
           )}
@@ -528,26 +555,40 @@ export default function PracticeExercise() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`mt-4 rounded-xl p-4 ${isCorrect ? "bg-success/10" : "bg-destructive/10"}`}
+              className={`mt-4 p-4 rounded-xl ${
+                isCorrect 
+                  ? "bg-success/10 border border-success/20" 
+                  : "bg-destructive/10 border border-destructive/20"
+              }`}
             >
-              <p className="text-foreground font-medium mb-2">
-                {isCorrect ? "✅ Correct!" : "❌ Not quite right"}
-              </p>
+              <div className="flex items-center gap-2">
+                {isCorrect ? (
+                  <Check className="w-5 h-5 text-success" />
+                ) : (
+                  <X className="w-5 h-5 text-destructive" />
+                )}
+                <span className={isCorrect ? "text-success" : "text-destructive"}>
+                  {isCorrect ? "Correct!" : "Not quite right"}
+                </span>
+              </div>
               {!isCorrect && (
-                <p className="text-muted-foreground text-sm">
-                  The correct answer is: {JSON.stringify(currentQuestion.answer_key.correct)}
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The correct answer is: {
+                    typeof currentQuestion.answer_key.correct === 'object'
+                      ? JSON.stringify(currentQuestion.answer_key.correct)
+                      : currentQuestion.answer_key.correct
+                  }
                 </p>
               )}
             </motion.div>
           )}
 
           {/* Action Buttons */}
-          <div className="mt-6">
+          <div className="mt-6 flex gap-3">
             {!showResult ? (
               <Button 
-                variant="hero" 
-                size="lg" 
-                className="w-full"
+                className="flex-1" 
+                size="lg"
                 onClick={handleCheckAnswer}
                 disabled={!answers[currentQuestion.id]}
               >
@@ -555,9 +596,8 @@ export default function PracticeExercise() {
               </Button>
             ) : (
               <Button 
-                variant="hero" 
-                size="lg" 
-                className="w-full"
+                className="flex-1" 
+                size="lg"
                 onClick={handleNext}
               >
                 {currentIndex < questions.length - 1 ? (
