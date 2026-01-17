@@ -43,6 +43,7 @@ import {
 } from "@/data/regentsSampleQuestions";
 import { NYS_STANDARDS, getStandardsBySubjectAndGrade } from "@/data/nysStandards";
 import { AlgebraTutor } from "@/components/AlgebraTutor";
+import { RegentsPrepSkeleton } from "@/components/skeletons/RegentsPrepSkeleton";
 
 interface ExamProgress {
   examType: string;
@@ -291,11 +292,7 @@ export default function RegentsPrep() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <RegentsPrepSkeleton />;
   }
 
   // Practice Mode View
