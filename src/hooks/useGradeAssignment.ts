@@ -17,6 +17,7 @@ interface GradeResult {
     correct_answer: string;
     student_answer: string;
   }[];
+  geoblox_unlocked?: boolean;
 }
 
 interface GradeParams {
@@ -25,6 +26,7 @@ interface GradeParams {
   attemptId?: string;
   answers: Record<string, string>;
   questions: QuizQuestion[];
+  examType?: string;
 }
 
 export function useGradeAssignment() {
@@ -50,6 +52,7 @@ export function useGradeAssignment() {
         options: q.options,
         answer_key: q.answer_key,
         skill_tag: q.skill_tag,
+        examType: params.examType,
       }));
 
       const { data, error: fnError } = await supabase.functions.invoke("grade-assignment", {
@@ -59,6 +62,7 @@ export function useGradeAssignment() {
           attempt_id: params.attemptId,
           answers: formattedAnswers,
           questions: formattedQuestions,
+          exam_type: params.examType,
         },
       });
 

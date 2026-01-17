@@ -563,6 +563,42 @@ export type Database = {
           },
         ]
       }
+      geometry_mastery: {
+        Row: {
+          created_at: string
+          geoblox_unlocked: boolean
+          id: string
+          mastery_percentage: number
+          questions_attempted: number
+          questions_correct: number
+          student_id: string
+          unlocked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          geoblox_unlocked?: boolean
+          id?: string
+          mastery_percentage?: number
+          questions_attempted?: number
+          questions_correct?: number
+          student_id: string
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          geoblox_unlocked?: boolean
+          id?: string
+          mastery_percentage?: number
+          questions_attempted?: number
+          questions_correct?: number
+          student_id?: string
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_tokens: {
         Row: {
           created_at: string

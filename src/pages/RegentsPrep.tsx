@@ -29,6 +29,9 @@ import {
   Sparkles,
   Bot,
   Lightbulb,
+  Lock,
+  Unlock,
+  Gamepad2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +49,7 @@ import { AlgebraTutor } from "@/components/AlgebraTutor";
 import { RegentsPrepSkeleton } from "@/components/skeletons/RegentsPrepSkeleton";
 import { useQuizSounds } from "@/hooks/useQuizSounds";
 import { QuestionImage } from "@/components/QuestionImage";
+import { useGeobloxAccess } from "@/hooks/useGeobloxAccess";
 
 interface ExamProgress {
   examType: string;
@@ -66,6 +70,7 @@ export default function RegentsPrep() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { playCorrectSound, playIncorrectSound, playStreakSound, playCompletionSound, playTimeoutSound } = useQuizSounds();
+  const { mastery: geobloxMastery, isUnlocked: geobloxUnlocked, progressToUnlock, refresh: refreshGeoblox } = useGeobloxAccess();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("exams");
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
@@ -582,6 +587,7 @@ export default function RegentsPrep() {
               {REGENTS_EXAMS.map((exam, idx) => {
                 const progress = getExamProgress(exam.id);
                 const questionCount = getQuestionsByExam(exam.id).length;
+                const isGeometry = exam.id === "geometry";
                 
                 return (
                   <motion.div
@@ -592,7 +598,8 @@ export default function RegentsPrep() {
                   >
                     <Card className={cn(
                       "hover:shadow-md transition-shadow",
-                      exam.hasAITutor && "ring-1 ring-primary/20"
+                      exam.hasAITutor && "ring-1 ring-primary/20",
+                      isGeometry && geobloxUnlocked && "ring-2 ring-green-500/50"
                     )}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
@@ -603,6 +610,27 @@ export default function RegentsPrep() {
                                 <Badge variant="default" className="text-xs gap-1">
                                   <Bot className="w-3 h-3" />
                                   AI Tutor
+                                </Badge>
+                              )}
+                              {isGeometry && (
+                                <Badge 
+                                  variant={geobloxUnlocked ? "default" : "secondary"} 
+                                  className={cn(
+                                    "text-xs gap-1",
+                                    geobloxUnlocked ? "bg-green-500" : ""
+                                  )}
+                                >
+                                  {geobloxUnlocked ? (
+                                    <>
+                                      <Unlock className="w-3 h-3" />
+                                      GeoBlox
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Lock className="w-3 h-3" />
+                                      70% to Unlock
+                                    </>
+                                  )}
                                 </Badge>
                               )}
                             </div>
@@ -616,6 +644,31 @@ export default function RegentsPrep() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* GeoBlox Progress Indicator for Geometry */}
+                        {isGeometry && !geobloxUnlocked && geobloxMastery && (
+                          <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Gamepad2 className="w-4 h-4 text-purple-500" />
+                              <span className="text-sm font-medium">GeoBlox Unlock Progress</span>
+                            </div>
+                            <Progress value={progressToUnlock} className="h-2 mb-1" />
+                            <p className="text-xs text-muted-foreground">
+                              {geobloxMastery.mastery_percentage.toFixed(0)}% mastery • Need 70% to unlock GeoBlox
+                            </p>
+                          </div>
+                        )}
+                        
+                        {isGeometry && geobloxUnlocked && (
+                          <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                🎮 GeoBlox Unlocked! You can now play!
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
                         {progress && (
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
