@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,16 +26,78 @@ const getTargetPath = (role: string): string => {
   }
 };
 
+// Cache user role in memory to avoid repeated DB calls
+let cachedRole: string | null = null;
+let cachedUserId: string | null = null;
+
+const getCachedRole = async (userId: string): Promise<string> => {
+  // Return cached role if same user
+  if (cachedUserId === userId && cachedRole) {
+    return cachedRole;
+  }
+
+  // Try session storage first for faster loads
+  const storedRole = sessionStorage.getItem(`user_role_${userId}`);
+  if (storedRole) {
+    cachedRole = storedRole;
+    cachedUserId = userId;
+    return storedRole;
+  }
+
+  // Fetch from database
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .single();
+
+  const role = userRole?.role || "student";
+  
+  // Cache in memory and session storage
+  cachedRole = role;
+  cachedUserId = userId;
+  sessionStorage.setItem(`user_role_${userId}`, role);
+  
+  return role;
+};
+
+const clearRoleCache = () => {
+  cachedRole = null;
+  cachedUserId = null;
+};
+
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const hasChecked = useRef(false);
 
+  const handleAuthenticatedUser = useCallback(async (userId: string, shouldRedirect: boolean) => {
+    try {
+      const role = await getCachedRole(userId);
+      
+      if (role === "teacher") {
+        clearRoleCache();
+        await supabase.auth.signOut();
+        return;
+      }
+      
+      if (shouldRedirect) {
+        const targetPath = getTargetPath(role);
+        const onPublicNonInvite = publicRoutes.includes(location.pathname);
+        
+        if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
+          navigate(targetPath, { replace: true });
+        }
+      }
+    } catch (error) {
+      console.error("Role fetch error:", error);
+    }
+  }, [navigate, location.pathname]);
+
   // Initial session check - runs once
   useEffect(() => {
     const checkSession = async () => {
-      // Skip if already checked
       if (hasChecked.current) {
         setIsLoading(false);
         return;
@@ -45,24 +107,7 @@ export const useAuthRedirect = () => {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          const { data: userRole } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single();
-
-          const role = userRole?.role || "student";
-          
-          if (role === "teacher") {
-            await supabase.auth.signOut();
-          } else {
-            const targetPath = getTargetPath(role);
-            const onPublicNonInvite = publicRoutes.includes(location.pathname);
-            
-            if (onPublicNonInvite || isOnWrongDashboard(location.pathname, role)) {
-              navigate(targetPath, { replace: true });
-            }
-          }
+          await handleAuthenticatedUser(session.user.id, true);
         }
       } catch (error) {
         console.error("Auth check error:", error);
@@ -73,22 +118,17 @@ export const useAuthRedirect = () => {
     };
 
     checkSession();
-  }, [navigate, location.pathname]);
+  }, [handleAuthenticatedUser]);
 
   // Auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          const { data: userRole } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single();
-
-          const role = userRole?.role || "student";
+          const role = await getCachedRole(session.user.id);
           
           if (role === "teacher") {
+            clearRoleCache();
             await supabase.auth.signOut();
             return;
           }
@@ -96,6 +136,13 @@ export const useAuthRedirect = () => {
           const targetPath = getTargetPath(role);
           navigate(targetPath, { replace: true });
         } else if (event === "SIGNED_OUT") {
+          clearRoleCache();
+          // Clear all role caches from session storage
+          Object.keys(sessionStorage).forEach(key => {
+            if (key.startsWith('user_role_')) {
+              sessionStorage.removeItem(key);
+            }
+          });
           navigate("/", { replace: true });
         }
       }
