@@ -44,6 +44,7 @@ import {
 import { NYS_STANDARDS, getStandardsBySubjectAndGrade } from "@/data/nysStandards";
 import { AlgebraTutor } from "@/components/AlgebraTutor";
 import { RegentsPrepSkeleton } from "@/components/skeletons/RegentsPrepSkeleton";
+import { useQuizSounds } from "@/hooks/useQuizSounds";
 
 interface ExamProgress {
   examType: string;
@@ -63,6 +64,7 @@ interface StandardProgress {
 export default function RegentsPrep() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { playCorrectSound, playIncorrectSound, playStreakSound, playCompletionSound, playTimeoutSound } = useQuizSounds();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("exams");
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
@@ -144,6 +146,7 @@ export default function RegentsPrep() {
     setStreak(0);
     setShowResult(true);
     setShowExplanation(true);
+    playTimeoutSound();
   };
 
   const startPractice = (examType: string, timed: boolean, questionCount: number = 10) => {
@@ -185,8 +188,15 @@ export default function RegentsPrep() {
       if (newStreak > maxStreak) {
         setMaxStreak(newStreak);
       }
+      // Play appropriate sound
+      if (newStreak >= 3) {
+        playStreakSound(newStreak);
+      } else {
+        playCorrectSound();
+      }
     } else {
       setStreak(0);
+      playIncorrectSound();
     }
 
     setShowResult(true);
@@ -210,6 +220,7 @@ export default function RegentsPrep() {
     
     if (percentage >= 80) {
       setShowConfetti(true);
+      playCompletionSound();
     }
 
     // Update progress
