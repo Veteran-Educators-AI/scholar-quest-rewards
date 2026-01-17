@@ -1,14 +1,13 @@
 import { Suspense, lazy } from "react";
-import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { StudyTimerProvider } from "@/contexts/StudyTimerContext";
 import { AuthRedirectWrapper } from "@/components/AuthRedirectWrapper";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import PageLoader from "./components/PageLoader";
+import { DeferredToasters } from "@/components/DeferredToasters";
 
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
@@ -51,8 +50,7 @@ const App = () => (
       <StudyTimerProvider>
         <LanguageProvider>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
+            <DeferredToasters />
             <BrowserRouter>
               <AuthRedirectWrapper>
                 <Suspense fallback={<PageLoader />}>

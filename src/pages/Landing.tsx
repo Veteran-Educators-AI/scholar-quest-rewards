@@ -1,41 +1,15 @@
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+import nycologicLogo64Webp from "@/assets/nycologic-ai-logo-64.webp";
+import nycologicLogo128Webp from "@/assets/nycologic-ai-logo-128.webp";
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Check if user is logged in and redirect to student dashboard
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/student", { replace: true });
-      } else {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <ScholarBuddy size="lg" animate={true} />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}
@@ -51,11 +25,22 @@ export default function Landing() {
               ← NYClogic Ai
             </a>
             <div className="flex items-center gap-2">
-              <img 
-                src={nycologicLogo} 
-                alt="NYClogic Scholar Ai" 
-                className="w-8 h-8 object-contain"
-              />
+              <picture>
+                <source
+                  type="image/webp"
+                  srcSet={`${nycologicLogo64Webp} 64w, ${nycologicLogo128Webp} 128w`}
+                  sizes="32px"
+                />
+                <img
+                  src={nycologicLogo}
+                  alt="NYClogic Scholar Ai"
+                  className="w-8 h-8 object-contain"
+                  width={32}
+                  height={32}
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
               <div className="flex items-baseline gap-0.5">
                 <span className="font-semibold text-foreground">NYClogic</span>
                 <span 

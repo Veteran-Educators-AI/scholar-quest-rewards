@@ -1,5 +1,9 @@
 import { forwardRef } from "react";
 import highschoolLogo from "@/assets/highschool-logo.png";
+import highschoolLogo96Webp from "@/assets/highschool-logo-96.webp";
+import highschoolLogo144Webp from "@/assets/highschool-logo-144.webp";
+import highschoolLogo192Webp from "@/assets/highschool-logo-192.webp";
+import highschoolLogo288Webp from "@/assets/highschool-logo-288.webp";
 
 interface ScholarBuddyProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -23,11 +27,20 @@ export const ScholarBuddy = forwardRef<HTMLDivElement, ScholarBuddyProps>(({
   return (
     <div ref={ref} className={`flex flex-col items-center gap-3 ${className}`}>
       <div className={`${sizeClasses[size]} relative`}>
-        <img 
-          src={highschoolLogo} 
-          alt="NYClogic Logo" 
-          className="w-full h-full object-contain drop-shadow-2xl"
-        />
+        <picture>
+          <source
+            type="image/webp"
+            srcSet={`${highschoolLogo96Webp} 96w, ${highschoolLogo144Webp} 144w, ${highschoolLogo192Webp} 192w, ${highschoolLogo288Webp} 288w`}
+            sizes="(max-width: 640px) 180px, 270px"
+          />
+          <img
+            src={highschoolLogo}
+            alt="NYClogic Logo"
+            className="w-full h-full object-contain drop-shadow-2xl"
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
       </div>
       
       {message && (
