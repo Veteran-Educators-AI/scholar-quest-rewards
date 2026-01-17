@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Zap, Trophy, Flame, Clock, Shuffle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Confetti } from "@/components/Confetti";
+import { useQuizSounds } from "@/hooks/useQuizSounds";
 
 interface MatchPair {
   id: string;
@@ -56,6 +57,8 @@ export default function MatchingPuzzle({
   const [showConfetti, setShowConfetti] = useState(false);
   const [wrongPair, setWrongPair] = useState<string[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
+  
+  const { playCorrectSound, playIncorrectSound, playStreakSound, playCompletionSound } = useQuizSounds();
 
   // Initialize cards
   useEffect(() => {
@@ -126,6 +129,13 @@ export default function MatchingPuzzle({
         setMaxStreak(newStreak);
       }
 
+      // Play sound feedback
+      if (newStreak >= 3 && newStreak % 3 === 0) {
+        playStreakSound(newStreak);
+      } else {
+        playCorrectSound();
+      }
+
       setSelectedCard(null);
 
       // Check completion
@@ -136,6 +146,7 @@ export default function MatchingPuzzle({
       // Wrong match
       setWrongPair([selectedCard.id, card.id]);
       setStreak(0);
+      playIncorrectSound();
 
       setTimeout(() => {
         setWrongPair([]);
@@ -150,6 +161,7 @@ export default function MatchingPuzzle({
     const timeBonus = Math.max(0, 1 - (timeSpent / (pairs.length * 10)));
     const score = Math.round((accuracy * 100) + (finalStreak * 10) + (timeBonus * 20));
 
+    playCompletionSound();
     setShowConfetti(true);
     setIsComplete(true);
 
