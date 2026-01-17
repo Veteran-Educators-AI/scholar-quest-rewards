@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
-import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+import nycologicLogo from "@/assets/nycologic-main-logo.png";
 
 export default function Landing() {
   return (

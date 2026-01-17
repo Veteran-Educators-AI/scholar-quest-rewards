@@ -1,4 +1,4 @@
-import nycologicLogo from "@/assets/nycologic-ai-logo.png";
+import nycologicLogo from "@/assets/nycologic-main-logo.png";
 
 interface PoweredByFooterProps {
   className?: string;
