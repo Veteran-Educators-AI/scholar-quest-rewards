@@ -69,7 +69,8 @@ const clearRoleCache = () => {
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
+  const isPublicPath = isPublicRoute(location.pathname);
+  const [isLoading, setIsLoading] = useState(() => !isPublicPath);
   const hasChecked = useRef(false);
 
   const handleAuthenticatedUser = useCallback(async (userId: string, shouldRedirect: boolean) => {
