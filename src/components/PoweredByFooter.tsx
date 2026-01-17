@@ -18,6 +18,8 @@ export function PoweredByFooter({ className = "" }: PoweredByFooterProps) {
           <img 
             src={nycologicLogo} 
             alt="NYClogic Ai" 
+            loading="lazy"
+            decoding="async"
             className="w-5 h-5 object-contain"
           />
           <span className="text-xs font-semibold text-foreground">NYClogic Ai™</span>

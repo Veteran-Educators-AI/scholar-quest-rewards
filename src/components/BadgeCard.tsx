@@ -55,7 +55,13 @@ export function BadgeCard({
       >
         {earned ? (
           iconUrl ? (
-            <img src={iconUrl} alt={name} className={`${s.icon} object-contain`} />
+            <img
+              src={iconUrl}
+              alt={name}
+              loading="lazy"
+              decoding="async"
+              className={`${s.icon} object-contain`}
+            />
           ) : (
             <Award className={`${s.icon} text-gold-foreground`} />
           )
