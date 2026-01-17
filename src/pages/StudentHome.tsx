@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { CoinCounter } from "@/components/CoinCounter";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { StudentHomeSkeleton } from "@/components/skeletons/StudentHomeSkeleton";
+import { PrefetchLink } from "@/components/PrefetchLink";
+import { prefetchRoutes } from "@/hooks/usePrefetch";
 
 interface ExternalStudentData {
   full_name: string;
@@ -83,6 +85,18 @@ export default function StudentHome() {
 
   useEffect(() => {
     fetchUserData();
+    // Prefetch common student routes after initial load
+    const timer = setTimeout(() => {
+      prefetchRoutes([
+        '/student/practice-center',
+        '/student/rewards',
+        '/student/leaderboard',
+        '/games',
+        '/regents-prep',
+        '/student/challenges',
+      ]);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -281,7 +295,7 @@ export default function StudentHome() {
         <header className="bg-card/80 backdrop-blur-xl border-b border-border/50 sticky top-0 z-40">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
-              <Link to="/student/profile" className="flex items-center gap-3 group">
+              <PrefetchLink to="/student/profile" className="flex items-center gap-3 group">
                 <div className="relative">
                   <img 
                     src={highschoolLogo} 
@@ -301,7 +315,7 @@ export default function StudentHome() {
                   </p>
                   <p className="text-xs text-muted-foreground">Level {level}</p>
                 </div>
-              </Link>
+              </PrefetchLink>
               
               <div className="flex items-center gap-1 sm:gap-2">
                 <ThemeToggle />
@@ -510,12 +524,12 @@ export default function StudentHome() {
                       <p className="text-sm text-success font-medium">{studyPlan.encouragement}</p>
                     </div>
 
-                    <Link to="/study-plan">
+                    <PrefetchLink to="/study-plan">
                       <Button variant="ghost" size="sm" className="w-full">
                         View Full Study Plan
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
-                    </Link>
+                    </PrefetchLink>
                   </div>
                 )}
               </CardContent>
@@ -535,7 +549,7 @@ export default function StudentHome() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Practice Option */}
-              <Link to="/student/practice-center">
+              <PrefetchLink to="/student/practice-center">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -559,10 +573,10 @@ export default function StudentHome() {
                     </div>
                   </div>
                 </motion.div>
-              </Link>
+              </PrefetchLink>
 
               {/* Game Practice Option */}
-              <Link to="/games">
+              <PrefetchLink to="/games">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -586,7 +600,7 @@ export default function StudentHome() {
                     </div>
                   </div>
                 </motion.div>
-              </Link>
+              </PrefetchLink>
             </div>
           </motion.section>
 
@@ -597,27 +611,27 @@ export default function StudentHome() {
             transition={{ delay: 0.3, duration: 0.4 }}
           >
             <div className="grid grid-cols-3 gap-3">
-              <Link to="/regents-prep">
+              <PrefetchLink to="/regents-prep">
                 <QuickLink 
                   icon={<GraduationCap className="w-5 h-5" />}
                   label="Regents Prep"
                   color="primary"
                 />
-              </Link>
-              <Link to="/student/rewards">
+              </PrefetchLink>
+              <PrefetchLink to="/student/rewards">
                 <QuickLink 
                   icon={<Award className="w-5 h-5" />}
                   label="Rewards"
                   color="gold"
                 />
-              </Link>
-              <Link to="/student/challenges">
+              </PrefetchLink>
+              <PrefetchLink to="/student/challenges">
                 <QuickLink 
                   icon={<Zap className="w-5 h-5" />}
                   label="Challenges"
                   color="warning"
                 />
-              </Link>
+              </PrefetchLink>
             </div>
           </motion.section>
         </main>
@@ -627,15 +641,15 @@ export default function StudentHome() {
           <div className="container mx-auto px-2">
             <div className="flex items-center justify-around py-2">
               <NavButton icon={<Home className="w-5 h-5" />} label={t.nav.home} active />
-              <Link to="/student/rewards">
+              <PrefetchLink to="/student/rewards">
                 <NavButton icon={<Trophy className="w-5 h-5" />} label={t.nav.rewards} />
-              </Link>
-              <Link to="/student/challenges">
+              </PrefetchLink>
+              <PrefetchLink to="/student/challenges">
                 <NavButton icon={<Zap className="w-5 h-5" />} label={t.nav.challenges} />
-              </Link>
-              <Link to="/student/leaderboard">
+              </PrefetchLink>
+              <PrefetchLink to="/student/leaderboard">
                 <NavButton icon={<BarChart3 className="w-5 h-5" />} label={t.nav.leaderboard} />
-              </Link>
+              </PrefetchLink>
             </div>
           </div>
         </nav>
