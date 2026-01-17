@@ -26,6 +26,9 @@ export const ScholarBuddy = forwardRef<HTMLDivElement, ScholarBuddyProps>(({
         <img 
           src={highschoolLogo} 
           alt="NYClogic Logo" 
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="w-full h-full object-contain drop-shadow-2xl"
         />
       </div>

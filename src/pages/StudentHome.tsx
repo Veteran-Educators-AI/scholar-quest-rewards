@@ -286,6 +286,9 @@ export default function StudentHome() {
                   <img 
                     src={highschoolLogo} 
                     alt="Scholar" 
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                     className="w-10 h-10 object-contain"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border-2 border-card">
