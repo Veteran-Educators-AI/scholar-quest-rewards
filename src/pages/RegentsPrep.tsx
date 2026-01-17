@@ -45,6 +45,7 @@ import { NYS_STANDARDS, getStandardsBySubjectAndGrade } from "@/data/nysStandard
 import { AlgebraTutor } from "@/components/AlgebraTutor";
 import { RegentsPrepSkeleton } from "@/components/skeletons/RegentsPrepSkeleton";
 import { useQuizSounds } from "@/hooks/useQuizSounds";
+import { QuestionImage } from "@/components/QuestionImage";
 
 interface ExamProgress {
   examType: string;
@@ -392,7 +393,17 @@ export default function RegentsPrep() {
               exit={{ opacity: 0, x: -50 }}
             >
               <Card className="mb-6">
-                <CardContent className="p-6">
+                <CardContent className="p-6 space-y-4">
+                  {/* AI Generated Image */}
+                  {currentQuestion.imagePrompt && (
+                    <QuestionImage
+                      questionId={currentQuestion.id}
+                      imagePrompt={currentQuestion.imagePrompt}
+                      subject={currentQuestion.subject}
+                      className="mb-4"
+                    />
+                  )}
+                  
                   <p className="text-lg font-medium">
                     {currentQuestion.prompt}
                   </p>

@@ -22,6 +22,8 @@ export interface RegentsQuestion {
   hint?: string;
   topic?: string;
   course?: string;
+  imagePrompt?: string; // Prompt for AI image generation
+  imageUrl?: string; // URL of generated/cached image
 }
 
 // Convert AlgebraQuestion to RegentsQuestion format
@@ -75,6 +77,8 @@ const convertedExtendedQuestions: RegentsQuestion[] = ALL_EXTENDED_QUESTIONS.map
   pointValue: q.pointValue,
   hint: q.hint,
   topic: q.topic,
+  imagePrompt: q.imagePrompt,
+  imageUrl: q.imageUrl,
 }));
 
 export const REGENTS_QUESTIONS: RegentsQuestion[] = [
