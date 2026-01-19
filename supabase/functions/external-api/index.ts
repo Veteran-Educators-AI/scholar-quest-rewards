@@ -1,109 +1,86 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+/**
+ * External API Edge Function
+ *
+ * REST API for external integrations to access ScholarQuest data.
+ * Supports GET and POST operations with scope-based access control.
+ */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-api-key, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-};
+import {
+  createHandler,
+  logRequest,
+  createSuccessResponse,
+  createErrorResponse,
+  createServiceClient,
+  hashApiKey,
+  type MiddlewareContext,
+} from "../_shared/index.ts";
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+// ============================================================================
+// Types
+// ============================================================================
+
+interface TokenData {
+  id: string;
+  created_by: string;
+  is_active: boolean;
+  expires_at?: string;
+  scopes?: string[];
+}
+
+// ============================================================================
+// API Key Verification
+// ============================================================================
+
+async function verifyApiToken(
+  apiKey: string,
+  supabase: ReturnType<typeof createServiceClient>
+): Promise<{ valid: boolean; tokenData?: TokenData; error?: string }> {
+  const tokenHash = await hashApiKey(apiKey);
+
+  const { data: tokenData, error: tokenError } = await supabase
+    .from("api_tokens")
+    .select("*")
+    .eq("token_hash", tokenHash)
+    .eq("is_active", true)
+    .single();
+
+  if (tokenError || !tokenData) {
+    return { valid: false, error: "Invalid API key" };
   }
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get API key from header
-    const apiKey = req.headers.get("x-api-key");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Missing API key", code: "MISSING_API_KEY" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Hash the API key and verify
-    const encoder = new TextEncoder();
-    const data = encoder.encode(apiKey);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-
-    // Look up the token
-    const { data: tokenData, error: tokenError } = await supabase
-      .from("api_tokens")
-      .select("*")
-      .eq("token_hash", tokenHash)
-      .eq("is_active", true)
-      .single();
-
-    if (tokenError || !tokenData) {
-      return new Response(
-        JSON.stringify({ error: "Invalid API key", code: "INVALID_API_KEY" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check expiration
-    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ error: "API key expired", code: "EXPIRED_API_KEY" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Update last used
-    await supabase
-      .from("api_tokens")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("id", tokenData.id);
-
-    // Parse the URL path
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const endpoint = pathParts[pathParts.length - 1]; // e.g., "students", "standards", etc.
-
-    // Route to appropriate handler
-    switch (req.method) {
-      case "GET":
-        return await handleGet(supabase, endpoint, url, tokenData, corsHeaders);
-      case "POST":
-        return await handlePost(supabase, endpoint, req, tokenData, corsHeaders);
-      default:
-        return new Response(
-          JSON.stringify({ error: "Method not allowed" }),
-          { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-    }
-  } catch (error: unknown) {
-    console.error("API Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: "Internal server error", message: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+  // Check expiration
+  if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
+    return { valid: false, error: "API key expired" };
   }
-});
+
+  // Update last used
+  await supabase
+    .from("api_tokens")
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("id", tokenData.id);
+
+  return { valid: true, tokenData };
+}
+
+// ============================================================================
+// GET Handlers
+// ============================================================================
 
 async function handleGet(
-  supabase: any,
+  supabase: ReturnType<typeof createServiceClient>,
   endpoint: string,
   url: URL,
-  token: any,
-  corsHeaders: Record<string, string>
-) {
+  token: TokenData,
+  ctx: MiddlewareContext
+): Promise<Response> {
   const scopes = token.scopes || [];
-  
+
   if (!scopes.includes("read") && !scopes.includes("admin")) {
-    return new Response(
-      JSON.stringify({ error: "Insufficient permissions", required: "read" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createErrorResponse("FORBIDDEN", "Insufficient permissions", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+      details: { required: "read" },
+    });
   }
 
   switch (endpoint) {
@@ -118,80 +95,80 @@ async function handleGet(
           profile:profiles!enrollments_student_id_fkey(full_name, avatar_url),
           student_profile:student_profiles!enrollments_student_id_fkey(xp, coins, current_streak, grade_level)
         `);
-      
+
       if (classId) {
         query = query.eq("class_id", classId);
       }
-      
+
       const { data, error } = await query;
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, count: data?.length || 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, count: data?.length || 0 },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
     case "standards": {
       const gradeBand = url.searchParams.get("grade_band");
       const subject = url.searchParams.get("subject");
-      
+
       let query = supabase.from("nys_standards").select("*");
       if (gradeBand) query = query.eq("grade_band", gradeBand);
       if (subject) query = query.eq("subject", subject);
-      
+
       const { data, error } = await query;
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, count: data?.length || 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, count: data?.length || 0 },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
     case "mastery": {
       const studentId = url.searchParams.get("student_id");
       const standardId = url.searchParams.get("standard_id");
-      
+
       let query = supabase
         .from("student_standard_mastery")
         .select(`
           *,
           standard:nys_standards(code, subject, domain, standard_text)
         `);
-      
+
       if (studentId) query = query.eq("student_id", studentId);
       if (standardId) query = query.eq("standard_id", standardId);
-      
+
       const { data, error } = await query;
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, count: data?.length || 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, count: data?.length || 0 },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
     case "assignments": {
       const classId = url.searchParams.get("class_id");
       const status = url.searchParams.get("status");
-      
+
       let query = supabase
         .from("assignments")
         .select(`
           *,
           standard:nys_standards(code, subject, domain, standard_text)
         `);
-      
+
       if (classId) query = query.eq("class_id", classId);
       if (status) query = query.eq("status", status);
-      
+
       const { data, error } = await query;
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, count: data?.length || 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, count: data?.length || 0 },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
@@ -200,40 +177,43 @@ async function handleGet(
         .from("classes")
         .select("*")
         .eq("teacher_id", token.created_by);
-      
+
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, count: data?.length || 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, count: data?.length || 0 },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
     default:
-      return new Response(
-        JSON.stringify({ 
-          error: "Unknown endpoint",
-          available_endpoints: ["students", "standards", "mastery", "assignments", "classes"]
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("NOT_FOUND", "Unknown endpoint", {
+        cors: ctx.corsHeaders,
+        requestId: ctx.requestId,
+        details: { available_endpoints: ["students", "standards", "mastery", "assignments", "classes"] },
+      });
   }
 }
 
+// ============================================================================
+// POST Handlers
+// ============================================================================
+
 async function handlePost(
-  supabase: any,
+  supabase: ReturnType<typeof createServiceClient>,
   endpoint: string,
   req: Request,
-  token: any,
-  corsHeaders: Record<string, string>
-) {
+  token: TokenData,
+  ctx: MiddlewareContext
+): Promise<Response> {
   const scopes = token.scopes || [];
-  
+
   if (!scopes.includes("write") && !scopes.includes("admin")) {
-    return new Response(
-      JSON.stringify({ error: "Insufficient permissions", required: "write" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return createErrorResponse("FORBIDDEN", "Insufficient permissions", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+      details: { required: "write" },
+    });
   }
 
   const body = await req.json();
@@ -241,14 +221,14 @@ async function handlePost(
   switch (endpoint) {
     case "assignments": {
       const { title, description, class_id, due_at, xp_reward, coin_reward, standard_id, subject } = body;
-      
+
       if (!title || !class_id || !due_at) {
-        return new Response(
-          JSON.stringify({ error: "Missing required fields: title, class_id, due_at" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return createErrorResponse("MISSING_REQUIRED_FIELD", "Missing required fields: title, class_id, due_at", {
+          cors: ctx.corsHeaders,
+          requestId: ctx.requestId,
+        });
       }
-      
+
       const { data, error } = await supabase
         .from("assignments")
         .insert({
@@ -263,36 +243,89 @@ async function handlePost(
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
-      return new Response(
-        JSON.stringify({ data, message: "Assignment created successfully" }),
-        { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+
+      return createSuccessResponse(
+        { data, message: "Assignment created successfully" },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId, status: 201 }
       );
     }
 
     case "sync-student": {
       // Sync student data from external system
       const { external_id, name, email, grade_level, class_code } = body;
-      
-      // This would be used by external systems like Scan Genius to sync student data
-      return new Response(
-        JSON.stringify({ 
+
+      return createSuccessResponse(
+        {
           message: "Student sync endpoint ready",
-          received: { external_id, name, email, grade_level, class_code }
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          received: { external_id, name, email, grade_level, class_code },
+        },
+        { cors: ctx.corsHeaders, requestId: ctx.requestId }
       );
     }
 
     default:
-      return new Response(
-        JSON.stringify({ 
-          error: "Unknown endpoint",
-          available_endpoints: ["assignments", "sync-student"]
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return createErrorResponse("NOT_FOUND", "Unknown endpoint", {
+        cors: ctx.corsHeaders,
+        requestId: ctx.requestId,
+        details: { available_endpoints: ["assignments", "sync-student"] },
+      });
   }
 }
+
+// ============================================================================
+// Main Handler
+// ============================================================================
+
+async function handleExternalApi(
+  req: Request,
+  ctx: MiddlewareContext
+): Promise<Response> {
+  const supabase = createServiceClient();
+
+  // Get API key from header
+  const apiKey = req.headers.get("x-api-key");
+  if (!apiKey) {
+    return createErrorResponse("UNAUTHORIZED", "Missing API key", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+      details: { code: "MISSING_API_KEY" },
+    });
+  }
+
+  const { valid, tokenData, error } = await verifyApiToken(apiKey, supabase);
+  if (!valid || !tokenData) {
+    return createErrorResponse("UNAUTHORIZED", error || "Invalid API key", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+      details: { code: error === "API key expired" ? "EXPIRED_API_KEY" : "INVALID_API_KEY" },
+    });
+  }
+
+  // Parse the URL path
+  const url = new URL(req.url);
+  const pathParts = url.pathname.split("/").filter(Boolean);
+  const endpoint = pathParts[pathParts.length - 1];
+
+  // Route to appropriate handler
+  switch (req.method) {
+    case "GET":
+      return handleGet(supabase, endpoint, url, tokenData, ctx);
+    case "POST":
+      return handlePost(supabase, endpoint, req, tokenData, ctx);
+    default:
+      return createErrorResponse("INVALID_REQUEST", "Method not allowed", {
+        cors: ctx.corsHeaders,
+        requestId: ctx.requestId,
+        status: 405,
+      });
+  }
+}
+
+// Create and export the handler with middleware
+Deno.serve(
+  createHandler(handleExternalApi, {
+    middleware: [logRequest],
+  })
+);

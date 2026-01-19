@@ -1,108 +1,90 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+/**
+ * Send Parent Notification Edge Function
+ *
+ * Sends email notifications to parents about their child's activity.
+ * Supports badge earned, streak warnings, rewards, assignments, points deducted, and pledge progress.
+ */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import {
+  createHandler,
+  logRequest,
+  parseBody,
+  createSuccessResponse,
+  createErrorResponse,
+  createServiceClient,
+  type MiddlewareContext,
+} from "../_shared/index.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-interface NotificationPayload {
-  type: "badge_earned" | "streak_warning" | "reward_earned" | "assignment_completed" | "points_deducted" | "pledge_near_completion";
-  student_id: string;
-  data: {
-    badge_name?: string;
-    current_streak?: number;
-    xp_earned?: number;
-    coins_earned?: number;
-    assignment_title?: string;
-    score?: number;
-    points_deducted?: number;
-    reason?: string;
-    student_name?: string;
-    current_coins?: number;
-    threshold?: number;
-    progress_percent?: number;
-    reward_description?: string;
-    coins_needed?: number;
-  };
+// ============================================================================
+// Types & Validation
+// ============================================================================
+
+const NotificationTypeSchema = z.enum([
+  "badge_earned",
+  "streak_warning",
+  "reward_earned",
+  "assignment_completed",
+  "points_deducted",
+  "pledge_near_completion",
+]);
+
+const NotificationDataSchema = z.object({
+  badge_name: z.string().optional(),
+  current_streak: z.number().optional(),
+  xp_earned: z.number().optional(),
+  coins_earned: z.number().optional(),
+  assignment_title: z.string().optional(),
+  score: z.number().optional(),
+  points_deducted: z.number().optional(),
+  reason: z.string().optional(),
+  student_name: z.string().optional(),
+  current_coins: z.number().optional(),
+  threshold: z.number().optional(),
+  progress_percent: z.number().optional(),
+  reward_description: z.string().optional(),
+  coins_needed: z.number().optional(),
+});
+
+const NotificationRequestSchema = z.object({
+  type: NotificationTypeSchema,
+  student_id: z.string().uuid(),
+  data: NotificationDataSchema,
+});
+
+type NotificationRequest = z.infer<typeof NotificationRequestSchema>;
+type NotificationType = z.infer<typeof NotificationTypeSchema>;
+
+// ============================================================================
+// Email Templates
+// ============================================================================
+
+interface EmailContent {
+  subject: string;
+  htmlContent: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+interface ParentEmail {
+  email: string;
+  name: string;
+}
 
-  try {
-    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    if (!brevoApiKey) {
-      throw new Error("BREVO_API_KEY not configured");
-    }
+function buildEmailContent(
+  type: NotificationType,
+  studentName: string,
+  data: NotificationRequest["data"]
+): EmailContent {
+  const baseStyle = `font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;`;
+  const containerStyle = `max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);`;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const payload: NotificationPayload = await req.json();
-    const { type, student_id, data } = payload;
-
-    // Get student info
-    const { data: studentProfile, error: studentError } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", student_id)
-      .single();
-
-    if (studentError || !studentProfile) {
-      console.log("Student not found:", student_id);
-      return new Response(JSON.stringify({ message: "Student not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get linked parents
-    const { data: parentLinks, error: parentLinksError } = await supabase
-      .from("parent_students")
-      .select("parent_id")
-      .eq("student_id", student_id)
-      .eq("verified", true);
-
-    if (parentLinksError || !parentLinks || parentLinks.length === 0) {
-      console.log("No verified parents found for student:", student_id);
-      return new Response(JSON.stringify({ message: "No parents to notify" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get parent emails from auth.users via profiles
-    const parentIds = parentLinks.map((p) => p.parent_id);
-    
-    const { data: parentProfiles, error: parentProfilesError } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", parentIds);
-
-    if (parentProfilesError || !parentProfiles) {
-      console.log("Parent profiles not found");
-      return new Response(JSON.stringify({ message: "Parent profiles not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Build email content based on notification type
-    let subject = "";
-    let htmlContent = "";
-    const studentName = studentProfile.full_name;
-
-    switch (type) {
-      case "badge_earned":
-        subject = `🏆 ${studentName} earned a new badge!`;
-        htmlContent = `
+  switch (type) {
+    case "badge_earned":
+      return {
+        subject: `🏆 ${studentName} earned a new badge!`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #7c3aed; text-align: center;">🎉 Congratulations!</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> just earned the <strong style="color: #7c3aed;">${data.badge_name}</strong> badge!
@@ -111,15 +93,16 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
+        `,
+      };
 
-      case "streak_warning":
-        subject = `⚠️ ${studentName}'s streak is at risk!`;
-        htmlContent = `
+    case "streak_warning":
+      return {
+        subject: `⚠️ ${studentName}'s streak is at risk!`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #f59e0b; text-align: center;">⚠️ Streak Alert</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> hasn't completed any assignments today and their <strong style="color: #f59e0b;">${data.current_streak}-day streak</strong> is at risk!
@@ -128,15 +111,16 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
+        `,
+      };
 
-      case "reward_earned":
-        subject = `🌟 ${studentName} earned rewards!`;
-        htmlContent = `
+    case "reward_earned":
+      return {
+        subject: `🌟 ${studentName} earned rewards!`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #10b981; text-align: center;">🌟 Great Progress!</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> just earned:
@@ -149,15 +133,16 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
+        `,
+      };
 
-      case "assignment_completed":
-        subject = `✅ ${studentName} completed an assignment!`;
-        htmlContent = `
+    case "assignment_completed":
+      return {
+        subject: `✅ ${studentName} completed an assignment!`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #7c3aed; text-align: center;">✅ Assignment Complete!</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> just completed <strong style="color: #7c3aed;">${data.assignment_title || "an assignment"}</strong>!
@@ -167,15 +152,16 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
+        `,
+      };
 
-      case "points_deducted":
-        subject = `⚠️ ${studentName} lost points for behavior`;
-        htmlContent = `
+    case "points_deducted":
+      return {
+        subject: `⚠️ ${studentName} lost points for behavior`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #dc2626; text-align: center;">⚠️ Behavior Alert</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> had <strong style="color: #dc2626;">${data.points_deducted} points</strong> deducted by their teacher.
@@ -190,15 +176,16 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
+        `,
+      };
 
-      case "pledge_near_completion":
-        subject = `🔥 ${studentName} is almost at their reward goal!`;
-        htmlContent = `
+    case "pledge_near_completion":
+      return {
+        subject: `🔥 ${studentName} is almost at their reward goal!`,
+        htmlContent: `
           <html>
-            <body style="font-family: 'Nunito', Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <body style="${baseStyle}">
+              <div style="${containerStyle}">
                 <h1 style="color: #f59e0b; text-align: center;">🔥 Almost There!</h1>
                 <p style="font-size: 18px; color: #374151; text-align: center;">
                   <strong>${studentName}</strong> is <strong style="color: #f59e0b;">${data.progress_percent}%</strong> of the way to their reward!
@@ -227,87 +214,154 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </body>
           </html>
-        `;
-        break;
-    }
+        `,
+      };
 
-    // Get parent emails using admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-    
-    if (authError) {
-      console.log("Could not fetch user emails:", authError);
-      return new Response(JSON.stringify({ message: "Could not fetch parent emails" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    default:
+      // This should never be reached due to Zod validation
+      throw new Error(`Unknown notification type: ${type}`);
+  }
+}
 
-    const parentEmails = authData.users
-      .filter((u) => parentIds.includes(u.id))
-      .map((u) => ({ email: u.email, name: parentProfiles.find((p) => p.id === u.id)?.full_name || "Parent" }))
-      .filter((p): p is { email: string; name: string } => !!p.email);
+// ============================================================================
+// Main Handler
+// ============================================================================
 
-    if (parentEmails.length === 0) {
-      console.log("No parent emails found");
-      return new Response(JSON.stringify({ message: "No parent emails found" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Send emails via Brevo
-    const emailPromises = parentEmails.map(async (parent) => {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "api-key": brevoApiKey,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: {
-            name: "ScholarQuest",
-            email: "notifications@scholarquest.app",
-          },
-          to: [{ email: parent.email, name: parent.name }],
-          subject,
-          htmlContent,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Brevo API error:", errorText);
-        throw new Error(`Brevo API error: ${response.status}`);
-      }
-
-      return response.json();
+async function handleSendParentNotification(
+  _req: Request,
+  ctx: MiddlewareContext
+): Promise<Response> {
+  const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+  if (!brevoApiKey) {
+    return createErrorResponse("SERVICE_UNAVAILABLE", "BREVO_API_KEY not configured", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
     });
+  }
 
-    const results = await Promise.allSettled(emailPromises);
-    const successful = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
+  const supabase = createServiceClient();
+  const { type, student_id, data } = ctx.body as NotificationRequest;
 
-    console.log(`Sent ${successful} emails, ${failed} failed`);
+  // Get student info
+  const { data: studentProfile, error: studentError } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", student_id)
+    .single();
 
-    return new Response(
-      JSON.stringify({ message: `Sent ${successful} emails`, failed }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error in send-parent-notification:", error);
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+  if (studentError || !studentProfile) {
+    console.log("Student not found:", student_id);
+    return createErrorResponse("NOT_FOUND", "Student not found", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+    });
+  }
+
+  // Get linked parents
+  const { data: parentLinks, error: parentLinksError } = await supabase
+    .from("parent_students")
+    .select("parent_id")
+    .eq("student_id", student_id)
+    .eq("verified", true);
+
+  if (parentLinksError || !parentLinks || parentLinks.length === 0) {
+    console.log("No verified parents found for student:", student_id);
+    return createSuccessResponse(
+      { message: "No parents to notify" },
+      { cors: ctx.corsHeaders, requestId: ctx.requestId }
     );
   }
-};
 
-serve(handler);
+  // Get parent profiles
+  const parentIds = parentLinks.map((p: { parent_id: string }) => p.parent_id);
+  const { data: parentProfiles, error: parentProfilesError } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", parentIds);
+
+  if (parentProfilesError || !parentProfiles) {
+    console.log("Parent profiles not found");
+    return createErrorResponse("NOT_FOUND", "Parent profiles not found", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+    });
+  }
+
+  // Get parent emails using admin API
+  const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+
+  if (authError) {
+    console.log("Could not fetch user emails:", authError);
+    return createErrorResponse("INTERNAL_ERROR", "Could not fetch parent emails", {
+      cors: ctx.corsHeaders,
+      requestId: ctx.requestId,
+    });
+  }
+
+  const parentEmails: ParentEmail[] = authData.users
+    .filter((u: { id: string }) => parentIds.includes(u.id))
+    .map((u: { id: string; email?: string }) => ({
+      email: u.email || "",
+      name: parentProfiles.find((p: { id: string; full_name: string }) => p.id === u.id)?.full_name || "Parent",
+    }))
+    .filter((p: { email: string; name: string }): p is ParentEmail => !!p.email);
+
+  if (parentEmails.length === 0) {
+    console.log("No parent emails found");
+    return createSuccessResponse(
+      { message: "No parent emails found" },
+      { cors: ctx.corsHeaders, requestId: ctx.requestId }
+    );
+  }
+
+  // Build email content
+  const studentName = studentProfile.full_name;
+  const { subject, htmlContent } = buildEmailContent(type, studentName, data);
+
+  // Send emails via Brevo
+  const emailPromises = parentEmails.map(async (parent: ParentEmail) => {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": brevoApiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "ScholarQuest",
+          email: "notifications@scholarquest.app",
+        },
+        to: [{ email: parent.email, name: parent.name }],
+        subject,
+        htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Brevo API error:", errorText);
+      throw new Error(`Brevo API error: ${response.status}`);
+    }
+
+    return response.json();
+  });
+
+  const results = await Promise.allSettled(emailPromises);
+  const successful = results.filter((r: PromiseSettledResult<unknown>) => r.status === "fulfilled").length;
+  const failed = results.filter((r: PromiseSettledResult<unknown>) => r.status === "rejected").length;
+
+  console.log(`Sent ${successful} emails, ${failed} failed`);
+
+  return createSuccessResponse(
+    { message: `Sent ${successful} emails`, failed },
+    { cors: ctx.corsHeaders, requestId: ctx.requestId }
+  );
+}
+
+// Create and export the handler with middleware
+Deno.serve(
+  createHandler(handleSendParentNotification, {
+    middleware: [logRequest, parseBody(NotificationRequestSchema)],
+  })
+);
