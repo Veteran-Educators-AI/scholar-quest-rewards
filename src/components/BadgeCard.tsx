@@ -1,5 +1,18 @@
+/**
+ * BadgeCard Component
+ *
+ * Displays achievement badges with earned/locked states.
+ * Refactored to use common design tokens.
+ */
+
 import { motion } from "framer-motion";
-import { Award, Lock } from "lucide-react";
+import { Award, Lock, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CARD_SIZES, type Size } from "@/components/common/tokens/sizes";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface BadgeCardProps {
   name: string;
@@ -11,6 +24,38 @@ interface BadgeCardProps {
   className?: string;
 }
 
+// ============================================================================
+// Size Mappings
+// ============================================================================
+
+const BADGE_SIZES = {
+  sm: {
+    container: "w-20 h-20",
+    icon: "w-10 h-10",
+    text: "text-xs",
+    check: "w-5 h-5",
+    checkBadge: "w-5 h-5 -top-0.5 -right-0.5",
+  },
+  md: {
+    container: "w-28 h-28",
+    icon: "w-14 h-14",
+    text: "text-sm",
+    check: "w-4 h-4",
+    checkBadge: "w-6 h-6 -top-1 -right-1",
+  },
+  lg: {
+    container: "w-36 h-36",
+    icon: "w-20 h-20",
+    text: "text-base",
+    check: "w-5 h-5",
+    checkBadge: "w-7 h-7 -top-1 -right-1",
+  },
+};
+
+// ============================================================================
+// Component
+// ============================================================================
+
 export function BadgeCard({
   name,
   description,
@@ -20,38 +65,23 @@ export function BadgeCard({
   size = "md",
   className = "",
 }: BadgeCardProps) {
-  const sizeClasses = {
-    sm: {
-      container: "w-20 h-20",
-      icon: "w-10 h-10",
-      text: "text-xs",
-    },
-    md: {
-      container: "w-28 h-28",
-      icon: "w-14 h-14",
-      text: "text-sm",
-    },
-    lg: {
-      container: "w-36 h-36",
-      icon: "w-20 h-20",
-      text: "text-base",
-    },
-  };
-
-  const s = sizeClasses[size];
+  const s = BADGE_SIZES[size];
 
   return (
     <motion.div
-      className={`flex flex-col items-center gap-2 ${className}`}
+      className={cn("flex flex-col items-center gap-2", className)}
       whileHover={earned ? { scale: 1.05, y: -4 } : {}}
       whileTap={earned ? { scale: 0.98 } : {}}
     >
+      {/* Badge Icon Container */}
       <div
-        className={`${s.container} rounded-2xl flex items-center justify-center relative ${
+        className={cn(
+          s.container,
+          "rounded-2xl flex items-center justify-center relative",
           earned
             ? "bg-gradient-gold shadow-glow-gold"
             : "bg-muted"
-        }`}
+        )}
       >
         {earned ? (
           iconUrl ? (
@@ -60,38 +90,47 @@ export function BadgeCard({
               alt={name}
               loading="lazy"
               decoding="async"
-              className={`${s.icon} object-contain`}
+              className={cn(s.icon, "object-contain")}
             />
           ) : (
-            <Award className={`${s.icon} text-gold-foreground`} />
+            <Award className={cn(s.icon, "text-gold-foreground")} />
           )
         ) : (
           <>
-            <Lock className={`${s.icon} text-muted-foreground/50`} />
+            <Lock className={cn(s.icon, "text-muted-foreground/50")} />
             <div className="absolute inset-0 bg-foreground/5 rounded-2xl" />
           </>
         )}
-        
+
+        {/* Earned checkmark */}
         {earned && (
           <motion.div
-            className="absolute -top-1 -right-1 w-6 h-6 bg-success rounded-full flex items-center justify-center shadow-md"
+            className={cn(
+              "absolute bg-success rounded-full flex items-center justify-center shadow-md",
+              s.checkBadge
+            )}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 500, damping: 15 }}
           >
-            <svg className="w-4 h-4 text-success-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className={cn(s.check, "text-success-foreground")} />
           </motion.div>
         )}
       </div>
-      
+
+      {/* Badge Info */}
       <div className="text-center">
-        <p className={`${s.text} font-bold ${earned ? "text-foreground" : "text-muted-foreground"}`}>
+        <p
+          className={cn(
+            s.text,
+            "font-bold",
+            earned ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
           {name}
         </p>
         {description && (
-          <p className={`${s.text} text-muted-foreground line-clamp-2`}>
+          <p className={cn(s.text, "text-muted-foreground line-clamp-2")}>
             {description}
           </p>
         )}

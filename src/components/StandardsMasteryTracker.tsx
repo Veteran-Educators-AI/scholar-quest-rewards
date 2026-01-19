@@ -1,3 +1,10 @@
+/**
+ * StandardsMasteryTracker Component
+ *
+ * Detailed standards mastery view with subject breakdown.
+ * Refactored to use common design tokens.
+ */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Circle, Target, TrendingUp, BookOpen } from "lucide-react";
@@ -10,6 +17,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import {
+  getSubjectColors,
+  MASTERY_COLORS,
+  type MasteryLevel,
+} from "@/components/common/tokens/colors";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface StandardMastery {
   id: string;
@@ -34,12 +51,20 @@ interface StandardsMasteryTrackerProps {
   className?: string;
 }
 
-const MASTERY_LEVELS = {
-  not_started: { label: "Not Started", color: "bg-muted", textColor: "text-muted-foreground", icon: Circle },
-  developing: { label: "Developing", color: "bg-warning/20", textColor: "text-warning", icon: Target },
-  approaching: { label: "Approaching", color: "bg-primary/20", textColor: "text-primary", icon: TrendingUp },
-  mastered: { label: "Mastered", color: "bg-success/20", textColor: "text-success", icon: CheckCircle2 },
-};
+// ============================================================================
+// Mastery Level Icons
+// ============================================================================
+
+const MASTERY_ICONS = {
+  not_started: Circle,
+  developing: Target,
+  approaching: TrendingUp,
+  mastered: CheckCircle2,
+} as const;
+
+// ============================================================================
+// Component
+// ============================================================================
 
 export function StandardsMasteryTracker({
   studentId,
@@ -56,7 +81,6 @@ export function StandardsMasteryTracker({
 
   const fetchData = async () => {
     try {
-      // Fetch all standards for the grade band
       const { data: standards } = await supabase
         .from("nys_standards")
         .select("*")
@@ -64,7 +88,6 @@ export function StandardsMasteryTracker({
 
       setAllStandards(standards || []);
 
-      // Fetch mastery data if we have a student ID
       if (studentId) {
         const { data: mastery } = await supabase
           .from("student_standard_mastery")
@@ -84,15 +107,17 @@ export function StandardsMasteryTracker({
   };
 
   // Group standards by subject
-  const standardsBySubject = allStandards.reduce((acc: Record<string, any[]>, standard: any) => {
-    if (!acc[standard.subject]) {
-      acc[standard.subject] = [];
-    }
-    acc[standard.subject].push(standard);
-    return acc;
-  }, {} as Record<string, any[]>);
+  const standardsBySubject = allStandards.reduce(
+    (acc: Record<string, any[]>, standard: any) => {
+      if (!acc[standard.subject]) {
+        acc[standard.subject] = [];
+      }
+      acc[standard.subject].push(standard);
+      return acc;
+    },
+    {} as Record<string, any[]>
+  );
 
-  // Calculate stats
   const getMasteryForStandard = (standardId: string) => {
     return masteryData.find((m) => m.standard_id === standardId);
   };
@@ -149,29 +174,18 @@ export function StandardsMasteryTracker({
         </div>
 
         <div className="grid grid-cols-4 gap-4 mb-4">
-          <StatBox
-            label="Mastered"
-            value={overallStats.mastered}
-            total={overallStats.total}
-            color="success"
-          />
-          <StatBox
-            label="Approaching"
-            value={overallStats.approaching}
-            total={overallStats.total}
-            color="primary"
-          />
-          <StatBox
-            label="Developing"
-            value={overallStats.developing}
-            total={overallStats.total}
-            color="warning"
-          />
+          <StatBox label="Mastered" value={overallStats.mastered} level="mastered" />
+          <StatBox label="Approaching" value={overallStats.approaching} level="approaching" />
+          <StatBox label="Developing" value={overallStats.developing} level="developing" />
           <StatBox
             label="Not Started"
-            value={overallStats.total - overallStats.mastered - overallStats.approaching - overallStats.developing}
-            total={overallStats.total}
-            color="muted"
+            value={
+              overallStats.total -
+              overallStats.mastered -
+              overallStats.approaching -
+              overallStats.developing
+            }
+            level="not_started"
           />
         </div>
 
@@ -186,7 +200,11 @@ export function StandardsMasteryTracker({
             </span>
           </div>
           <Progress
-            value={overallStats.total > 0 ? (overallStats.mastered / overallStats.total) * 100 : 0}
+            value={
+              overallStats.total > 0
+                ? (overallStats.mastered / overallStats.total) * 100
+                : 0
+            }
             className="h-3"
           />
         </div>
@@ -194,10 +212,12 @@ export function StandardsMasteryTracker({
 
       {/* Standards by Subject */}
       <Accordion type="multiple" className="space-y-3">
-      {Object.entries(standardsBySubject).map(([subject, standards], index) => {
+        {Object.entries(standardsBySubject).map(([subject, standards], index) => {
           const standardsArray = standards as any[];
           const stats = calculateSubjectStats(standardsArray);
-          const progressPercent = stats.total > 0 ? (stats.mastered / stats.total) * 100 : 0;
+          const progressPercent =
+            stats.total > 0 ? (stats.mastered / stats.total) * 100 : 0;
+          const subjectColors = getSubjectColors(subject);
 
           return (
             <motion.div
@@ -214,17 +234,12 @@ export function StandardsMasteryTracker({
                   <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          subject === "Mathematics"
-                            ? "bg-primary/10 text-primary"
-                            : subject === "English Language Arts"
-                            ? "bg-secondary/10 text-secondary"
-                            : subject === "Science"
-                            ? "bg-success/10 text-success"
-                            : "bg-warning/10 text-warning"
-                        }`}
+                        className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center text-xl",
+                          subjectColors.bg
+                        )}
                       >
-                        <BookOpen className="w-5 h-5" />
+                        {subjectColors.icon}
                       </div>
                       <div className="text-left">
                         <p className="font-semibold text-foreground">{subject}</p>
@@ -242,17 +257,20 @@ export function StandardsMasteryTracker({
                   <div className="space-y-2 pt-2">
                     {standardsArray.map((standard: any) => {
                       const mastery = getMasteryForStandard(standard.id);
-                      const level = mastery?.mastery_level || "not_started";
-                      const levelConfig = MASTERY_LEVELS[level as keyof typeof MASTERY_LEVELS];
-                      const Icon = levelConfig.icon;
+                      const level = (mastery?.mastery_level || "not_started") as MasteryLevel;
+                      const levelColors = MASTERY_COLORS[level];
+                      const Icon = MASTERY_ICONS[level];
 
                       return (
                         <div
                           key={standard.id}
-                          className={`p-3 rounded-lg border ${levelConfig.color} border-transparent`}
+                          className={cn(
+                            "p-3 rounded-lg border border-transparent",
+                            levelColors.bg
+                          )}
                         >
                           <div className="flex items-start gap-3">
-                            <Icon className={`w-5 h-5 mt-0.5 ${levelConfig.textColor}`} />
+                            <Icon className={cn("w-5 h-5 mt-0.5", levelColors.text)} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <Badge variant="outline" className="font-mono text-xs">
@@ -260,9 +278,9 @@ export function StandardsMasteryTracker({
                                 </Badge>
                                 <Badge
                                   variant="secondary"
-                                  className={`text-xs ${levelConfig.textColor}`}
+                                  className={cn("text-xs", levelColors.text)}
                                 >
-                                  {levelConfig.label}
+                                  {levelColors.label}
                                 </Badge>
                                 {mastery && mastery.attempts_count > 0 && (
                                   <span className="text-xs text-muted-foreground">
@@ -289,28 +307,25 @@ export function StandardsMasteryTracker({
   );
 }
 
+// ============================================================================
+// Helper Components
+// ============================================================================
+
 function StatBox({
   label,
   value,
-  total,
-  color,
+  level,
 }: {
   label: string;
   value: number;
-  total: number;
-  color: "success" | "primary" | "warning" | "muted";
+  level: MasteryLevel;
 }) {
-  const colorClasses = {
-    success: "bg-success/10 text-success",
-    primary: "bg-primary/10 text-primary",
-    warning: "bg-warning/10 text-warning",
-    muted: "bg-muted text-muted-foreground",
-  };
+  const colors = MASTERY_COLORS[level];
 
   return (
-    <div className={`rounded-xl p-3 text-center ${colorClasses[color]}`}>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs">{label}</p>
+    <div className={cn("rounded-xl p-3 text-center", colors.bg)}>
+      <p className={cn("text-2xl font-bold", colors.text)}>{value}</p>
+      <p className={cn("text-xs", colors.text)}>{label}</p>
     </div>
   );
 }

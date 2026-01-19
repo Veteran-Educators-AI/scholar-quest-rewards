@@ -4,8 +4,9 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthRedirectWrapper } from "@/components/AuthRedirectWrapper";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { queryClient } from "@/lib/query";
 import PageLoader from "./components/PageLoader";
 
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
@@ -41,8 +42,6 @@ const AdminClasses = lazy(() => import("./pages/AdminClasses"));
 const AdminGeoBloxIntegration = lazy(() => import("./pages/AdminGeoBloxIntegration"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PrivateLayout = lazy(() => import("./layouts/PrivateLayout"));
-
-const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

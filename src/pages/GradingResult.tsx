@@ -1,3 +1,10 @@
+/**
+ * GradingResult Page
+ *
+ * Displays assignment grading results with score and rewards.
+ * Refactored to use common design tokens for grade colors.
+ */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -8,6 +15,9 @@ import { Confetti } from "@/components/Confetti";
 import { ArrowLeft, Check, X, RefreshCw, Star, Trophy, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSyncToNYCologic } from "@/hooks/useSyncToNYCologic";
+import { getGradeColors } from "@/components/common/tokens/colors";
+import { RewardBadge } from "@/components/common/RewardDisplay";
+import { cn } from "@/lib/utils";
 
 interface GradingData {
   score: number;
@@ -208,16 +218,22 @@ export default function GradingResult() {
             transition={{ delay: 0.3, type: "spring" }}
             className="mt-8"
           >
-            <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center ${
-              gradingData.meetsThreshold 
-                ? "bg-gradient-to-br from-success to-success/80" 
-                : "bg-gradient-to-br from-warning to-warning/80"
-            }`}>
-              <div className="text-center text-white">
-                <p className="text-4xl font-extrabold">{gradingData.percentage}%</p>
-                <p className="text-sm opacity-80">{gradingData.score}/{gradingData.totalQuestions}</p>
-              </div>
-            </div>
+            {(() => {
+              const gradeColors = getGradeColors(gradingData.percentage);
+              return (
+                <div className={cn(
+                  "w-32 h-32 mx-auto rounded-full flex items-center justify-center",
+                  gradingData.meetsThreshold
+                    ? "bg-gradient-to-br from-success to-success/80"
+                    : "bg-gradient-to-br from-warning to-warning/80"
+                )}>
+                  <div className="text-center text-white">
+                    <p className="text-4xl font-extrabold">{gradingData.percentage}%</p>
+                    <p className="text-sm opacity-80">{gradingData.score}/{gradingData.totalQuestions}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </motion.div>
 
           {/* Result Message */}
@@ -227,12 +243,17 @@ export default function GradingResult() {
             transition={{ delay: 0.5 }}
             className="mt-6"
           >
-            <h1 className={`text-2xl font-extrabold ${
-              gradingData.meetsThreshold ? "text-success" : "text-warning"
-            }`}>
-              {gradingData.meetsThreshold ? "You Passed!" : "Almost There!"}
-            </h1>
-            <p className="text-muted-foreground mt-2">{gradingData.feedback}</p>
+            {(() => {
+              const gradeColors = getGradeColors(gradingData.percentage);
+              return (
+                <>
+                  <h1 className={cn("text-2xl font-extrabold", gradeColors.text)}>
+                    {gradingData.meetsThreshold ? "You Passed!" : "Almost There!"}
+                  </h1>
+                  <p className="text-muted-foreground mt-2">{gradingData.feedback}</p>
+                </>
+              );
+            })()}
           </motion.div>
 
           {/* Progress to threshold */}
@@ -260,17 +281,13 @@ export default function GradingResult() {
               className="mt-6 bg-gradient-gold rounded-2xl p-6 shadow-glow-gold"
             >
               <p className="text-gold-foreground font-bold text-lg mb-4">Rewards Ready!</p>
-              <div className="flex items-center justify-center gap-8">
-                <div className="text-center">
-                  <Star className="w-8 h-8 text-gold-foreground mx-auto mb-1" />
-                  <p className="text-xl font-extrabold text-gold-foreground">+{gradingData.xpEarned}</p>
-                  <p className="text-sm text-gold-foreground/80">XP</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-3xl">🪙</span>
-                  <p className="text-xl font-extrabold text-gold-foreground">+{gradingData.coinsEarned}</p>
-                  <p className="text-sm text-gold-foreground/80">Coins</p>
-                </div>
+              <div className="flex items-center justify-center">
+                <RewardBadge
+                  xp={gradingData.xpEarned}
+                  coins={gradingData.coinsEarned}
+                  size="lg"
+                  showPlus
+                />
               </div>
             </motion.div>
           )}

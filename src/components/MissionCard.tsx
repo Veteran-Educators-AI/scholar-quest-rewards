@@ -1,6 +1,23 @@
+/**
+ * MissionCard Component
+ *
+ * Displays assignment/mission information with status, rewards, and actions.
+ * Refactored to use common design tokens and components.
+ */
+
 import { motion } from "framer-motion";
-import { Clock, Star, FileText, Smartphone } from "lucide-react";
+import { Clock, FileText, Smartphone, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RewardBadge } from "@/components/common/RewardDisplay";
+import {
+  getSubjectColors,
+  STATUS_COLORS,
+  type Status,
+} from "@/components/common/tokens/colors";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface MissionCardProps {
   title: string;
@@ -10,10 +27,14 @@ interface MissionCardProps {
   coinReward: number;
   hasPrintable?: boolean;
   hasInApp?: boolean;
-  status?: "not_started" | "in_progress" | "submitted" | "completed";
+  status?: Status;
   onStart?: () => void;
   className?: string;
 }
+
+// ============================================================================
+// Component
+// ============================================================================
 
 export function MissionCard({
   title,
@@ -27,11 +48,15 @@ export function MissionCard({
   onStart,
   className = "",
 }: MissionCardProps) {
+  // Time calculations
   const now = new Date();
   const isOverdue = dueAt < now;
-  const hoursUntilDue = Math.max(0, Math.floor((dueAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
+  const hoursUntilDue = Math.max(
+    0,
+    Math.floor((dueAt.getTime() - now.getTime()) / (1000 * 60 * 60))
+  );
   const daysUntilDue = Math.floor(hoursUntilDue / 24);
-  
+
   const timeText = isOverdue
     ? "Overdue"
     : daysUntilDue > 0
@@ -40,29 +65,20 @@ export function MissionCard({
     ? `${hoursUntilDue}h left`
     : "Due soon!";
 
-  const subjectEmojis: Record<string, string> = {
-    math: "🔢",
-    reading: "📖",
-    science: "🔬",
-    writing: "✏️",
-    history: "🏛️",
-    art: "🎨",
-    music: "🎵",
-    default: "📚",
-  };
+  // Get colors from design tokens
+  const subjectColors = getSubjectColors(subject);
+  const statusColors = STATUS_COLORS[status];
 
-  const emoji = subjectEmojis[subject.toLowerCase()] || subjectEmojis.default;
-
-  const statusStyles = {
-    not_started: "",
-    in_progress: "border-primary",
-    submitted: "border-warning",
-    completed: "border-success bg-success/5",
-  };
+  // Time urgency color
+  const timeColorClass = isOverdue
+    ? "text-destructive"
+    : hoursUntilDue < 24
+    ? "text-warning"
+    : "text-muted-foreground";
 
   return (
     <motion.div
-      className={`bg-card rounded-2xl border-2 ${statusStyles[status]} shadow-md overflow-hidden ${className}`}
+      className={`bg-card rounded-2xl border-2 ${statusColors.border} shadow-md overflow-hidden ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
@@ -72,47 +88,44 @@ export function MissionCard({
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-2xl shadow-glow-primary">
-              {emoji}
+            <div
+              className={`w-12 h-12 rounded-xl ${subjectColors.bg} flex items-center justify-center text-2xl shadow-sm`}
+            >
+              {subjectColors.icon}
             </div>
             <div>
-              <h3 className="font-bold text-foreground text-lg line-clamp-1">{title}</h3>
-              <p className="text-sm text-muted-foreground capitalize">{subject}</p>
+              <h3 className="font-bold text-foreground text-lg line-clamp-1">
+                {title}
+              </h3>
+              <p className={`text-sm ${subjectColors.text} capitalize font-medium`}>
+                {subject}
+              </p>
             </div>
           </div>
-          
+
           {status === "completed" && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               className="w-8 h-8 bg-success rounded-full flex items-center justify-center"
             >
-              <svg className="w-5 h-5 text-success-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckCircle2 className="w-5 h-5 text-success-foreground" />
             </motion.div>
           )}
         </div>
 
         {/* Due time */}
-        <div className={`flex items-center gap-2 mb-4 ${isOverdue ? "text-destructive" : hoursUntilDue < 24 ? "text-warning" : "text-muted-foreground"}`}>
+        <div className={`flex items-center gap-2 mb-4 ${timeColorClass}`}>
           <Clock className="w-4 h-4" />
           <span className="text-sm font-medium">{timeText}</span>
         </div>
 
-        {/* Rewards */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-1.5 bg-gold/10 px-3 py-1.5 rounded-full">
-            <Star className="w-4 h-4 text-gold fill-gold" />
-            <span className="text-sm font-bold text-gold">{xpReward} XP</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-warning/10 px-3 py-1.5 rounded-full">
-            <span className="text-sm">🪙</span>
-            <span className="text-sm font-bold text-warning">{coinReward}</span>
-          </div>
+        {/* Rewards - using RewardBadge from common components */}
+        <div className="mb-4">
+          <RewardBadge xp={xpReward} coins={coinReward} size="sm" />
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons based on status */}
         {status === "not_started" && (
           <div className="flex gap-2">
             {hasPrintable && (
@@ -138,13 +151,17 @@ export function MissionCard({
 
         {status === "submitted" && (
           <div className="text-center py-2">
-            <span className="text-sm font-medium text-warning">⏳ Waiting for teacher review</span>
+            <span className="text-sm font-medium text-warning">
+              ⏳ Waiting for teacher review
+            </span>
           </div>
         )}
 
         {status === "completed" && (
           <div className="text-center py-2">
-            <span className="text-sm font-medium text-success">✨ Mission Complete!</span>
+            <span className="text-sm font-medium text-success">
+              ✨ Mission Complete!
+            </span>
           </div>
         )}
       </div>

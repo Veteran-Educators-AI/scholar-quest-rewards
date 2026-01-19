@@ -1,7 +1,21 @@
-import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+/**
+ * CollectibleCard Component
+ *
+ * Displays collectible items with rarity-based styling.
+ * Refactored to use common design tokens.
+ */
 
-type Rarity = "common" | "rare" | "epic" | "legendary";
+import { motion } from "framer-motion";
+import { Sparkles, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  RARITY_COLORS,
+  type Rarity,
+} from "@/components/common/tokens/colors";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface CollectibleCardProps {
   name: string;
@@ -12,6 +26,10 @@ interface CollectibleCardProps {
   className?: string;
 }
 
+// ============================================================================
+// Component
+// ============================================================================
+
 export function CollectibleCard({
   name,
   description,
@@ -20,68 +38,41 @@ export function CollectibleCard({
   earned = true,
   className = "",
 }: CollectibleCardProps) {
-  const rarityStyles: Record<Rarity, { bg: string; border: string; glow: string; label: string }> = {
-    common: {
-      bg: "bg-muted",
-      border: "border-rarity-common",
-      glow: "",
-      label: "Common",
-    },
-    rare: {
-      bg: "bg-gradient-to-br from-blue-500/10 to-blue-600/10",
-      border: "border-rarity-rare",
-      glow: "shadow-[0_0_20px_hsl(217_91%_60%/0.3)]",
-      label: "Rare",
-    },
-    epic: {
-      bg: "bg-gradient-to-br from-purple-500/10 to-purple-600/10",
-      border: "border-rarity-epic",
-      glow: "shadow-[0_0_20px_hsl(262_83%_58%/0.4)]",
-      label: "Epic",
-    },
-    legendary: {
-      bg: "bg-gradient-to-br from-yellow-500/10 to-orange-500/10",
-      border: "border-rarity-legendary",
-      glow: "shadow-[0_0_30px_hsl(43_96%_56%/0.5)]",
-      label: "Legendary",
-    },
-  };
-
-  const style = rarityStyles[rarity];
+  // Get colors from design tokens
+  const colors = RARITY_COLORS[rarity];
 
   return (
     <motion.div
-      className={`relative ${className}`}
+      className={cn("relative", className)}
       whileHover={earned ? { scale: 1.03, y: -4 } : {}}
       whileTap={earned ? { scale: 0.98 } : {}}
     >
       <div
-        className={`
-          relative overflow-hidden rounded-2xl border-2 ${style.border} ${style.bg}
-          ${earned ? style.glow : "opacity-50 grayscale"}
-          transition-all duration-300
-        `}
+        className={cn(
+          "relative overflow-hidden rounded-2xl border-2 transition-all duration-300",
+          colors.border,
+          colors.bg,
+          earned ? colors.glow : "opacity-50 grayscale"
+        )}
       >
         {/* Card content */}
         <div className="aspect-[3/4] p-4 flex flex-col">
           {/* Rarity indicator */}
           <div className="flex items-center justify-between mb-2">
             <span
-              className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
-                ${rarity === "common" ? "bg-rarity-common/20 text-rarity-common" : ""}
-                ${rarity === "rare" ? "bg-rarity-rare/20 text-rarity-rare" : ""}
-                ${rarity === "epic" ? "bg-rarity-epic/20 text-rarity-epic" : ""}
-                ${rarity === "legendary" ? "bg-rarity-legendary/20 text-rarity-legendary" : ""}
-              `}
+              className={cn(
+                "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                `${colors.bg} ${colors.text}`
+              )}
             >
-              {style.label}
+              {colors.label}
             </span>
             {rarity === "legendary" && earned && (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
               >
-                <Sparkles className="w-4 h-4 text-rarity-legendary" />
+                <Sparkles className={cn("w-4 h-4", colors.text)} />
               </motion.div>
             )}
           </div>
@@ -105,9 +96,13 @@ export function CollectibleCard({
 
           {/* Card info */}
           <div className="text-center">
-            <h3 className="font-bold text-foreground text-sm line-clamp-1">{name}</h3>
+            <h3 className="font-bold text-foreground text-sm line-clamp-1">
+              {name}
+            </h3>
             {description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{description}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                {description}
+              </p>
             )}
           </div>
         </div>
@@ -122,10 +117,13 @@ export function CollectibleCard({
       {!earned && (
         <div className="absolute inset-0 flex items-center justify-center bg-foreground/5 rounded-2xl">
           <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-            <span className="text-2xl">🔒</span>
+            <Lock className="w-6 h-6 text-muted-foreground" />
           </div>
         </div>
       )}
     </motion.div>
   );
 }
+
+// Re-export Rarity type for consumers
+export type { Rarity };
