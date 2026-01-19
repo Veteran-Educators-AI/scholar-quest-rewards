@@ -1,96 +1,83 @@
-/**
- * Sync to NYCologic Edge Function
- *
- * Syncs data from ScholarQuest to NYCologic AI parent app.
- * Supports assignment completed, student progress, badge earned, and mastery updates.
- */
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import {
-  createHandler,
-  logRequest,
-  parseBody,
-  createSuccessResponse,
-  createErrorResponse,
-  type MiddlewareContext,
-} from "../_shared/index.ts";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-// ============================================================================
-// Types & Validation
-// ============================================================================
-
-const SyncTypeSchema = z.enum([
-  "assignment_completed",
-  "student_progress",
-  "badge_earned",
-  "mastery_update",
-]);
-
-const SyncPayloadSchema = z.object({
-  type: SyncTypeSchema,
-  data: z.record(z.unknown()),
-});
-
-type SyncPayload = z.infer<typeof SyncPayloadSchema>;
-
-// ============================================================================
-// Main Handler
-// ============================================================================
-
-async function handleSyncToNycologic(
-  _req: Request,
-  ctx: MiddlewareContext
-): Promise<Response> {
-  const nycologicApiUrl = Deno.env.get("NYCOLOGIC_API_URL");
-
-  if (!nycologicApiUrl) {
-    return createErrorResponse("SERVICE_UNAVAILABLE", "NYCOLOGIC_API_URL not configured", {
-      cors: ctx.corsHeaders,
-      requestId: ctx.requestId,
-    });
-  }
-
-  const payload = ctx.body as SyncPayload;
-  console.log(`Syncing ${payload.type} to NYCologic AI...`);
-
-  // Send data to NYCologic AI parent app
-  const response = await fetch(nycologicApiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-source-app": "scholar-app",
-    },
-    body: JSON.stringify({
-      source: "scholar-app",
-      timestamp: new Date().toISOString(),
-      event_type: payload.type,
-      data: payload.data,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("NYCologic API error:", errorText);
-    return createErrorResponse("EXTERNAL_SERVICE_ERROR", "Failed to sync with NYCologic", {
-      cors: ctx.corsHeaders,
-      requestId: ctx.requestId,
-      status: 502,
-      details: { nycologic_status: response.status, response: errorText },
-    });
-  }
-
-  const result = await response.json();
-  console.log("Sync successful:", result);
-
-  return createSuccessResponse(
-    { synced_at: new Date().toISOString(), nycologic_response: result },
-    { cors: ctx.corsHeaders, requestId: ctx.requestId }
-  );
+interface SyncPayload {
+  type: "assignment_completed" | "student_progress" | "badge_earned" | "mastery_update";
+  data: Record<string, unknown>;
 }
 
-// Create and export the handler with middleware
-Deno.serve(
-  createHandler(handleSyncToNycologic, {
-    middleware: [logRequest, parseBody(SyncPayloadSchema)],
-  })
-);
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const nycologicApiUrl = Deno.env.get("NYCOLOGIC_API_URL");
+
+    if (!nycologicApiUrl) {
+      return new Response(
+        JSON.stringify({ error: "NYCOLOGIC_API_URL not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const payload: SyncPayload = await req.json();
+
+    console.log(`Syncing ${payload.type} to NYCologic AI...`);
+
+    // Send data to NYCologic AI parent app
+    const response = await fetch(nycologicApiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-source-app": "scholar-app",
+      },
+      body: JSON.stringify({
+        source: "scholar-app",
+        timestamp: new Date().toISOString(),
+        event_type: payload.type,
+        data: payload.data,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("NYCologic API error:", errorText);
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to sync with NYCologic", 
+          status: response.status,
+          details: errorText 
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const result = await response.json();
+    console.log("Sync successful:", result);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        synced_at: new Date().toISOString(),
+        nycologic_response: result 
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (error) {
+    console.error("Sync error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(
+      JSON.stringify({ error: "Internal server error", details: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

@@ -1,39 +1,42 @@
-/**
- * Send Welcome Email Edge Function
- *
- * Sends a welcome email to new students via Brevo SMTP API.
- */
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import {
-  createHandler,
-  logRequest,
-  parseBody,
-  createSuccessResponse,
-  createErrorResponse,
-  type MiddlewareContext,
-} from "../_shared/index.ts";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-// ============================================================================
-// Types & Validation
-// ============================================================================
+interface WelcomeEmailRequest {
+  student_id: string;
+  student_name: string;
+  student_email: string;
+  class_name?: string;
+  teacher_name?: string;
+}
 
-const WelcomeEmailRequestSchema = z.object({
-  student_id: z.string().uuid(),
-  student_name: z.string().min(1),
-  student_email: z.string().email(),
-  class_name: z.string().optional(),
-  teacher_name: z.string().optional(),
-});
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-type WelcomeEmailRequest = z.infer<typeof WelcomeEmailRequestSchema>;
+  try {
+    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+    if (!brevoApiKey) {
+      throw new Error("BREVO_API_KEY not configured");
+    }
 
-// ============================================================================
-// Email Template
-// ============================================================================
+    const { student_id, student_name, student_email, class_name, teacher_name }: WelcomeEmailRequest = await req.json();
 
-function buildWelcomeEmailHtml(firstName: string, className?: string, teacherName?: string): string {
-  return `
+    if (!student_email) {
+      return new Response(
+        JSON.stringify({ error: "No email provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const firstName = student_name?.split(" ")[0] || "Scholar";
+
+    const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -49,30 +52,30 @@ function buildWelcomeEmailHtml(firstName: string, className?: string, teacherNam
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">Welcome to ScholarQuest!</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎓 Welcome to ScholarQuest!</h1>
               <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Your learning adventure begins now</p>
             </td>
           </tr>
-
+          
           <!-- Content -->
           <tr>
             <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px; font-size: 18px; color: #18181b;">Hey ${firstName}!</p>
-
+              <p style="margin: 0 0 20px; font-size: 18px; color: #18181b;">Hey ${firstName}! 👋</p>
+              
               <p style="margin: 0 0 20px; font-size: 16px; color: #52525b; line-height: 1.6;">
-                You've just joined an awesome learning community where studying pays off—literally!
+                You've just joined an awesome learning community where studying pays off—literally! 
                 Complete assignments, master standards, and earn coins & XP along the way.
               </p>
 
-              ${className ? `
+              ${class_name ? `
               <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #166534; font-size: 14px; font-weight: 600;">Your Class</p>
-                <p style="margin: 8px 0 0; color: #15803d; font-size: 16px;">${className}${teacherName ? ` with ${teacherName}` : ''}</p>
+                <p style="margin: 0; color: #166534; font-size: 14px; font-weight: 600;">📚 Your Class</p>
+                <p style="margin: 8px 0 0; color: #15803d; font-size: 16px;">${class_name}${teacher_name ? ` with ${teacher_name}` : ''}</p>
               </div>
               ` : ''}
 
-              <h2 style="margin: 30px 0 15px; font-size: 18px; color: #18181b;">Getting Started</h2>
-
+              <h2 style="margin: 30px 0 15px; font-size: 18px; color: #18181b;">🚀 Getting Started</h2>
+              
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
@@ -123,7 +126,7 @@ function buildWelcomeEmailHtml(firstName: string, className?: string, teacherNam
 
               <!-- CTA Button -->
               <div style="text-align: center; margin: 35px 0 20px;">
-                <a href="https://scholar-quest-rewards.lovable.app/student" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Start Learning Now</a>
+                <a href="https://scholar-quest-rewards.lovable.app/student" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Start Learning Now →</a>
               </div>
 
               <p style="margin: 30px 0 0; font-size: 14px; color: #a1a1aa; text-align: center;">
@@ -131,12 +134,12 @@ function buildWelcomeEmailHtml(firstName: string, className?: string, teacherNam
               </p>
             </td>
           </tr>
-
+          
           <!-- Footer -->
           <tr>
             <td style="background-color: #f4f4f5; padding: 20px 30px; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: #71717a;">
-                ScholarQuest - Making learning rewarding
+                ScholarQuest • Making learning rewarding 🏆
               </p>
             </td>
           </tr>
@@ -146,77 +149,47 @@ function buildWelcomeEmailHtml(firstName: string, className?: string, teacherNam
   </table>
 </body>
 </html>
-  `;
-}
+    `;
 
-// ============================================================================
-// Main Handler
-// ============================================================================
-
-async function handleSendWelcomeEmail(
-  _req: Request,
-  ctx: MiddlewareContext
-): Promise<Response> {
-  const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-  if (!brevoApiKey) {
-    return createErrorResponse("SERVICE_UNAVAILABLE", "BREVO_API_KEY not configured", {
-      cors: ctx.corsHeaders,
-      requestId: ctx.requestId,
-    });
-  }
-
-  const { student_name, student_email, class_name, teacher_name } = ctx.body as WelcomeEmailRequest;
-
-  if (!student_email) {
-    return createErrorResponse("VALIDATION_ERROR", "No email provided", {
-      cors: ctx.corsHeaders,
-      requestId: ctx.requestId,
-    });
-  }
-
-  const firstName = student_name?.split(" ")[0] || "Scholar";
-  const htmlContent = buildWelcomeEmailHtml(firstName, class_name, teacher_name);
-
-  // Send email via Brevo
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "api-key": brevoApiKey,
-    },
-    body: JSON.stringify({
-      sender: {
-        name: "ScholarQuest",
-        email: "noreply@scholarquest.app",
+    // Send email via Brevo
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "api-key": brevoApiKey,
       },
-      to: [{ email: student_email, name: student_name }],
-      subject: `Welcome to ScholarQuest, ${firstName}!`,
-      htmlContent,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.text();
-    console.error("Brevo error:", errorData);
-    return createErrorResponse("EXTERNAL_SERVICE_ERROR", `Failed to send email: ${response.status}`, {
-      cors: ctx.corsHeaders,
-      requestId: ctx.requestId,
+      body: JSON.stringify({
+        sender: {
+          name: "ScholarQuest",
+          email: "noreply@scholarquest.app",
+        },
+        to: [{ email: student_email, name: student_name }],
+        subject: `🎓 Welcome to ScholarQuest, ${firstName}!`,
+        htmlContent,
+      }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Brevo error:", errorData);
+      throw new Error(`Failed to send email: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Welcome email sent successfully:", result);
+
+    return new Response(
+      JSON.stringify({ success: true, messageId: result.messageId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    console.error("Error sending welcome email:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
+};
 
-  const result = await response.json();
-  console.log("Welcome email sent successfully:", result);
-
-  return createSuccessResponse(
-    { messageId: result.messageId },
-    { cors: ctx.corsHeaders, requestId: ctx.requestId }
-  );
-}
-
-// Create and export the handler with middleware
-Deno.serve(
-  createHandler(handleSendWelcomeEmail, {
-    middleware: [logRequest, parseBody(WelcomeEmailRequestSchema)],
-  })
-);
+serve(handler);
