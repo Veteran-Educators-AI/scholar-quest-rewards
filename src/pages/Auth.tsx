@@ -7,12 +7,15 @@ import { Label } from "@/components/ui/label";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Shield, Loader2 } from "lucide-react";
+import { useRateLimit, formatLockoutTime } from "@/hooks/useRateLimit";
+import { validatePassword } from "@/lib/passwordValidation";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Loader2, AlertTriangle } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
-type UserRole = "student" | "parent" | "admin";
+type UserRole = "student" | "parent";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,13 +37,15 @@ export default function Auth() {
 
   const [mode, setMode] = useState<AuthMode>(urlMode === "reset" ? "reset" : "login");
   const [role, setRole] = useState<UserRole>(
-    urlRole === "parent" ? "parent" : urlRole === "admin" ? "admin" : "student"
+    urlRole === "parent" ? "parent" : "student"
   );
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
+  const { checkRateLimit, recordAttempt, rateLimitStatus } = useRateLimit();
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -60,8 +65,15 @@ export default function Auth() {
       toast({ title: "Invalid email", description: "Please enter a valid email.", variant: "destructive" });
       return;
     }
-    if (password.length < 6) {
-      toast({ title: "Weak password", description: "Password must be at least 6 characters.", variant: "destructive" });
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Weak password",
+        description: `Password requirements: ${passwordValidation.errors.slice(0, 2).join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -83,11 +95,8 @@ export default function Auth() {
       }
 
       if (data.user) {
-        await Promise.allSettled([
-          supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName, role }, { onConflict: "id" }),
-          supabase.from("user_roles").upsert({ user_id: data.user.id, role }, { onConflict: "user_id" }),
-        ]);
-
+        // Profile and user_roles are created by database trigger (handle_new_user)
+        // No need for client-side inserts - this prevents race conditions
         toast({ title: "Welcome!", description: "Your account has been created." });
         navigate(getTargetPath(role));
       }
@@ -104,16 +113,39 @@ export default function Auth() {
       return;
     }
 
+    // Check rate limit before attempting login
+    const rateLimit = await checkRateLimit(email);
+    if (!rateLimit.isAllowed) {
+      toast({
+        title: "Too many attempts",
+        description: `Please try again in ${formatLockoutTime(rateLimit.lockoutUntil!)}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        toast({ title: "Login failed", description: "Invalid email or password.", variant: "destructive" });
+        // Record failed attempt
+        await recordAttempt(email, false);
+        const remaining = (rateLimit.attemptsRemaining ?? 5) - 1;
+        toast({
+          title: "Login failed",
+          description: remaining > 0
+            ? `Invalid email or password. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining.`
+            : "Account locked. Please try again later.",
+          variant: "destructive",
+        });
         return;
       }
 
       if (data.user) {
+        // Record successful login (clears failed attempts)
+        await recordAttempt(email, true);
+
         const userRole = data.user.user_metadata?.role || "student";
 
         if (userRole === "teacher") {
@@ -156,8 +188,14 @@ export default function Auth() {
   };
 
   const handlePasswordReset = async () => {
-    if (password.length < 6) {
-      toast({ title: "Weak password", description: "Password must be at least 6 characters.", variant: "destructive" });
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Weak password",
+        description: `Password requirements: ${passwordValidation.errors.slice(0, 2).join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
     if (password !== confirmPassword) {
@@ -238,7 +276,7 @@ export default function Auth() {
             <p className="text-muted-foreground text-sm mt-1">{subtitles[mode]}</p>
           </div>
 
-          {role !== "admin" && mode !== "forgot" && mode !== "reset" && (
+          {mode !== "forgot" && mode !== "reset" && (
             <div className="grid grid-cols-2 gap-2 mb-6">
               <Button
                 type="button"
@@ -258,13 +296,6 @@ export default function Auth() {
                 <Heart className="w-4 h-4 mr-1" />
                 Parent
               </Button>
-            </div>
-          )}
-
-          {role === "admin" && (
-            <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-muted rounded-lg">
-              <Shield className="w-5 h-5 text-primary" />
-              <span className="font-medium">Admin Login</span>
             </div>
           )}
 
@@ -320,6 +351,7 @@ export default function Auth() {
                     disabled={loading}
                   />
                 </div>
+                {mode === "signup" && <PasswordStrengthIndicator password={password} />}
               </div>
             )}
 
@@ -339,6 +371,7 @@ export default function Auth() {
                       disabled={loading}
                     />
                   </div>
+                  <PasswordStrengthIndicator password={password} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
