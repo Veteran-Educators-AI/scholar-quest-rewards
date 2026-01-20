@@ -8,15 +8,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Sparkles, 
-  GraduationCap, 
-  BookOpen, 
-  Calculator, 
-  Palette, 
-  Music, 
+import { ClassBrowser } from "@/components/ClassBrowser";
+import {
+  Sparkles,
+  GraduationCap,
+  BookOpen,
+  Calculator,
+  Palette,
+  Music,
   Globe,
   ArrowRight,
   ArrowLeft,
@@ -25,7 +27,8 @@ import {
   Rocket,
   Users,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Search
 } from "lucide-react";
 
 interface OnboardingData {
@@ -169,6 +172,65 @@ export default function StudentOnboarding() {
     }
   };
 
+  const handleBrowseJoin = async (classId: string, className: string) => {
+    setJoiningClass(true);
+    setClassJoinResult(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      // Check if already enrolled
+      const { data: existingEnrollment } = await supabase
+        .from("enrollments")
+        .select("id")
+        .eq("student_id", user.id)
+        .eq("class_id", classId)
+        .single();
+
+      if (existingEnrollment) {
+        setClassJoinResult({
+          success: true,
+          className,
+          error: "You're already enrolled in this class!",
+        });
+        setJoiningClass(false);
+        return;
+      }
+
+      // Enroll the student
+      const { error: enrollError } = await supabase
+        .from("enrollments")
+        .insert({
+          student_id: user.id,
+          class_id: classId,
+        });
+
+      if (enrollError) throw enrollError;
+
+      setClassJoinResult({
+        success: true,
+        className,
+      });
+
+      toast({
+        title: "Joined class!",
+        description: `You're now enrolled in ${className}`,
+      });
+    } catch (error) {
+      console.error("Error joining class:", error);
+      setClassJoinResult({
+        success: false,
+        error: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setJoiningClass(false);
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
@@ -262,7 +324,7 @@ export default function StudentOnboarding() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg"
+        className={`w-full transition-all duration-300 ${currentStep === 0 ? "max-w-2xl" : "max-w-lg"}`}
       >
         {/* Progress Header */}
         <div className="mb-6">
@@ -282,7 +344,7 @@ export default function StudentOnboarding() {
 
         <Card className="border-2 border-border shadow-lg">
           <AnimatePresence mode="wait">
-            {/* Step 0: Class Code */}
+            {/* Step 0: Join Class */}
             {currentStep === 0 && (
               <motion.div
                 key="classCode"
@@ -296,67 +358,119 @@ export default function StudentOnboarding() {
                   </div>
                   <CardTitle className="text-2xl">Join Your Class</CardTitle>
                   <CardDescription>
-                    Enter the class code from your teacher to join their class
+                    Browse available classes or enter a code from your teacher
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="classCode" className="text-sm font-medium">
-                      Class Code
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="classCode"
-                        placeholder="Enter code (e.g., ABC123)"
-                        value={data.classCode}
-                        onChange={(e) => {
-                          setData({ ...data, classCode: e.target.value.toUpperCase() });
-                          setClassJoinResult(null);
-                        }}
-                        className="text-center text-lg font-mono tracking-widest uppercase"
-                        maxLength={10}
-                        disabled={joiningClass}
-                      />
-                      <Button
-                        onClick={handleJoinClass}
-                        disabled={!data.classCode.trim() || joiningClass}
-                        size="default"
-                      >
-                        {joiningClass ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Join"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                  <Tabs defaultValue="browse" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="browse" className="flex items-center gap-2">
+                        <Search className="w-4 h-4" />
+                        Browse Classes
+                      </TabsTrigger>
+                      <TabsTrigger value="code" className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Enter Code
+                      </TabsTrigger>
+                    </TabsList>
 
-                  {/* Result feedback */}
-                  {classJoinResult && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex items-center gap-2 p-3 rounded-lg ${
-                        classJoinResult.success
-                          ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                          : "bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {classJoinResult.success ? (
-                        <>
-                          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                          <span className="text-sm">
-                            {classJoinResult.error || `Joined "${classJoinResult.className}"!`}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                          <span className="text-sm">{classJoinResult.error}</span>
-                        </>
+                    <TabsContent value="browse" className="mt-4">
+                      <ClassBrowser
+                        onSelectClass={handleBrowseJoin}
+                        isJoining={joiningClass}
+                      />
+                      {/* Result feedback for browse join */}
+                      {classJoinResult && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex items-center gap-2 p-3 rounded-lg mt-4 ${
+                            classJoinResult.success
+                              ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {classJoinResult.success ? (
+                            <>
+                              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-sm">
+                                {classJoinResult.error || `Joined "${classJoinResult.className}"!`}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-sm">{classJoinResult.error}</span>
+                            </>
+                          )}
+                        </motion.div>
                       )}
-                    </motion.div>
-                  )}
+                    </TabsContent>
+
+                    <TabsContent value="code" className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="classCode" className="text-sm font-medium">
+                          Class Code
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="classCode"
+                            placeholder="Enter code (e.g., ABC123)"
+                            value={data.classCode}
+                            onChange={(e) => {
+                              setData({ ...data, classCode: e.target.value.toUpperCase() });
+                              setClassJoinResult(null);
+                            }}
+                            className="text-center text-lg font-mono tracking-widest uppercase"
+                            maxLength={10}
+                            disabled={joiningClass}
+                          />
+                          <Button
+                            onClick={handleJoinClass}
+                            disabled={!data.classCode.trim() || joiningClass}
+                            size="default"
+                          >
+                            {joiningClass ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "Join"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Result feedback for code join */}
+                      {classJoinResult && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex items-center gap-2 p-3 rounded-lg ${
+                            classJoinResult.success
+                              ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {classJoinResult.success ? (
+                            <>
+                              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-sm">
+                                {classJoinResult.error || `Joined "${classJoinResult.className}"!`}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-sm">{classJoinResult.error}</span>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground text-center">
+                        Get the code from your teacher to join their class directly.
+                      </p>
+                    </TabsContent>
+                  </Tabs>
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -364,13 +478,13 @@ export default function StudentOnboarding() {
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
                       <span className="bg-card px-2 text-muted-foreground">
-                        Or continue without a code
+                        Or continue without joining
                       </span>
                     </div>
                   </div>
 
                   <p className="text-xs text-muted-foreground text-center">
-                    Don't have a code? No problem! You can join a class later from your profile.
+                    Don't see your class? No problem! You can join a class later from your profile.
                   </p>
                 </CardContent>
               </motion.div>
