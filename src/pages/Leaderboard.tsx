@@ -1,3 +1,10 @@
+/**
+ * Leaderboard Page
+ *
+ * Displays student rankings by XP or streak.
+ * Refactored to use common design tokens for rank colors.
+ */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -10,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   ArrowLeft,
   Trophy,
   Flame,
@@ -22,6 +29,8 @@ import {
   Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getRankColors } from "@/components/common/tokens/colors";
+import { cn } from "@/lib/utils";
 
 interface LeaderboardEntry {
   rank: number;
@@ -226,19 +235,8 @@ export default function Leaderboard() {
   };
 
   const getRankStyle = (rank: number, isCurrentUser: boolean) => {
-    if (isCurrentUser) {
-      return "bg-primary/10 border-primary";
-    }
-    switch (rank) {
-      case 1:
-        return "bg-gradient-to-r from-gold/10 to-gold/5 border-gold/30";
-      case 2:
-        return "bg-gradient-to-r from-gray-200/50 to-gray-100/30 border-gray-300/50";
-      case 3:
-        return "bg-gradient-to-r from-amber-100/50 to-amber-50/30 border-amber-300/50";
-      default:
-        return "bg-card border-border";
-    }
+    const colors = getRankColors(rank, isCurrentUser);
+    return cn(colors.bg, colors.border);
   };
 
   return (
@@ -382,7 +380,10 @@ export default function Leaderboard() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + index * 0.03 }}
-                className={`rounded-xl p-4 border ${getRankStyle(entry.rank, entry.isCurrentUser || false)} transition-all hover:scale-[1.01]`}
+                className={cn(
+                  "rounded-xl p-4 border transition-all hover:scale-[1.01]",
+                  getRankStyle(entry.rank, entry.isCurrentUser || false)
+                )}
               >
                 <div className="flex items-center gap-4">
                   {/* Rank */}
@@ -481,9 +482,10 @@ export default function Leaderboard() {
 function NavButton({ icon, label, active = false }: { icon: string; label: string; active?: boolean }) {
   return (
     <button
-      className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+      className={cn(
+        "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
         active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-      }`}
+      )}
     >
       <span className="text-xl">{icon}</span>
       <span className="text-xs font-medium">{label}</span>

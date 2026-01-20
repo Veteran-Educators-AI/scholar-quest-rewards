@@ -1,9 +1,21 @@
+/**
+ * DailyQuoteCard Component
+ *
+ * Displays daily growth mindset quotes with save and share functionality.
+ * Refactored to use common utilities for cleaner code.
+ */
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Quote, RefreshCw, Share2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getDailyQuote, getRandomQuote, type GrowthQuote } from "@/data/growthMindsetQuotes";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface DailyQuoteCardProps {
   className?: string;
@@ -97,7 +109,7 @@ export function DailyQuoteCard({ className = "" }: DailyQuoteCardProps) {
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             </Button>
           </div>
 
@@ -129,10 +141,13 @@ export function DailyQuoteCard({ className = "" }: DailyQuoteCardProps) {
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 gap-1.5 ${isLiked ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+              className={cn(
+                "h-8 gap-1.5",
+                isLiked ? "text-destructive" : "text-muted-foreground hover:text-destructive"
+              )}
               onClick={handleLike}
             >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+              <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
               <span className="text-xs">Save</span>
             </Button>
             <Button

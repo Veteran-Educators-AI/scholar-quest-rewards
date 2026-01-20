@@ -1,10 +1,26 @@
+/**
+ * StandardsMasteryWidget Component
+ *
+ * Displays standards mastery progress by subject.
+ * Refactored to use common design tokens and components.
+ */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Circle, Target, TrendingUp, BookOpen, ChevronRight } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { CheckCircle2, Target, TrendingUp, BookOpen, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/common/EmptyState";
+import {
+  getSubjectColors,
+  MASTERY_COLORS,
+} from "@/components/common/tokens/colors";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface SubjectProgress {
   subject: string;
@@ -14,12 +30,9 @@ interface SubjectProgress {
   total: number;
 }
 
-const SUBJECT_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
-  "Mathematics": { bg: "bg-primary/10", text: "text-primary", icon: "🔢" },
-  "English Language Arts": { bg: "bg-accent/10", text: "text-accent", icon: "📚" },
-  "Science": { bg: "bg-success/10", text: "text-success", icon: "🔬" },
-  "Social Studies": { bg: "bg-warning/10", text: "text-warning", icon: "🌍" },
-};
+// ============================================================================
+// Component
+// ============================================================================
 
 export function StandardsMasteryWidget({ className }: { className?: string }) {
   const [subjects, setSubjects] = useState<SubjectProgress[]>([]);
@@ -33,7 +46,9 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
 
   const fetchMasteryData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Fetch student profile to get grade level
@@ -63,13 +78,15 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
         .select("standard_id, mastery_level")
         .eq("student_id", user.id);
 
-      const masteryMap = new Map(mastery?.map(m => [m.standard_id, m.mastery_level]) || []);
+      const masteryMap = new Map(
+        mastery?.map((m) => [m.standard_id, m.mastery_level]) || []
+      );
 
       // Group by subject
       const subjectMap: Record<string, SubjectProgress> = {};
       let totalMastered = 0;
 
-      standards.forEach(standard => {
+      standards.forEach((standard) => {
         if (!subjectMap[standard.subject]) {
           subjectMap[standard.subject] = {
             subject: standard.subject,
@@ -82,7 +99,7 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
 
         subjectMap[standard.subject].total++;
         const level = masteryMap.get(standard.id) || "not_started";
-        
+
         if (level === "mastered") {
           subjectMap[standard.subject].mastered++;
           totalMastered++;
@@ -105,7 +122,7 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
 
   if (loading) {
     return (
-      <div className={`bg-card border border-border rounded-xl p-4 ${className}`}>
+      <div className={cn("bg-card border border-border rounded-xl p-4", className)}>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-muted rounded w-1/2" />
           <div className="h-2 bg-muted rounded" />
@@ -118,17 +135,25 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
     );
   }
 
-  const overallPercent = overallTotal > 0 ? Math.round((overallMastered / overallTotal) * 100) : 0;
+  const overallPercent =
+    overallTotal > 0 ? Math.round((overallMastered / overallTotal) * 100) : 0;
 
   return (
     <div className={className}>
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Standards Mastery</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Standards Mastery
+          </h2>
         </div>
         <Link to="/student/standards">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary h-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-primary h-8"
+          >
             Details
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
@@ -140,9 +165,9 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Overall Progress</span>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">{overallPercent}%</span>
-            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {overallPercent}%
+            </span>
           </div>
           <div className="h-2.5 bg-muted rounded-full overflow-hidden">
             <motion.div
@@ -156,17 +181,18 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
             <span className="text-xs text-muted-foreground">
               {overallMastered} of {overallTotal} standards mastered
             </span>
+            {/* Mastery level legend using design tokens */}
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-success" />
+                <CheckCircle2 className={cn("w-3 h-3", MASTERY_COLORS.mastered.text)} />
                 <span className="text-muted-foreground">Mastered</span>
               </span>
               <span className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3 text-primary" />
+                <TrendingUp className={cn("w-3 h-3", MASTERY_COLORS.approaching.text)} />
                 <span className="text-muted-foreground">Approaching</span>
               </span>
               <span className="flex items-center gap-1">
-                <Target className="w-3 h-3 text-warning" />
+                <Target className={cn("w-3 h-3", MASTERY_COLORS.developing.text)} />
                 <span className="text-muted-foreground">Developing</span>
               </span>
             </div>
@@ -177,34 +203,56 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
         {subjects.length > 0 ? (
           <div className="grid grid-cols-2 gap-2">
             {subjects.slice(0, 4).map((subject, idx) => {
-              const colors = SUBJECT_COLORS[subject.subject] || { bg: "bg-muted", text: "text-muted-foreground", icon: "📖" };
-              const percent = subject.total > 0 ? Math.round((subject.mastered / subject.total) * 100) : 0;
-              
+              const colors = getSubjectColors(subject.subject);
+              const percent =
+                subject.total > 0
+                  ? Math.round((subject.mastered / subject.total) * 100)
+                  : 0;
+
               return (
                 <motion.div
                   key={subject.subject}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className={`${colors.bg} rounded-lg p-3 border border-transparent hover:border-border/50 transition-colors`}
+                  className={cn(
+                    colors.bg,
+                    "rounded-lg p-3 border border-transparent hover:border-border/50 transition-colors"
+                  )}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-base">{colors.icon}</span>
                     <span className="text-xs font-medium text-foreground truncate">
-                      {subject.subject === "English Language Arts" ? "ELA" : subject.subject}
+                      {subject.subject === "English Language Arts"
+                        ? "ELA"
+                        : subject.subject}
                     </span>
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className={`text-xl font-bold ${colors.text}`}>{percent}%</p>
+                      <p className={cn("text-xl font-bold", colors.text)}>
+                        {percent}%
+                      </p>
                       <p className="text-[10px] text-muted-foreground">
                         {subject.mastered}/{subject.total}
                       </p>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <MiniBar value={subject.mastered} max={subject.total} color="bg-success" />
-                      <MiniBar value={subject.approaching} max={subject.total} color="bg-primary" />
-                      <MiniBar value={subject.developing} max={subject.total} color="bg-warning" />
+                      <MiniBar
+                        value={subject.mastered}
+                        max={subject.total}
+                        colorClass={MASTERY_COLORS.mastered.text.replace("text-", "bg-")}
+                      />
+                      <MiniBar
+                        value={subject.approaching}
+                        max={subject.total}
+                        colorClass={MASTERY_COLORS.approaching.text.replace("text-", "bg-")}
+                      />
+                      <MiniBar
+                        value={subject.developing}
+                        max={subject.total}
+                        colorClass={MASTERY_COLORS.developing.text.replace("text-", "bg-")}
+                      />
                     </div>
                   </div>
                 </motion.div>
@@ -212,22 +260,38 @@ export function StandardsMasteryWidget({ className }: { className?: string }) {
             })}
           </div>
         ) : (
-          <div className="text-center py-4">
-            <Circle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No standards data yet</p>
-            <p className="text-xs text-muted-foreground/70">Complete assignments to track progress</p>
-          </div>
+          <EmptyState
+            variant="data"
+            title="No standards data yet"
+            description="Complete assignments to track progress"
+            size="sm"
+          />
         )}
       </div>
     </div>
   );
 }
 
-function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+// ============================================================================
+// Helper Components
+// ============================================================================
+
+function MiniBar({
+  value,
+  max,
+  colorClass,
+}: {
+  value: number;
+  max: number;
+  colorClass: string;
+}) {
   const width = max > 0 ? (value / max) * 100 : 0;
   return (
     <div className="w-12 h-1 bg-foreground/10 rounded-full overflow-hidden">
-      <div className={`h-full ${color} rounded-full`} style={{ width: `${width}%` }} />
+      <div
+        className={cn("h-full rounded-full", colorClass)}
+        style={{ width: `${width}%` }}
+      />
     </div>
   );
 }

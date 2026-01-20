@@ -1,9 +1,23 @@
+/**
+ * StudentRewardPledges Component
+ *
+ * Displays parent reward pledges that students can work toward.
+ * Refactored to use common design tokens.
+ */
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Gift, Coins, Target, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getRewardTypeIcon } from "@/components/common/tokens/colors";
+import { CoinBadge } from "@/components/common/StatBadge";
+import { cn } from "@/lib/utils";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface PointPledge {
   id: string;
@@ -25,16 +39,6 @@ interface BadgePledge {
 interface StudentRewardPledgesProps {
   className?: string;
 }
-
-const rewardTypeEmoji: Record<string, string> = {
-  toy: "🧸",
-  game: "🎮",
-  outing: "🎢",
-  treat: "🍦",
-  screen_time: "📺",
-  sleepover: "🏠",
-  custom: "🎁",
-};
 
 export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
   const [pointPledges, setPointPledges] = useState<PointPledge[]>([]);
@@ -172,7 +176,7 @@ export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
   }
 
   return (
-    <Card className={`overflow-hidden ${className}`}>
+    <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="bg-gradient-to-r from-gold/10 to-primary/10 border-b border-border pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="w-5 h-5 text-gold" />
@@ -186,13 +190,8 @@ export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
       <CardContent className="p-4 space-y-4">
         {/* Current Coins Display */}
         <div className="flex items-center gap-3 p-3 bg-gold/10 rounded-xl border border-gold/20">
-          <div className="w-10 h-10 bg-gold/20 rounded-full flex items-center justify-center">
-            <Coins className="w-5 h-5 text-gold" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Your Current Coins</p>
-            <p className="text-xl font-bold text-foreground">{currentCoins}</p>
-          </div>
+          <CoinBadge value={currentCoins} size="lg" />
+          <p className="text-sm text-muted-foreground">Your Current Coins</p>
         </div>
 
         {/* Point-Based Pledges */}
@@ -213,17 +212,19 @@ export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={cn(
+                    "p-4 rounded-xl border transition-all",
                     isComplete
                       ? "bg-success/10 border-success/30"
                       : "bg-card border-border hover:border-primary/30"
-                  }`}
+                  )}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ${
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0",
                       isComplete ? "bg-success/20" : "bg-muted"
-                    }`}>
-                      {rewardTypeEmoji[pledge.reward_type] || "🎁"}
+                    )}>
+                      {getRewardTypeIcon(pledge.reward_type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
@@ -276,17 +277,22 @@ export function StudentRewardPledges({ className }: StudentRewardPledgesProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: (pointPledges.length + index) * 0.05 }}
-                className={`p-4 rounded-xl border transition-all ${
+                className={cn(
+                  "p-4 rounded-xl border transition-all",
                   pledge.badge_earned
                     ? "bg-success/10 border-success/30"
                     : "bg-card border-border hover:border-primary/30"
-                }`}
+                )}
               >
                 <div className="flex items-start gap-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
                     pledge.badge_earned ? "bg-success/20" : "bg-gold/20"
-                  }`}>
-                    <Gift className={`w-6 h-6 ${pledge.badge_earned ? "text-success" : "text-gold"}`} />
+                  )}>
+                    <Gift className={cn(
+                      "w-6 h-6",
+                      pledge.badge_earned ? "text-success" : "text-gold"
+                    )} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
