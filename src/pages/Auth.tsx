@@ -12,10 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRateLimit, formatLockoutTime } from "@/hooks/useRateLimit";
 import { validatePassword } from "@/lib/passwordValidation";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Loader2, AlertTriangle } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Shield, Loader2, Eye, EyeOff } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
-type UserRole = "student" | "parent";
+type UserRole = "student" | "parent" | "admin";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,15 +37,17 @@ export default function Auth() {
 
   const [mode, setMode] = useState<AuthMode>(urlMode === "reset" ? "reset" : "login");
   const [role, setRole] = useState<UserRole>(
-    urlRole === "parent" ? "parent" : "student"
+    urlRole === "parent" ? "parent" : urlRole === "admin" ? "admin" : "student"
   );
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { checkRateLimit, recordAttempt, rateLimitStatus } = useRateLimit();
+  const { checkRateLimit, recordAttempt } = useRateLimit();
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -74,6 +76,10 @@ export default function Auth() {
         description: `Password requirements: ${passwordValidation.errors.slice(0, 2).join(", ")}`,
         variant: "destructive",
       });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "Passwords don't match", description: "Please confirm your password.", variant: "destructive" });
       return;
     }
 
@@ -276,7 +282,7 @@ export default function Auth() {
             <p className="text-muted-foreground text-sm mt-1">{subtitles[mode]}</p>
           </div>
 
-          {mode !== "forgot" && mode !== "reset" && (
+          {role !== "admin" && mode !== "forgot" && mode !== "reset" && (
             <div className="grid grid-cols-2 gap-2 mb-6">
               <Button
                 type="button"
@@ -296,6 +302,13 @@ export default function Auth() {
                 <Heart className="w-4 h-4 mr-1" />
                 Parent
               </Button>
+            </div>
+          )}
+
+          {role === "admin" && (
+            <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-muted rounded-lg">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-medium">Admin Login</span>
             </div>
           )}
 
@@ -343,15 +356,49 @@ export default function Auth() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {mode === "signup" && <PasswordStrengthIndicator password={password} />}
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -363,29 +410,45 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       id="newPassword"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 pr-10"
                       disabled={loading}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                   <PasswordStrengthIndicator password={password} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="resetConfirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="confirmPassword"
-                      type="password"
+                      id="resetConfirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 pr-10"
                       disabled={loading}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               </>
@@ -411,7 +474,7 @@ export default function Auth() {
             </Button>
           </form>
 
-          {mode !== "reset" && (
+          {mode !== "reset" && role !== "admin" && (
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 {mode === "login" ? "Don't have an account? " : "Already have an account? "}
