@@ -8,11 +8,11 @@
 // External APIs
 // ============================================================================
 
-export const GEOBLOX_API_URL = "https://wedghtmkaxkxrrbbeenq.supabase.co/functions/v1/scholar-sync";
+export const GEOBLOX_API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scholar-sync`;
 
-export const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+export const AI_GATEWAY_URL = import.meta.env.VITE_AI_GATEWAY_URL || "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-export const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+export const BREVO_API_URL = import.meta.env.VITE_BREVO_API_URL || "https://api.brevo.com/v3/smtp/email";
 
 // ============================================================================
 // Rate Limits

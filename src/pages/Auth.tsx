@@ -15,9 +15,28 @@ import { validatePassword } from "@/lib/passwordValidation";
 import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Shield, Loader2, Eye, EyeOff } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
-type UserRole = "student" | "parent" | "admin";
+type UserRole = "student" | "parent" | "admin" | "teacher";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Allowed roles for this app (teachers must use the teacher portal)
+const ALLOWED_ROLES: UserRole[] = ["student", "parent", "admin"];
+
+// Fetch user role from the profiles table (source of truth)
+async function fetchUserRole(userId: string): Promise<UserRole | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (error || !data) {
+    console.error("Error fetching user role:", error);
+    return null;
+  }
+
+  return data.role as UserRole;
+}
 
 const getTargetPath = (role: string | undefined): string => {
   switch (role) {
@@ -152,11 +171,24 @@ export default function Auth() {
         // Record successful login (clears failed attempts)
         await recordAttempt(email, true);
 
-        const userRole = data.user.user_metadata?.role || "student";
+        // Fetch role from profiles table (source of truth, not user_metadata)
+        const userRole = await fetchUserRole(data.user.id);
 
-        if (userRole === "teacher") {
+        if (!userRole) {
+          // Profile doesn't exist yet - this shouldn't happen but handle it
           await supabase.auth.signOut();
-          toast({ title: "Access Denied", description: "Teachers should use NYCologic AI.", variant: "destructive" });
+          toast({ title: "Account Error", description: "Account setup incomplete. Please try again.", variant: "destructive" });
+          return;
+        }
+
+        if (!ALLOWED_ROLES.includes(userRole)) {
+          // User is not allowed in this app (e.g., teacher)
+          await supabase.auth.signOut();
+          toast({
+            title: "Access Denied",
+            description: "This portal is for students only. Please use the Teacher Portal to sign in.",
+            variant: "destructive"
+          });
           return;
         }
 
