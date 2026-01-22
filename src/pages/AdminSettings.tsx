@@ -347,7 +347,7 @@ export default function AdminSettings() {
                 API Endpoint
               </h4>
               <code className="text-sm bg-background px-2 py-1 rounded border block overflow-x-auto">
-                https://rjlqmfthemfpetpcydog.supabase.co/functions/v1/external-api
+                {import.meta.env.VITE_SUPABASE_URL}/functions/v1/external-api
               </code>
               <p className="text-sm text-muted-foreground mt-2">
                 Use the <code className="text-primary">x-api-key</code> header to authenticate.
