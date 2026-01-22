@@ -22,8 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.claude/
 .temp/
+.claude/
 
 # Environment files
 .env

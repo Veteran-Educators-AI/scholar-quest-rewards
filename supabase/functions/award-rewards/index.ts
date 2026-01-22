@@ -58,6 +58,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if user is a teacher (teachers are blocked from student rewards)
+    const { data: userRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "teacher")
+      .maybeSingle();
+
+    if (userRole) {
+      return new Response(
+        JSON.stringify({ error: "Teachers cannot access student rewards. Please use NYCologic AI." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body: AwardRewardsRequest = await req.json();
     const { claim_type, reference_id, xp_amount, coin_amount, reason, validation_data } = body;
 
