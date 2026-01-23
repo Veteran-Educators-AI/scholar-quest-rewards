@@ -21,8 +21,9 @@ interface WebhookLog {
   payload: Record<string, unknown> | null;
 }
 
-const WEBHOOK_URL = "https://rjlqmfthemfpetpcydog.supabase.co/functions/v1/geoblox-webhook";
-const SYNC_URL = "https://rjlqmfthemfpetpcydog.supabase.co/functions/v1/geoblox-sync";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/geoblox-webhook`;
+const SYNC_URL = `${SUPABASE_URL}/functions/v1/geoblox-sync`;
 
 const apiActions = [
   {

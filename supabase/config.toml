@@ -1,28 +1,5 @@
-project_id = "rjlqmfthemfpetpcydog"
+# Supabase Configuration
+# This app uses the unified backend from the teacher app (quickscan-insight)
+# All edge functions and migrations are managed in the teacher app
 
-[functions.scan-genius-webhook]
-verify_jwt = false
-
-[functions.send-parent-notification]
-verify_jwt = false
-
-[functions.grade-assignment]
-verify_jwt = false
-
-[functions.sync-to-nycologic]
-verify_jwt = false
-
-[functions.generate-invite]
-verify_jwt = false
-
-[functions.nycologic-webhook]
-verify_jwt = false
-
-[functions.sync-student]
-verify_jwt = false
-
-[functions.geoblox-sync]
-verify_jwt = false
-
-[functions.generate-question-image]
-verify_jwt = false
+project_id = "dvkarvdcstavlhnaoisr"

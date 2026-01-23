@@ -144,7 +144,7 @@ export default function StudentHome() {
         .from("external_students")
         .select("*")
         .eq("linked_user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (externalStudent) {
         setExternalData(externalStudent as ExternalStudentData);
