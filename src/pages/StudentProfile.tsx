@@ -95,6 +95,9 @@ export default function StudentProfile() {
   const [badges, setBadges] = useState<BadgeData[]>([]);
   const [collectibles, setCollectibles] = useState<Collectible[]>([]);
   const [loading, setLoading] = useState(true);
+  const [badgesLoading, setBadgesLoading] = useState(true);
+  const [collectiblesLoading, setCollectiblesLoading] = useState(true);
+  const [classesLoading, setClassesLoading] = useState(true);
   const [equippedItems, setEquippedItems] = useState<EquippedItems>({});
   const [joinClassOpen, setJoinClassOpen] = useState(false);
   const [classCode, setClassCode] = useState("");
@@ -162,60 +165,186 @@ export default function StudentProfile() {
   };
 
   const fetchEnrolledClasses = async (userId: string) => {
-    const { data: enrollments } = await supabase
+    setClassesLoading(true);
+    const { data: enrollments, error } = await supabase
       .from("enrollments")
       .select("class_id, classes(id, name, teacher_id, profiles:teacher_id(full_name))")
       .eq("student_id", userId);
 
+    if (error) {
+      console.error("Error fetching classes:", error);
+      setClassesLoading(false);
+      return;
+    }
+
     if (enrollments) {
-      const classes = enrollments.map((e: any) => ({
-        id: e.classes?.id || "",
-        name: e.classes?.name || "Unknown Class",
-        teacherName: e.classes?.profiles?.full_name || "Unknown Teacher",
-      })).filter(c => c.id);
+      const classes = enrollments
+        .map((e: any) => ({
+          id: e.classes?.id || "",
+          name: e.classes?.name || "Unknown Class",
+          teacherName: e.classes?.profiles?.full_name || "Unknown Teacher",
+        }))
+        .filter((c) => c.id);
       setEnrolledClasses(classes);
     }
+    setClassesLoading(false);
   };
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    let cancelled = false;
+
+    const loadBadges = async (userId: string) => {
+      setBadgesLoading(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const [{ data: allBadges, error: badgesError }, { data: earnedBadges, error: earnedError }] =
+          await Promise.all([
+            supabase.from("badges").select("id, name, description, icon_url"),
+            supabase
+              .from("student_badges")
+              .select("badge_id, earned_at")
+              .eq("student_id", userId),
+          ]);
+
+        if (badgesError) throw badgesError;
+        if (earnedError) throw earnedError;
+
+        const earnedMap = new Map(earnedBadges?.map((eb) => [eb.badge_id, eb.earned_at]) || []);
+
+        if (cancelled) return;
+        setBadges(
+          (allBadges || []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            description: b.description,
+            iconUrl: b.icon_url,
+            earned: earnedMap.has(b.id),
+            earnedAt: earnedMap.get(b.id),
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching badges:", error);
+      } finally {
+        if (!cancelled) setBadgesLoading(false);
+      }
+    };
+
+    const loadCollectibles = async (userId: string) => {
+      setCollectiblesLoading(true);
+      try {
+        const [
+          { data: allCollectibles, error: collectiblesError },
+          { data: earnedCollectibles, error: earnedError },
+        ] = await Promise.all([
+          supabase.from("collectibles").select("id, name, description, image_url, rarity, slot"),
+          supabase.from("student_collectibles").select("collectible_id").eq("student_id", userId),
+        ]);
+
+        if (collectiblesError) throw collectiblesError;
+        if (earnedError) throw earnedError;
+
+        const earnedCollectibleIds = new Set(
+          earnedCollectibles?.map((ec) => ec.collectible_id) || []
+        );
+
+        const mappedCollectibles: Collectible[] = (allCollectibles || []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description || undefined,
+          imageUrl: c.image_url,
+          rarity: c.rarity as Rarity,
+          slot: (c.slot as Slot) || "accessory",
+          earned: earnedCollectibleIds.has(c.id),
+        }));
+
+        if (cancelled) return;
+        setCollectibles(mappedCollectibles);
+
+        const { data: equipped, error: equippedError } = await supabase
+          .from("equipped_items")
+          .select("slot, collectible_id")
+          .eq("student_id", userId);
+
+        if (equippedError) throw equippedError;
+        if (cancelled) return;
+
+        if (equipped) {
+          const equippedMap: EquippedItems = {};
+          equipped.forEach((e) => {
+            const collectible = mappedCollectibles.find((c) => c.id === e.collectible_id);
+            if (collectible && e.slot) {
+              equippedMap[e.slot as Slot] = collectible;
+            }
+          });
+          setEquippedItems(equippedMap);
+        }
+      } catch (error) {
+        console.error("Error fetching collectibles:", error);
+      } finally {
+        if (!cancelled) setCollectiblesLoading(false);
+      }
+    };
+
+    const fetchProfileData = async () => {
+      setLoading(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           setLoading(false);
+          setBadgesLoading(false);
+          setCollectiblesLoading(false);
+          setClassesLoading(false);
           return;
         }
 
-        // Fetch profile
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url, created_at")
-          .eq("id", user.id)
-          .single();
+        loadBadges(user.id);
+        loadCollectibles(user.id);
+        fetchEnrolledClasses(user.id);
 
-        // Fetch student profile
-        const { data: studentProfile } = await supabase
-          .from("student_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        const [
+          { data: userProfile, error: profileError },
+          { data: studentProfile, error: studentError },
+          { data: attempts, error: attemptsError },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("full_name, avatar_url, created_at")
+            .eq("id", user.id)
+            .single(),
+          supabase
+            .from("student_profiles")
+            .select(
+              "xp, coins, current_streak, longest_streak, streak_shield_available, grade_level, reading_level, math_level, strengths, weaknesses"
+            )
+            .eq("user_id", user.id)
+            .single(),
+          supabase
+            .from("attempts")
+            .select("score")
+            .eq("student_id", user.id)
+            .eq("status", "verified"),
+        ]);
 
-        // Calculate stats from attempts
-        const { data: attempts } = await supabase
-          .from("attempts")
-          .select("score, status")
-          .eq("student_id", user.id)
-          .eq("status", "verified");
+        if (profileError) console.error("Error fetching profile:", profileError);
+        if (studentError) console.error("Error fetching student profile:", studentError);
+        if (attemptsError) console.error("Error fetching attempts:", attemptsError);
 
-        const completedCount = attempts?.length || 0;
-        const avgScore = completedCount > 0 
-          ? Math.round((attempts?.reduce((sum, a) => sum + (a.score || 0), 0) || 0) / completedCount)
-          : 0;
+        const verifiedAttempts = attempts || [];
+        const completedCount = verifiedAttempts.length;
+        const avgScore =
+          completedCount > 0
+            ? Math.round(
+                (verifiedAttempts.reduce((sum, a) => sum + (a.score || 0), 0) || 0) /
+                  completedCount
+              )
+            : 0;
 
         const totalXp = studentProfile?.xp || 0;
         const level = Math.floor(totalXp / 500) + 1;
-        const currentLevelXp = totalXp - ((level - 1) * 500);
+        const currentLevelXp = totalXp - (level - 1) * 500;
 
+        if (cancelled) return;
         setProfile({
           name: userProfile?.full_name || user.email?.split("@")[0] || "Scholar",
           avatar: userProfile?.avatar_url || null,
@@ -240,80 +369,17 @@ export default function StudentProfile() {
           areasToImprove: studentProfile?.weaknesses || [],
           recentSubjects: [],
         });
-
-        // Fetch badges
-        const { data: allBadges } = await supabase
-          .from("badges")
-          .select("id, name, description, icon_url");
-
-        const { data: earnedBadges } = await supabase
-          .from("student_badges")
-          .select("badge_id, earned_at")
-          .eq("student_id", user.id);
-
-        const earnedMap = new Map(earnedBadges?.map(eb => [eb.badge_id, eb.earned_at]) || []);
-
-        setBadges((allBadges || []).map(b => ({
-          id: b.id,
-          name: b.name,
-          description: b.description,
-          iconUrl: b.icon_url,
-          earned: earnedMap.has(b.id),
-          earnedAt: earnedMap.get(b.id),
-        })));
-
-        // Fetch collectibles
-        const { data: allCollectibles } = await supabase
-          .from("collectibles")
-          .select("id, name, description, image_url, rarity, slot");
-
-        const { data: earnedCollectibles } = await supabase
-          .from("student_collectibles")
-          .select("collectible_id")
-          .eq("student_id", user.id);
-
-        const earnedCollectibleIds = new Set(earnedCollectibles?.map(ec => ec.collectible_id) || []);
-
-        const mappedCollectibles: Collectible[] = (allCollectibles || []).map(c => ({
-          id: c.id,
-          name: c.name,
-          description: c.description || undefined,
-          imageUrl: c.image_url,
-          rarity: c.rarity as Rarity,
-          slot: (c.slot as Slot) || "accessory",
-          earned: earnedCollectibleIds.has(c.id),
-        }));
-
-        setCollectibles(mappedCollectibles);
-
-        // Fetch equipped items
-        const { data: equipped } = await supabase
-          .from("equipped_items")
-          .select("slot, collectible_id")
-          .eq("student_id", user.id);
-
-        if (equipped) {
-          const equippedMap: EquippedItems = {};
-          equipped.forEach(e => {
-            const collectible = mappedCollectibles.find(c => c.id === e.collectible_id);
-            if (collectible && e.slot) {
-              equippedMap[e.slot as Slot] = collectible;
-            }
-          });
-          setEquippedItems(equippedMap);
-        }
-
-        // Fetch enrolled classes
-        fetchEnrolledClasses(user.id);
-
       } catch (error) {
         console.error("Error fetching profile:", error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchProfileData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleEquip = useCallback((slot: Slot, collectible: Collectible | null) => {
@@ -365,6 +431,7 @@ export default function StudentProfile() {
   const earnedBadges = badges.filter(b => b.earned);
   const earnedCollectibles = collectibles.filter(c => c.earned);
   const daysSinceJoin = Math.floor((Date.now() - displayProfile.joinedAt.getTime()) / (1000 * 60 * 60 * 24));
+  const remainingXp = Math.max(displayProfile.xpForNextLevel - displayProfile.xp, 0);
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -539,7 +606,11 @@ export default function StudentProfile() {
             </Dialog>
           </div>
 
-          {enrolledClasses.length > 0 ? (
+          {classesLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : enrolledClasses.length > 0 ? (
             <div className="space-y-2">
               {enrolledClasses.map((cls) => (
                 <div
@@ -592,29 +663,35 @@ export default function StudentProfile() {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-lg text-foreground">Badges Earned</h3>
                 <span className="text-sm text-muted-foreground">
-                  {earnedBadges.length} / {badges.length}
+                  {badgesLoading ? "Loading..." : `${earnedBadges.length} / ${badges.length}`}
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {badges.map((badge, index) => (
-                  <motion.div
-                    key={badge.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <BadgeCard
-                      name={badge.name}
-                      description={badge.description}
-                      iconUrl={badge.iconUrl}
-                      earned={badge.earned}
-                      earnedAt={badge.earnedAt}
-                      size="md"
-                    />
-                  </motion.div>
-                ))}
-              </div>
+              {badgesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {badges.map((badge, index) => (
+                    <motion.div
+                      key={badge.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <BadgeCard
+                        name={badge.name}
+                        description={badge.description}
+                        iconUrl={badge.iconUrl}
+                        earned={badge.earned}
+                        earnedAt={badge.earnedAt}
+                        size="md"
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
@@ -628,28 +705,36 @@ export default function StudentProfile() {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-lg text-foreground">My Collection</h3>
                 <span className="text-sm text-muted-foreground">
-                  {earnedCollectibles.length} / {collectibles.length}
+                  {collectiblesLoading
+                    ? "Loading..."
+                    : `${earnedCollectibles.length} / ${collectibles.length}`}
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {collectibles.map((collectible, index) => (
-                  <motion.div
-                    key={collectible.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <CollectibleCard
-                      name={collectible.name}
-                      description={collectible.description}
-                      imageUrl={collectible.imageUrl}
-                      rarity={collectible.rarity}
-                      earned={collectible.earned}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+              {collectiblesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {collectibles.map((collectible, index) => (
+                    <motion.div
+                      key={collectible.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <CollectibleCard
+                        name={collectible.name}
+                        description={collectible.description}
+                        imageUrl={collectible.imageUrl}
+                        rarity={collectible.rarity}
+                        earned={collectible.earned}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
@@ -760,9 +845,12 @@ export default function StudentProfile() {
           <div className="flex items-start gap-4">
             <ScholarBuddy size="sm" animate={false} />
             <div>
-              <h3 className="font-bold text-lg mb-1">Keep Going, {profile.name.split(' ')[0]}!</h3>
+              <h3 className="font-bold text-lg mb-1">
+                Keep Going, {displayProfile.name.split(" ")[0]}!
+              </h3>
               <p className="opacity-90">
-                You're making great progress! Complete {500 - profile.xp} more XP to reach Level {profile.level + 1}! 🌟
+                You're making great progress! Complete {remainingXp} more XP to reach
+                Level {displayProfile.level + 1}! 🌟
               </p>
             </div>
           </div>
