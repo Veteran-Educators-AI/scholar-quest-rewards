@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScholarBuddy } from "@/components/ScholarBuddy";
@@ -5,11 +6,19 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PoweredByFooter } from "@/components/PoweredByFooter";
 import { Star, Trophy, Flame, Users, BookOpen, Sparkles, Gift, Shield, AlertTriangle, Award, Heart, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
+import hillcrestComboLogo from "@/assets/hillcrest-nyclogic-combo.svg";
 import nycologicLogo from "@/assets/nycologic-main-logo.png";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { WhatsNew, WhatsNewButton } from "@/components/WhatsNew";
+import { LandingTour, TakeTourButton } from "@/components/LandingTour";
 
 export default function Landing() {
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <>
+      <div className="min-h-screen bg-background overflow-hidden">
       {/* Fixed Header with Theme Toggle */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -23,31 +32,32 @@ export default function Landing() {
               ← NYClogic Ai
             </a>
             <div className="flex items-center gap-2">
-              <img 
-                src={nycologicLogo} 
-                alt="NYClogic Scholar Ai" 
-                decoding="async"
-                fetchPriority="high"
-                className="w-8 h-8 object-contain"
-              />
-              <div className="flex items-baseline gap-0.5">
-                <span className="font-semibold text-foreground">NYClogic</span>
-                <span 
-                  className="font-bold text-destructive" 
-                  style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
-                >
-                  Ai
-                </span>
-                <span 
-                  className="text-lg font-black text-destructive ml-1" 
-                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
-                >
-                  SCHOLAR
-                </span>
-              </div>
+            <img 
+              src={hillcrestComboLogo} 
+              alt="Hillcrest Scholar Ai" 
+              decoding="async"
+              fetchPriority="high"
+              className="w-10 h-10 object-contain"
+            />
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-lg">
+                <span className="text-foreground">Hillcrest</span>{" "}
+                <span className="text-foreground font-black">Scholar</span>{" "}
+                <span className="text-destructive">Ai</span>
+              </span>
+              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded">
+                BETA
+              </span>
+            </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link to="/demo">
+              <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />
+                Demo
+              </Button>
+            </Link>
             <ThemeToggle />
             <Link to="/auth?role=admin">
               <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-1">
@@ -82,7 +92,12 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
             className="flex flex-col items-center mb-12"
           >
-            <ScholarBuddy size="xl" />
+            {/* Hillcrest + NYClogic Combo Logo */}
+            <img 
+              src={hillcrestComboLogo} 
+              alt="Hillcrest Scholar Ai" 
+              className="w-full max-w-xl md:max-w-2xl object-contain drop-shadow-2xl"
+            />
             
             {/* App Name */}
             <motion.div
@@ -91,22 +106,27 @@ export default function Landing() {
               transition={{ delay: 0.3 }}
               className="flex flex-col items-center mt-6"
             >
-              <div className="flex flex-col items-center">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl md:text-4xl font-bold text-foreground">NYClogic</span>
-                  <span 
-                    className="text-3xl md:text-4xl font-bold text-destructive" 
-                    style={{ fontFamily: "'Darker Grotesque', sans-serif" }}
-                  >
-                    Ai
-                  </span>
-                </div>
-                <h1 
-                  className="text-5xl md:text-6xl font-black text-destructive leading-tight tracking-tight" 
-                  style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif' }}
-                >
-                  SCHOLAR<sup className="text-lg">™</sup>
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+                  <span className="text-primary">Hillcrest</span>{" "}
+                  <span className="text-foreground font-black">Scholar</span>{" "}
+                  <span className="text-destructive">Ai</span>
                 </h1>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="px-2 py-1 text-sm font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded animate-pulse cursor-help">
+                        BETA
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-center">
+                      <p className="font-semibold mb-1">🚀 Early Access Version</p>
+                      <p className="text-xs text-muted-foreground">
+                        We're still improving! Use the feedback button to report bugs or suggest features.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </motion.div>
           </motion.div>
@@ -125,9 +145,13 @@ export default function Landing() {
                 transition={{ delay: 0.4 }}
                 className="flex flex-col items-center lg:items-start gap-4 mb-6"
               >
-                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-sm font-semibold">Learning made fun!</span>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Learning made fun!</span>
+                  </div>
+                  <WhatsNewButton onClick={() => setShowWhatsNew(true)} />
+                  <TakeTourButton onClick={() => setShowTour(true)} />
                 </div>
               </motion.div>
 
@@ -460,7 +484,12 @@ export default function Landing() {
           <PoweredByFooter />
         </div>
       </footer>
-    </div>
+      </div>
+
+      {/* Modals */}
+      <WhatsNew isOpen={showWhatsNew} onClose={() => setShowWhatsNew(false)} />
+      <LandingTour isOpen={showTour} onClose={() => setShowTour(false)} />
+    </>
   );
 }
 
