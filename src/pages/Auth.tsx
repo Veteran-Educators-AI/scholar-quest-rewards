@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRateLimit, formatLockoutTime } from "@/hooks/useRateLimit";
 import { validatePassword } from "@/lib/passwordValidation";
-import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Shield, Loader2, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, GraduationCap, Heart, Shield, Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
 type UserRole = "student" | "parent" | "admin" | "teacher";
@@ -65,6 +65,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [signupEmailSent, setSignupEmailSent] = useState(false);
 
   const { checkRateLimit, recordAttempt } = useRateLimit();
 
@@ -120,10 +121,8 @@ export default function Auth() {
       }
 
       if (data.user) {
-        // Profile and user_roles are created by database trigger (handle_new_user)
-        // No need for client-side inserts - this prevents race conditions
-        toast({ title: "Welcome!", description: "Your account has been created." });
-        navigate(getTargetPath(role));
+        setSignupEmailSent(true);
+        toast({ title: "Verification email sent!", description: "Please check your inbox to verify your email address." });
       }
     } catch {
       toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
@@ -344,6 +343,35 @@ export default function Auth() {
             </div>
           )}
 
+          {signupEmailSent ? (
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-lg font-semibold">Check Your Email</h3>
+              <p className="text-center text-sm text-muted-foreground">
+                We've sent a verification link to <strong>{email}</strong>.
+                Please click the link in the email to verify your account.
+              </p>
+              <p className="text-center text-xs text-muted-foreground">
+                Don't see it? Check your spam folder.
+              </p>
+              <Button
+                onClick={() => {
+                  setSignupEmailSent(false);
+                  setEmail("");
+                  setPassword("");
+                  setConfirmPassword("");
+                  setFullName("");
+                  setMode("login");
+                }}
+                variant="outline"
+                className="mt-2"
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
@@ -505,8 +533,9 @@ export default function Auth() {
               )}
             </Button>
           </form>
+          )}
 
-          {mode !== "reset" && role !== "admin" && (
+          {mode !== "reset" && role !== "admin" && !signupEmailSent && (
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 {mode === "login" ? "Don't have an account? " : "Already have an account? "}
@@ -521,13 +550,15 @@ export default function Auth() {
             </div>
           )}
 
-          <div className="mt-6 pt-4 border-t text-center">
-            <div className="flex justify-center gap-4 text-xs text-muted-foreground">
-              <a href="/privacy-policy" className="hover:underline">Privacy</a>
-              <span>•</span>
-              <a href="/terms-of-service" className="hover:underline">Terms</a>
+          {!signupEmailSent && (
+            <div className="mt-6 pt-4 border-t text-center">
+              <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+                <a href="/privacy-policy" className="hover:underline">Privacy</a>
+                <span>•</span>
+                <a href="/terms-of-service" className="hover:underline">Terms</a>
+              </div>
             </div>
-          </div>
+          )}
 
           <PoweredByFooter className="mt-4" />
         </div>
